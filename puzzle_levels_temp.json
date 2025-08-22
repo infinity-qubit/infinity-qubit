@@ -1,0 +1,335 @@
+[{
+    "name": "Quantum Flip",
+    "description": "Transform |0⟩ into |1⟩",
+    "input_state": "|0⟩",
+    "target_state": "|1⟩",
+    "available_gates": ["H", "X", "Y", "Z"],
+    "qubits": 1,
+    "hint": "The X gate (Pauli-X) flips |0⟩ to |1⟩",
+    "max_gates": 1,
+    "difficulty": "Beginner"
+},
+{
+    "name": "First Superposition",
+    "description": "Create |+⟩ state from |0⟩",
+    "input_state": "|0⟩",
+    "target_state": "|+⟩",
+    "available_gates": ["H", "X", "Y", "Z"],
+    "qubits": 1,
+    "hint": "The Hadamard gate creates equal superposition",
+    "max_gates": 1,
+    "difficulty": "Beginner"
+},
+{
+    "name": "Phase Flip Challenge",
+    "description": "Transform |+⟩ into |-⟩",
+    "input_state": "|+⟩",
+    "target_state": "|-⟩",
+    "available_gates": ["H", "X", "Y", "Z"],
+    "qubits": 1,
+    "hint": "The Z gate adds a phase flip to |+⟩",
+    "max_gates": 1,
+    "difficulty": "Beginner"
+},
+{
+    "name": "Y-Gate Mystery",
+    "description": "Apply Y gate to |0⟩",
+    "input_state": "|0⟩",
+    "target_state": "|i·1⟩",
+    "available_gates": ["H", "X", "Y", "Z"],
+    "qubits": 1,
+    "hint": "Y gate combines X and Z operations with a phase",
+    "max_gates": 1,
+    "difficulty": "Beginner"
+},
+{
+    "name": "Return to Zero",
+    "description": "Bring |1⟩ back to |0⟩",
+    "input_state": "|1⟩",
+    "target_state": "|0⟩",
+    "available_gates": ["H", "X", "Y", "Z"],
+    "qubits": 1,
+    "hint": "X gate is its own inverse",
+    "max_gates": 1,
+    "difficulty": "Beginner"
+},
+
+{
+    "name": "Double Hadamard",
+    "description": "Apply H twice to |0⟩",
+    "input_state": "|0⟩",
+    "target_state": "|0⟩",
+    "available_gates": ["H", "X", "Y", "Z"],
+    "qubits": 1,
+    "hint": "H·H = I (identity). Two Hadamards cancel out",
+    "max_gates": 2,
+    "difficulty": "Intermediate"
+},
+{
+    "name": "Phase Gate Introduction",
+    "description": "Transform |+⟩ using S gate",
+    "input_state": "|+⟩",
+    "target_state": "|+i⟩",
+    "available_gates": ["H", "X", "Y", "Z", "S"],
+    "qubits": 1,
+    "hint": "S gate adds π/2 phase to |1⟩ component",
+    "max_gates": 1,
+    "difficulty": "Intermediate"
+},
+{
+    "name": "T Gate Challenge",
+    "description": "Apply T gate to superposition",
+    "input_state": "|+⟩",
+    "target_state": "|T+⟩",
+    "available_gates": ["H", "X", "Y", "Z", "S", "T"],
+    "qubits": 1,
+    "hint": "T gate adds π/4 phase to |1⟩ component",
+    "max_gates": 1,
+    "difficulty": "Intermediate"
+},
+{
+    "name": "Complex Sequence",
+    "description": "Transform |0⟩ to |-⟩ via |1⟩",
+    "input_state": "|0⟩",
+    "target_state": "|-⟩",
+    "available_gates": ["H", "X", "Y", "Z"],
+    "qubits": 1,
+    "hint": "Think: |0⟩ → |1⟩ → |-⟩. What gates do this?",
+    "max_gates": 2,
+    "difficulty": "Intermediate"
+},
+{
+    "name": "Phase Correction",
+    "description": "Fix the phase of |i·1⟩ to get |1⟩",
+    "input_state": "|i·1⟩",
+    "target_state": "|1⟩",
+    "available_gates": ["H", "X", "Y", "Z", "S"],
+    "qubits": 1,
+    "hint": "You need to remove the i phase from |1⟩",
+    "max_gates": 2,
+    "difficulty": "Intermediate"
+},
+
+{
+    "name": "First Bell State",
+    "description": "Create |Φ+⟩ from |00⟩",
+    "input_state": "|00⟩",
+    "target_state": "|Φ+⟩",
+    "available_gates": ["H", "X", "CNOT"],
+    "qubits": 2,
+    "hint": "Apply H to first qubit, then CNOT(0,1)",
+    "max_gates": 2,
+    "difficulty": "Intermediate"
+},
+{
+    "name": "Bell State Φ-",
+    "description": "Create |Φ-⟩ Bell state",
+    "input_state": "|00⟩",
+    "target_state": "|Φ-⟩",
+    "available_gates": ["H", "X", "Z", "CNOT"],
+    "qubits": 2,
+    "hint": "Similar to |Φ+⟩ but with a phase flip",
+    "max_gates": 3,
+    "difficulty": "Intermediate"
+},
+{
+    "name": "Bell State Ψ+",
+    "description": "Create |Ψ+⟩ Bell state",
+    "input_state": "|00⟩",
+    "target_state": "|Ψ+⟩",
+    "available_gates": ["H", "X", "CNOT"],
+    "qubits": 2,
+    "hint": "Flip one qubit before creating entanglement",
+    "max_gates": 3,
+    "difficulty": "Intermediate"
+},
+{
+    "name": "Bell State Ψ-",
+    "description": "Create |Ψ-⟩ Bell state",
+    "input_state": "|00⟩",
+    "target_state": "|Ψ-⟩",
+    "available_gates": ["H", "X", "Z", "CNOT"],
+    "qubits": 2,
+    "hint": "Combine X flip and phase operations with entanglement",
+    "max_gates": 4,
+    "difficulty": "Intermediate"
+},
+{
+    "name": "Controlled Operations",
+    "description": "Use CNOT to flip second qubit when first is |1⟩",
+    "input_state": "|10⟩",
+    "target_state": "|11⟩",
+    "available_gates": ["H", "X", "CNOT"],
+    "qubits": 2,
+    "hint": "CNOT flips target when control is |1⟩",
+    "max_gates": 1,
+    "difficulty": "Intermediate"
+},
+
+{
+    "name": "Superposition Distribution",
+    "description": "Create |++⟩ from |00⟩",
+    "input_state": "|00⟩",
+    "target_state": "|++⟩",
+    "available_gates": ["H", "X", "Y", "Z"],
+    "qubits": 2,
+    "hint": "Apply H to both qubits independently",
+    "max_gates": 2,
+    "difficulty": "Advanced"
+},
+{
+    "name": "Entanglement Destruction",
+    "description": "Disentangle |Φ+⟩ back to |00⟩",
+    "input_state": "|Φ+⟩",
+    "target_state": "|00⟩",
+    "available_gates": ["H", "X", "CNOT"],
+    "qubits": 2,
+    "hint": "Reverse the Bell state creation process",
+    "max_gates": 2,
+    "difficulty": "Advanced"
+},
+{
+    "name": "Quantum Teleportation Setup",
+    "description": "Prepare entangled resource |Φ+⟩ on qubits 1,2",
+    "input_state": "|000⟩",
+    "target_state": "|0Φ+⟩",
+    "available_gates": ["H", "X", "CNOT"],
+    "qubits": 3,
+    "hint": "Leave first qubit alone, entangle qubits 1 and 2",
+    "max_gates": 2,
+    "difficulty": "Advanced"
+},
+{
+    "name": "GHZ State Creation",
+    "description": "Create 3-qubit GHZ state",
+    "input_state": "|000⟩",
+    "target_state": "|GHZ⟩",
+    "available_gates": ["H", "X", "CNOT"],
+    "qubits": 3,
+    "hint": "H on first qubit, then CNOT to others",
+    "max_gates": 3,
+    "difficulty": "Advanced"
+},
+{
+    "name": "Controlled-Z Operation",
+    "description": "Apply phase flip between entangled qubits",
+    "input_state": "|Φ+⟩",
+    "target_state": "|Φ-⟩",
+    "available_gates": ["H", "X", "Z", "CZ", "CNOT"],
+    "qubits": 2,
+    "hint": "CZ gate adds phase when both qubits are |1⟩",
+    "max_gates": 1,
+    "difficulty": "Advanced"
+},
+
+{
+    "name": "W State Creation",
+    "description": "Create 3-qubit W state from |000⟩",
+    "input_state": "|000⟩",
+    "target_state": "|W⟩",
+    "available_gates": ["H", "X", "Y", "CNOT", "Toffoli"],
+    "qubits": 3,
+    "hint": "W state is symmetric superposition of all single-excitation states",
+    "max_gates": 6,
+    "difficulty": "Expert"
+},
+{
+    "name": "Quantum Error Syndrome",
+    "description": "Create error detection pattern",
+    "input_state": "|000⟩",
+    "target_state": "|err⟩",
+    "available_gates": ["H", "X", "CNOT", "Toffoli"],
+    "qubits": 3,
+    "hint": "Use auxiliary qubits to detect bit flip errors",
+    "max_gates": 4,
+    "difficulty": "Expert"
+},
+{
+    "name": "Quantum Fourier Transform",
+    "description": "Apply 2-qubit QFT",
+    "input_state": "|00⟩",
+    "target_state": "|QFT⟩",
+    "available_gates": ["H", "S", "T", "CNOT"],
+    "qubits": 2,
+    "hint": "H on first qubit, controlled phase operations",
+    "max_gates": 3,
+    "difficulty": "Expert"
+},
+{
+    "name": "Toffoli Gate Demo",
+    "description": "Flip third qubit only when first two are |11⟩",
+    "input_state": "|110⟩",
+    "target_state": "|111⟩",
+    "available_gates": ["H", "X", "CNOT", "Toffoli"],
+    "qubits": 3,
+    "hint": "Toffoli gate performs controlled-controlled-X",
+    "max_gates": 1,
+    "difficulty": "Expert"
+},
+{
+    "name": "Quantum Supremacy Circuit",
+    "description": "Create maximally entangled 4-qubit state",
+    "input_state": "|0000⟩",
+    "target_state": "|MaxEnt⟩",
+    "available_gates": ["H", "X", "Y", "Z", "CNOT", "CZ", "Toffoli"],
+    "qubits": 4,
+    "hint": "Use multiple layers of Hadamard and entangling gates",
+    "max_gates": 8,
+    "difficulty": "Expert"
+},
+
+{
+    "name": "Quantum Secret Sharing",
+    "description": "Encode secret in 3-qubit state",
+    "input_state": "|000⟩",
+    "target_state": "|Secret⟩",
+    "available_gates": ["H", "X", "Y", "Z", "S", "T", "CNOT", "CZ", "Toffoli"],
+    "qubits": 3,
+    "hint": "Create state where no single qubit reveals the secret",
+    "max_gates": 10,
+    "difficulty": "Master"
+},
+{
+    "name": "Quantum Phase Kickback",
+    "description": "Demonstrate phase kickback with ancilla",
+    "input_state": "|+0⟩",
+    "target_state": "|-0⟩",
+    "available_gates": ["H", "X", "Z", "S", "CNOT"],
+    "qubits": 2,
+    "hint": "Use controlled operation to transfer phase",
+    "max_gates": 3,
+    "difficulty": "Master"
+},
+{
+    "name": "Quantum Interference",
+    "description": "Create destructive interference pattern",
+    "input_state": "|00⟩",
+    "target_state": "|Interference⟩",
+    "available_gates": ["H", "X", "Y", "Z", "S", "T", "CNOT"],
+    "qubits": 2,
+    "hint": "Use multiple paths that interfere destructively",
+    "max_gates": 6,
+    "difficulty": "Master"
+},
+{
+    "name": "Quantum Error Correction",
+    "description": "Implement 3-qubit bit flip code",
+    "input_state": "|000⟩",
+    "target_state": "|ErrorCode⟩",
+    "available_gates": ["H", "X", "CNOT", "Toffoli"],
+    "qubits": 3,
+    "hint": "Encode logical |0⟩ in physical |000⟩",
+    "max_gates": 5,
+    "difficulty": "Master"
+},
+{
+    "name": "Ultimate Challenge",
+    "description": "Create the most complex quantum state",
+    "input_state": "|0000⟩",
+    "target_state": "|Ultimate⟩",
+    "available_gates": ["H", "X", "Y", "Z", "S", "T", "CNOT", "CZ", "Toffoli"],
+    "qubits": 4,
+    "hint": "Use every gate type in a meaningful sequence",
+    "max_gates": 15,
+    "difficulty": "Master"
+}]
