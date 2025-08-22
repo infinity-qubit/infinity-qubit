@@ -12,6 +12,9 @@ from PIL import Image, ImageTk
 import threading
 import time
 
+sys.path.append('..')
+from run import PROJECT_ROOT, get_resource_path
+
 class GameModeSelection:
     def __init__(self):
         self.root = tk.Tk()
@@ -65,7 +68,7 @@ class GameModeSelection:
         """Setup video background"""
         try:
             # Try to load video file (you'll need to add your video file)
-            video_path = "quantum_background.mp4"  # Change this to your video file
+            video_path = get_resource_path('resources/images/quantum_background.mp4')
             self.video_cap = cv2.VideoCapture(video_path)
 
             if not self.video_cap.isOpened():

@@ -9,6 +9,10 @@ import math
 from PIL import Image, ImageTk
 import pygame
 import os
+import sys
+
+sys.path.append('..')
+from run import PROJECT_ROOT, get_resource_path
 
 class TutorialWindow:
     def __init__(self, parent, return_callback=None):
@@ -130,12 +134,12 @@ class TutorialWindow:
         try:
             # Define sound file paths
             sound_files = {
-                'button_click': 'sounds/click.wav',
-                'gate_place': 'sounds/click.wav',
-                'success': 'sounds/success.wav',
-                'error': 'sounds/error.wav',
-                'clear': 'sounds/clear.wav',
-                'tutorial_open': 'sounds/clear.wav',
+                'button_click': get_resource_path('resources/sounds/click.wav'),
+                'gate_place': get_resource_path('resources/sounds/click.wav'),
+                'success': get_resource_path('resources/sounds/success.wav'),
+                'error': get_resource_path('resources/sounds/error.wav'),
+                'clear': get_resource_path('resources/sounds/clear.wav'),
+                'tutorial_open': get_resource_path('resources/sounds/clear.wav'),
                 'gate_hover': None
             }
             
@@ -471,13 +475,13 @@ class GateTutorial:
         try:
             # Define sound file paths
             sound_files = {
-                'button_click': 'sounds/click.wav',
-                'gate_place': 'sounds/click.wav',
-                'success': 'sounds/success.wav',
-                'error': 'sounds/error.wav',
-                'clear': 'sounds/clear.wav',
-                'tutorial_open': 'sounds/success.wav',
-                'circuit_run': 'sounds/success.wav'
+                'button_click': get_resource_path('resources/sounds/click.wav'),
+                'gate_place': get_resource_path('resources/sounds/click.wav'),
+                'success': get_resource_path('resources/sounds/success.wav'),
+                'error': get_resource_path('resources/sounds/error.wav'),
+                'clear': get_resource_path('resources/sounds/clear.wav'),
+                'tutorial_open': get_resource_path('resources/sounds/success.wav'),
+                'circuit_run': get_resource_path('resources/sounds/success.wav')
             }
             
             # Load sounds into pygame

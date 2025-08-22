@@ -6,6 +6,10 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 import pygame
 from PIL import Image, ImageTk
+import sys
+
+sys.path.append('..')
+from run import PROJECT_ROOT, get_resource_path
 
 class PuzzleMode:
     def __init__(self, root):
@@ -99,12 +103,12 @@ class PuzzleMode:
         try:
             # Define sound file paths
             sound_files = {
-                'button_click': 'sounds/click.wav',
-                'gate_place': 'sounds/click.wav',
-                'success': 'sounds/success.wav',
-                'error': 'sounds/error.wav',
-                'clear': 'sounds/clear.wav',
-                'level_complete': 'sounds/success.wav'
+                'button_click': get_resource_path('resources/sounds/click.wav'),
+                'gate_place': get_resource_path('resources/sounds/click.wav'),
+                'success': get_resource_path('resources/sounds/success.wav'),
+                'error': get_resource_path('resources/sounds/error.wav'),
+                'clear': get_resource_path('resources/sounds/clear.wav'),
+                'level_complete': get_resource_path('resources/sounds/success.wav')
             }
             
             # Load sounds into pygame
