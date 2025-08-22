@@ -7,12 +7,6 @@ Main entry point for the application.
 import sys
 import os
 
-# # Add the current directory to the Python path
-# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-# sys.path.append('..')
-# from run import PROJECT_ROOT, get_resource_path
-
 def main():
     """Main entry point for the game"""
     try:

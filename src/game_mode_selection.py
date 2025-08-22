@@ -67,7 +67,7 @@ class GameModeSelection:
     def setup_video_background(self):
         """Setup video background"""
         try:
-            # Try to load video file (you'll need to add your video file)
+            # Loading video file
             video_path = get_resource_path('resources/images/quantum_background.mp4')
             self.video_cap = cv2.VideoCapture(video_path)
 
