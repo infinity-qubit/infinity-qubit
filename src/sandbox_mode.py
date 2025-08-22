@@ -7,6 +7,10 @@ from qiskit.visualization import plot_bloch_multivector, plot_state_qsphere # ty
 import pygame # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # type: ignore
+import sys
+
+sys.path.append('..')
+from run import PROJECT_ROOT, get_resource_path
 
 class SandboxMode:
     def __init__(self, root):
@@ -23,12 +27,12 @@ class SandboxMode:
             self.sounds = {}
             try:
                 # Gate sounds
-                self.sounds['gate_place'] = pygame.mixer.Sound("sounds/click.wav")
-                self.sounds['success'] = pygame.mixer.Sound("sounds/run_circuit.wav")
-                self.sounds['error'] = pygame.mixer.Sound("sounds/error.wav")
-                self.sounds['click'] = pygame.mixer.Sound("sounds/click.wav")
-                self.sounds['circuit_run'] = pygame.mixer.Sound("sounds/click.wav")
-                self.sounds['clear'] = pygame.mixer.Sound("sounds/clear.wav")
+                self.sounds['gate_place'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
+                self.sounds['success'] = pygame.mixer.Sound(get_resource_path("resources/sounds/run_circuit.wav"))
+                self.sounds['error'] = pygame.mixer.Sound(get_resource_path("resources/sounds/error.wav"))
+                self.sounds['click'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
+                self.sounds['circuit_run'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
+                self.sounds['clear'] = pygame.mixer.Sound(get_resource_path("resources/sounds/clear.wav"))
 
                 # Set volumes
                 for sound in self.sounds.values():
