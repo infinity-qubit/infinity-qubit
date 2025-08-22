@@ -1,0 +1,47 @@
+[{
+    "stage_name":"splash_screen",
+    "colors": {
+        "background": "#1a1a1a",
+        "title_color": "#00ff88",
+        "highlight": "#ff5733",
+        "sub-title_color": "#ffffff",
+        "loading_text_color": "#4ecdc4",
+        "version_text_color": "#888888",
+        "throughcolor": "#2a2a2a"
+    }
+},
+{
+    "stage_name":"game_mode_selection",
+    "colors": {
+        "black": "#000000",
+        "background": "#1a1a1a",
+        "main_box_outline": "#4ecdc4",
+        "shadow_title_color": "#003322",
+        "title_color": "#00ff88",
+        "subtitle_color_1": "#ffffff",
+        "subtitle_color_2": "#4ecdc4",
+        "subtitle_color_3": "#f39c12",
+        "subtitle_color_4": "#e74c3c",
+        "subtitle_color_5": "#9b59b6",
+
+        "tutorial_mode_button_color": "#9b59b6",
+        "tutorial_mode_button_hover_color": "#b370d1",
+
+        "puzzle_mode_button_color": "#00ff88",
+        "puzzle_mode_button_hover_color": "#33ff99",
+
+        "sandbox_mode_button_color": "#f39c12",
+        "sandbox_mode_button_hover_color": "#f5b041",
+
+        "learn_hub_button_color": "#e74c3c",
+        "learn_hub_button_hover_color": "#ec7063",
+
+        "button_outline_color": "#2a2a2a",
+
+        "exit_button_color": "#ff6b6b",
+        "exit_button_hover_color": "#ff5252",
+        "exit_text_color": "#ffffff",
+
+        "version_text_color": "#888888"
+    }
+}]
