@@ -223,4 +223,97 @@
         "quantum_wire_3": "#f39c12",
         "quantum_wire_4": "#a29bfe"
     }
+},
+{
+    "stage_name": "sandbox_mode",
+    "colors": {
+
+        "background": "#1a1a1a",
+        "background_2": "#0a0a0a",
+        "background_3": "#2a2a2a",
+        "background_4": "#3a3a3a",
+        "background_black": "#000",
+
+        "H_color": "#ff6b6b",
+        "S_color": "#74b9ff",
+        "T_color": "#a29bfe",
+        "CZ_color": "#a29bfe",
+        "X_color": "#4ecdc4",
+        "Y_color": "#55a3ff",
+        "Z_color": "#45b7d1",
+        "CNOT_color": "#ffeaa7",
+        "Toffoli_color": "#fd79a8",
+
+        "top_border_color": "#00ff88",
+        "title_color": "#00ff88",
+        "subtitle_color": "#4ecdc4",
+        "info_title_color": "#ff6b6b",
+
+        "main_menu_button_text_color": "#4ecdc4",
+        "close_button_background": "#ff6b6b",
+        "close_button_text_color": "#fff",
+        "close_button_hover_text_color": "#ffffff",
+        "clear_button_background": "#ff6b6b",
+        "clear_button_text_color": "#ffffff",
+
+        "qubit_number_title_color": "#fff",
+        "qubit_spinbox_color": "#00ff88",
+        "initial_state_title_color": "#fff",
+        "combobox_color": "#00ff88",
+        "circuit_designer_title_color": "#00ff88",
+        "gate_palette_title_color": "#f39c12",
+
+        "undo_button_background": "#f39c12",
+        "visualizer_button_background": "#9b59b6",
+        "visualizer_button_text_color": "#ffffff",
+
+
+        "circuit_title_text_color": "#00ff88",
+        "results_title_text_color": "#00ff88",
+        "results_text_color": "#00ff88",
+        "results_background": "#00ff88",
+        "results_select_background": "#4ecdc4",
+
+        "scrollbar_active_background": "#4ecdc4",
+
+        "controls_title_text_color": "#ff6b6b",
+
+        "run_button_background": "#00ff88",
+        "run_button_text_color": "#000000",
+
+        "button_hover_background": "#fff",
+        "button_hover_text_color": "#000",
+
+        "circuit_status_title_color": "#4ecdc4",
+        "gates_counter_color": "#fff",
+        "used_gates_counter_color": "#fff",
+        "3D_visualizer_title_color": "#00ff88",
+        "info_panel_text_color": "#4ecdc4",
+        "sphere_visualization_color": "#00ff88",
+
+        "save_image_background": "#4ecdc4",
+        "refresh_button_background": "#f39c12",
+
+        "target_qubit_title_color": "#fff",
+        "gate_description_color": "#ccc",
+        "multi_qubit_gates_title_color": "#fff",
+        "CNOT_gate_title_color": "#ffeaa7",
+        "CZ_gate_title_color": "#a29bfe",
+        "toffoli_gate_title_color": "#fd79a8",
+        "toffoli_add_button_background": "#fd79a8",
+
+        "quantum_wire_1": "#ff6b6b",
+        "quantum_wire_2": "#4ecdc4",
+        "quantum_wire_3": "#f39c12",
+        "quantum_wire_4": "#a29bfe",
+
+        "single_qubit_gates_title_color": "#fff",
+
+        "state_analysis_title_color": "#ff6b6b",
+        "state_display_text_color": "#00ff88",
+        "state_display_insert_background": "#00ff88",
+        "state_display_select_background": "#4ecdc4",
+        "state_display_select_foreground": "#000000",
+        "state_scrollbar_active_background": "#4ecdc4"
+    }
 }]
