@@ -8,6 +8,16 @@ import sys
 import os
 import tkinter as tk
 from tkinter import ttk
+import sys
+
+from q_utils import get_colors_from_file, extract_color_palette
+
+sys.path.append('..')
+from run import PROJECT_ROOT, get_resource_path
+
+# Get color palette
+color_file_path = get_resource_path('config/color_palette.json')
+palette = extract_color_palette(get_colors_from_file(color_file_path), 'splash_screen')
 
 class SplashScreen:
     def __init__(self):
@@ -34,7 +44,7 @@ class SplashScreen:
         y = (screen_height - splash_height) // 2
         
         self.splash.geometry(f"{splash_width}x{splash_height}+{x}+{y}")
-        self.splash.configure(bg='#1a1a1a')
+        self.splash.configure(bg=palette['background'])
         
         # Make splash screen stay on top
         self.splash.attributes('-topmost', True)
@@ -48,23 +58,23 @@ class SplashScreen:
     def create_splash_content(self):
         """Create the content for the splash screen"""
         # Main container
-        main_frame = tk.Frame(self.splash, bg='#1a1a1a')
+        main_frame = tk.Frame(self.splash, bg=palette['background'])
         main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
         # Title - increased top padding and adjusted font
         title_label = tk.Label(main_frame, text="🔬 Infinity Qubit",
                             font=('Arial', 28, 'bold'),  # Slightly smaller font
-                            fg='#00ff88', bg='#1a1a1a')
+                            fg=palette['title_color'], bg=palette['background'])
         title_label.pack(pady=(40, 15))  # More balanced padding
         
         # Subtitle - added more padding
         subtitle_label = tk.Label(main_frame, text="Quantum Computing Educational Game",
                                 font=('Arial', 14),  # Slightly smaller
-                                fg='#ffffff', bg='#1a1a1a')
+                                fg=palette['sub-title_color'], bg=palette['background'])
         subtitle_label.pack(pady=(5, 30))  # Better spacing
         
         # Quantum circuit animation area - reduced padding
-        self.animation_frame = tk.Frame(main_frame, bg='#1a1a1a')
+        self.animation_frame = tk.Frame(main_frame, bg=palette['background'])
         self.animation_frame.pack(pady=15)
         
         # Create animated quantum gates
@@ -73,7 +83,7 @@ class SplashScreen:
         # Loading text - increased padding and better positioning
         self.loading_label = tk.Label(main_frame, text="Initializing quantum circuits...",
                                     font=('Arial', 11),  # Slightly smaller
-                                    fg='#4ecdc4', bg='#1a1a1a')
+                                    fg=palette['loading_text_color'], bg=palette['background'])
         self.loading_label.pack(pady=(30, 15))  # More space above and below
         
         # Progress bar
@@ -84,18 +94,18 @@ class SplashScreen:
         # Version info - with more space from bottom
         version_label = tk.Label(main_frame, text="Version 1.0 | Built with Qiskit",
                                 font=('Arial', 9),  # Smaller font
-                                fg='#888888', bg='#1a1a1a')
+                                fg=palette['version_text_color'], bg=palette['background'])
         version_label.pack(side=tk.BOTTOM, pady=(10, 15))  # More space from bottom
         
         # Configure progress bar style
         style = ttk.Style()
         style.theme_use('clam')
         style.configure('Splash.Horizontal.TProgressbar',
-                    background='#00ff88',
-                    troughcolor='#2a2a2a',
+                    background=palette['background'],
+                    troughcolor=palette['throughcolor'],
                     borderwidth=0,
-                    lightcolor='#00ff88',
-                    darkcolor='#00ff88')
+                    lightcolor=palette['background'],
+                    darkcolor=palette['background'])
     
     def create_quantum_animation(self):
         """Create animated quantum circuit elements"""

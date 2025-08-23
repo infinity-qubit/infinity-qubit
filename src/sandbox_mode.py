@@ -9,8 +9,14 @@ import matplotlib.pyplot as plt # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # type: ignore
 import sys
 
+from q_utils import get_colors_from_file, extract_color_palette
+
 sys.path.append('..')
 from run import PROJECT_ROOT, get_resource_path
+
+# Get color palette
+color_file_path = get_resource_path('config/color_palette.json')
+palette = extract_color_palette(get_colors_from_file(color_file_path), 'sandbox_mode')
 
 class SandboxMode:
     def __init__(self, root):
@@ -59,7 +65,7 @@ class SandboxMode:
         y = (screen_height - window_height) // 2
 
         self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        self.root.configure(bg='#1a1a1a')
+        self.root.configure(bg=palette['background'])
 
         # Store dimensions
         self.window_width = window_width
@@ -194,22 +200,22 @@ class SandboxMode:
     def setup_ui(self):
         """Setup the sandbox UI with enhanced styling matching learn hub"""
         # Main container with gradient-like effect
-        main_frame = tk.Frame(self.root, bg='#0a0a0a')
+        main_frame = tk.Frame(self.root, bg=palette['background_2'])
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Add subtle top border
-        top_border = tk.Frame(main_frame, bg='#00ff88', height=3)
+        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=3)
         top_border.pack(fill=tk.X)
 
         # Content frame
-        content_frame = tk.Frame(main_frame, bg='#2a2a2a')
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True)
 
         # Create simplified header (no animation)
         self.create_simple_header(content_frame)
 
         # Main content container
-        main_container = tk.Frame(content_frame, bg='#2a2a2a')
+        main_container = tk.Frame(content_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=(0, 25))
 
         # Control panel
@@ -222,31 +228,31 @@ class SandboxMode:
 
     def create_simple_header(self, parent):
         """Create a simple header without animation to save space"""
-        header_frame = tk.Frame(parent, bg='#2a2a2a')
+        header_frame = tk.Frame(parent, bg=palette['background_3'])
         header_frame.pack(fill=tk.X, padx=25, pady=(15, 10))
 
         # Add a top navigation bar with title and menu button
-        nav_frame = tk.Frame(header_frame, bg='#2a2a2a')
+        nav_frame = tk.Frame(header_frame, bg=palette['background_3'])
         nav_frame.pack(fill=tk.X)
 
         # Title on the left
         title_label = tk.Label(nav_frame, text="🛠️ Quantum Circuit Sandbox",
                             font=('Arial', 20, 'bold'),
-                            fg='#00ff88', bg='#2a2a2a')
+                            fg=palette['title_color'], bg=palette['background_3'])
         title_label.pack(side=tk.LEFT)
 
         # Subtitle below title
         subtitle_label = tk.Label(nav_frame,
                                 text="Build and simulate quantum circuits in real-time",
                                 font=('Arial', 11, 'italic'),
-                                fg='#4ecdc4', bg='#2a2a2a')
+                                fg=palette['subtitle_color'], bg=palette['background_3'])
         subtitle_label.pack(side=tk.LEFT, padx=(10, 0))
 
         # Back to Main Menu button - top right
         main_menu_btn = tk.Button(nav_frame, text="🏠 Main Menu",
                                 command=self.return_to_main_menu,
                                 font=('Arial', 10, 'bold'),
-                                bg='#3a3a3a', fg='#4ecdc4',
+                                bg=palette['background_4'], fg=palette['main_menu_button_text_color'],
                                 padx=15, pady=8,
                                 cursor='hand2',
                                 relief=tk.FLAT,
@@ -255,9 +261,9 @@ class SandboxMode:
 
         # Add hover effect
         def on_nav_enter(event):
-            main_menu_btn.configure(bg='#4ecdc4', fg='#000000')
+            main_menu_btn.configure(bg=palette['main_menu_button_text_color'], fg=palette['background_black'])
         def on_nav_leave(event):
-            main_menu_btn.configure(bg='#3a3a3a', fg='#4ecdc4')
+            main_menu_btn.configure(bg=palette['background_4'], fg=palette['main_menu_button_text_color'])
 
         main_menu_btn.bind("<Enter>", on_nav_enter)
         main_menu_btn.bind("<Leave>", on_nav_leave)
@@ -285,37 +291,37 @@ class SandboxMode:
 
     def setup_control_panel(self, parent):
         """Setup the control panel with enhanced styling"""
-        control_frame = tk.Frame(parent, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        control_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         control_frame.pack(fill=tk.X, pady=(0, 20))
 
         # Enhanced title
         control_title = tk.Label(control_frame, text="🎛️ Circuit Configuration",
-                                font=('Arial', 16, 'bold'), fg='#00ff88', bg='#2a2a2a')
+                                font=('Arial', 16, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['background_3'])
         control_title.pack(pady=(15, 10))
 
         # Main controls container
-        controls_container = tk.Frame(control_frame, bg='#2a2a2a')
+        controls_container = tk.Frame(control_frame, bg=palette['background_3'])
         controls_container.pack(padx=20, pady=(0, 15))
 
         # Qubit controls - left side
-        qubit_frame = tk.Frame(controls_container, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+        qubit_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
         qubit_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15), pady=5, ipadx=15, ipady=10)
 
         tk.Label(qubit_frame, text="⚛️ Number of Qubits",
-                font=('Arial', 12, 'bold'), fg='#ffffff', bg='#3a3a3a').pack(pady=(0, 5))
+                font=('Arial', 12, 'bold'), fg=palette['qubit_number_title_color'], bg=palette['background_4']).pack(pady=(0, 5))
 
         self.qubit_var = tk.IntVar(value=1)
         qubit_spinbox = tk.Spinbox(qubit_frame, from_=1, to=4, textvariable=self.qubit_var,
                                 command=self.on_qubit_change, font=('Arial', 12), width=8,
-                                bg='#1a1a1a', fg='#00ff88', insertbackground='#00ff88')
+                                bg=palette['background'], fg=palette['qubit_spinbox_color'], insertbackground=palette['qubit_spinbox_color'])
         qubit_spinbox.pack(pady=5)
 
         # Initial state selection - right side
-        state_frame = tk.Frame(controls_container, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+        state_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
         state_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5, ipadx=15, ipady=10)
 
         tk.Label(state_frame, text="🎯 Initial State",
-                font=('Arial', 12, 'bold'), fg='#ffffff', bg='#3a3a3a').pack(pady=(0, 5))
+                font=('Arial', 12, 'bold'), fg=palette['initial_state_title_color'], bg=palette['background_4']).pack(pady=(0, 5))
 
         self.state_var = tk.StringVar(value="|0⟩")
         state_options = ["|0⟩", "|1⟩", "|+⟩", "|-⟩"]
@@ -323,10 +329,10 @@ class SandboxMode:
         # Custom styled combobox
         style = ttk.Style()
         style.configure('Custom.TCombobox',
-                       fieldbackground='#1a1a1a',
-                       background='#3a3a3a',
-                       foreground='#00ff88',
-                       arrowcolor='#00ff88')
+                       fieldbackground=palette['background'],
+                       background=palette['background_4'],
+                       foreground=palette['combobox_color'],
+                       arrowcolor=palette['combobox_color'])
 
         self.state_combo = ttk.Combobox(state_frame, textvariable=self.state_var,
                                     values=state_options, state="readonly",
@@ -337,23 +343,23 @@ class SandboxMode:
 
     def setup_circuit_area(self, parent):
         """Setup the circuit visualization area with enhanced styling"""
-        circuit_frame = tk.Frame(parent, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        circuit_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         circuit_frame.pack(fill=tk.X, pady=(0, 15))
 
         # Enhanced title with icon
         circuit_title = tk.Label(circuit_frame, text="🔧 Quantum Circuit Designer",
-                                font=('Arial', 14, 'bold'), fg='#00ff88', bg='#2a2a2a')
+                                font=('Arial', 14, 'bold'), fg=palette['circuit_designer_title_color'], bg=palette['background_3'])
         circuit_title.pack(pady=(10, 8))
 
         # Circuit canvas with enhanced styling
-        canvas_container = tk.Frame(circuit_frame, bg='#1a1a1a', relief=tk.SUNKEN, bd=3)
+        canvas_container = tk.Frame(circuit_frame, bg=palette['background'], relief=tk.SUNKEN, bd=3)
         canvas_container.pack(padx=20, pady=(0, 10))
 
         canvas_width = int(self.window_width * 0.85)
         canvas_height = int(self.window_height * 0.25)
 
         self.circuit_canvas = tk.Canvas(canvas_container, width=canvas_width, height=canvas_height,
-                                       bg='#0a0a0a', highlightthickness=0)
+                                       bg=palette['background_2'], highlightthickness=0)
         self.circuit_canvas.pack(padx=5, pady=5)
 
         self.canvas_width = canvas_width
@@ -364,16 +370,16 @@ class SandboxMode:
 
     def setup_bottom_section(self, parent):
         """Setup the bottom section with gate palette on left, controls in middle, and results on right"""
-        bottom_frame = tk.Frame(parent, bg='#2a2a2a')
+        bottom_frame = tk.Frame(parent, bg=palette['background_3'])
         bottom_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
 
         # Left side - Gate Palette (40% width)
-        gate_frame = tk.Frame(bottom_frame, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        gate_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         gate_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
 
         # Gate palette title
         tk.Label(gate_frame, text="🎨 Gate Palette",
-                font=('Arial', 14, 'bold'), fg='#f39c12', bg='#2a2a2a').pack(pady=(10, 10))
+                font=('Arial', 14, 'bold'), fg=palette['gate_palette_title_color'], bg=palette['background_3']).pack(pady=(10, 10))
 
         # Create tabbed interface for gates
         gate_notebook = ttk.Notebook(gate_frame)
@@ -390,14 +396,14 @@ class SandboxMode:
         self.setup_multi_gate_controls(multi_frame)
 
         # Middle section - Circuit Controls (30% width)
-        controls_frame = tk.Frame(bottom_frame, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        controls_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         controls_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5)
 
         # Action buttons in middle section
         self.setup_action_buttons(controls_frame)
 
         # Right side - Quantum State Analysis (30% width)
-        results_frame = tk.Frame(bottom_frame, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        results_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         results_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 0))
 
         # Results area in right section
@@ -407,33 +413,33 @@ class SandboxMode:
         """Setup action buttons with enhanced styling in middle section"""
         # Title for action section
         action_title = tk.Label(parent, text="🎮 Circuit Controls",
-                               font=('Arial', 14, 'bold'), fg='#00ff88', bg='#2a2a2a')
+                               font=('Arial', 14, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['background_3'])
         action_title.pack(pady=(10, 15))
 
         # Create buttons container with fixed width and proper height
-        action_frame = tk.Frame(parent, bg='#2a2a2a', width=250, height=350)  # Increased height for new button
+        action_frame = tk.Frame(parent, bg=palette['background_3'], width=250, height=350)  # Increased height for new button
         action_frame.pack(pady=(0, 15), padx=15)
         action_frame.pack_propagate(False)  # Maintain fixed size
 
         # Create enhanced buttons with hover effects
         buttons_data = [
-            ("🚀 Run Circuit", self.run_circuit, '#00ff88', '#000000'),
-            ("🔄 Clear Circuit", self.clear_circuit, '#ff6b6b', '#ffffff'),
-            ("↶ Undo Last", self.undo_gate, '#f39c12', '#000000'),
-            ("🌐 3D Visualizer", self.open_3d_visualizer, '#9b59b6', '#ffffff')  # New button
+            ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
+            ("🔄 Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
+            ("↶ Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
+            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color'])  # New button
         ]
 
         # Create buttons in a vertical layout for the middle section
         for i, (text, command, bg_color, fg_color) in enumerate(buttons_data):
             # Button container with proper spacing
-            btn_container = tk.Frame(action_frame, bg='#3a3a3a', relief=tk.RAISED, bd=2)
+            btn_container = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.RAISED, bd=2)
             btn_container.pack(fill=tk.X, pady=8, padx=5)  # Reduced padding for 4 buttons
 
             # Create the actual button
             btn = tk.Button(btn_container, text=text, command=command,
                            font=('Arial', 11, 'bold'), bg=bg_color, fg=fg_color,
                            padx=15, pady=10, cursor='hand2', relief=tk.FLAT, bd=0,  # Reduced pady
-                           activebackground='#ffffff', activeforeground='#000000')
+                           activebackground='#ffffff', activeforeground=palette['background_black'])
             btn.pack(padx=4, pady=4, fill=tk.X)
 
             # Store button reference for hover effects
@@ -442,13 +448,13 @@ class SandboxMode:
             def create_hover_functions(button, orig_color):
                 def on_enter(event):
                     if orig_color == '#00ff88':
-                        button.configure(bg='#ffffff', fg='#000000')
+                        button.configure(bg='#ffffff', fg=palette['background_black'])
                     elif orig_color == '#ff6b6b':
-                        button.configure(bg='#ffffff', fg='#000000')
+                        button.configure(bg='#ffffff', fg=palette['background_black'])
                     elif orig_color == '#9b59b6':  # New color for 3D visualizer
-                        button.configure(bg='#ffffff', fg='#000000')
+                        button.configure(bg='#ffffff', fg=palette['background_black'])
                     else:
-                        button.configure(bg='#ffffff', fg='#000000')
+                        button.configure(bg='#ffffff', fg=palette['background_black'])
 
                 def on_leave(event):
                     button.configure(bg=orig_color, fg=fg_color)
@@ -460,21 +466,21 @@ class SandboxMode:
             btn.bind("<Leave>", on_leave)
 
         # Add status info at the bottom of the controls
-        status_frame = tk.Frame(action_frame, bg='#3a3a3a', relief=tk.SUNKEN, bd=1)
+        status_frame = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.SUNKEN, bd=1)
         status_frame.pack(fill=tk.X, pady=(15, 0), padx=5)  # Reduced top padding
 
         status_title = tk.Label(status_frame, text="📊 Circuit Status",
-                               font=('Arial', 10, 'bold'), fg='#4ecdc4', bg='#3a3a3a')
+                               font=('Arial', 10, 'bold'), fg=palette['circuit_status_title_color'], bg=palette['background_4'])
         status_title.pack(pady=(5, 3))
 
         # Gates count
         self.gates_count_label = tk.Label(status_frame, text=f"Gates: {len(self.placed_gates)}",
-                                         font=('Arial', 9), fg='#ffffff', bg='#3a3a3a')
+                                         font=('Arial', 9), fg=palette['gates_counter_color'], bg=palette['background_4'])
         self.gates_count_label.pack(pady=2)
 
         # Qubits info
         self.qubits_info_label = tk.Label(status_frame, text=f"Qubits: {self.num_qubits}",
-                                         font=('Arial', 9), fg='#ffffff', bg='#3a3a3a')
+                                         font=('Arial', 9), fg=palette['used_gates_counter_color'], bg=palette['background_4'])
         self.qubits_info_label.pack(pady=(0, 5))
 
 
@@ -541,7 +547,7 @@ class SandboxMode:
             # Create a new window for the 3D visualization
             viz_window = tk.Toplevel(self.root)
             viz_window.title("🌐 3D Quantum State Visualizer")
-            viz_window.configure(bg='#1a1a1a')
+            viz_window.configure(bg=palette['background'])
 
             # Set window size and center it
             window_width = 900
@@ -553,25 +559,25 @@ class SandboxMode:
             viz_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
             # Create header
-            header_frame = tk.Frame(viz_window, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+            header_frame = tk.Frame(viz_window, bg=palette['background_3'], relief=tk.RAISED, bd=2)
             header_frame.pack(fill=tk.X, padx=10, pady=(10, 5))
 
             header_title = tk.Label(header_frame, text="🌐 3D Quantum State Visualization",
-                                   font=('Arial', 16, 'bold'), fg='#00ff88', bg='#2a2a2a')
+                                   font=('Arial', 16, 'bold'), fg=palette['3D_visualizer_title_color'], bg=palette['background_3'])
             header_title.pack(pady=10)
 
             # Create info panel
-            info_frame = tk.Frame(viz_window, bg='#2a2a2a', relief=tk.RAISED, bd=1)
+            info_frame = tk.Frame(viz_window, bg=palette['background_3'], relief=tk.RAISED, bd=1)
             info_frame.pack(fill=tk.X, padx=10, pady=5)
 
             info_text = tk.Label(info_frame,
                 text=f"Circuit: {self.num_qubits} qubits, {len(self.placed_gates)} gates | "
                      f"Gates: {[gate for gate, _ in self.placed_gates]}",
-                font=('Arial', 10), fg='#4ecdc4', bg='#2a2a2a')
+                font=('Arial', 10), fg=palette['info_panel_text_color'], bg=palette['background_3'])
             info_text.pack(pady=8)
 
             # Create visualization container
-            viz_container = tk.Frame(viz_window, bg='#1a1a1a', relief=tk.SUNKEN, bd=3)
+            viz_container = tk.Frame(viz_window, bg=palette['background'], relief=tk.SUNKEN, bd=3)
             viz_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
             # Create matplotlib figure with dark theme
@@ -583,26 +589,26 @@ class SandboxMode:
                 try:
                     fig = plot_bloch_multivector(state_vector)
                     fig.suptitle('Single Qubit Bloch Sphere Visualization',
-                               fontsize=16, color='#00ff88', fontweight='bold')
+                               fontsize=16, color=palette['sphere_visualization_color'], fontweight='bold')
                 except Exception as bloch_error:
                     print(f"Bloch sphere error: {bloch_error}")
                     # Fallback to qsphere if bloch sphere fails
                     fig = plot_state_qsphere(state_vector)
                     fig.suptitle('Single Qubit Q-Sphere Visualization',
-                               fontsize=16, color='#00ff88', fontweight='bold')
+                               fontsize=16, color=palette['sphere_visualization_color'], fontweight='bold')
 
             else:
                 # For multiple qubits, show Q-sphere
                 fig = plot_state_qsphere(state_vector)
                 fig.suptitle(f'{self.num_qubits}-Qubit Q-Sphere Visualization',
-                           fontsize=16, color='#00ff88', fontweight='bold')
+                           fontsize=16, color=palette['sphere_visualization_color'], fontweight='bold')
 
             # Customize the plot appearance
-            fig.patch.set_facecolor('#1a1a1a')
+            fig.patch.set_facecolor(palette['background'])
 
             # Make sure all axes have dark background
             for ax in fig.get_axes():
-                ax.set_facecolor('#1a1a1a')
+                ax.set_facecolor(palette['background'])
                 # Set text colors to be visible on dark background
                 ax.tick_params(colors='white')
                 ax.xaxis.label.set_color('white')
@@ -616,32 +622,32 @@ class SandboxMode:
             canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
             # Add control buttons at the bottom
-            controls_frame = tk.Frame(viz_window, bg='#2a2a2a')
+            controls_frame = tk.Frame(viz_window, bg=palette['background_3'])
             controls_frame.pack(fill=tk.X, padx=10, pady=5)
 
             # Save button
             save_btn = tk.Button(controls_frame, text="💾 Save Image",
                                command=lambda: self.save_3d_visualization(fig),
-                               font=('Arial', 10, 'bold'), bg='#4ecdc4', fg='#000000',
+                               font=('Arial', 10, 'bold'), bg=palette['save_image_background'], fg=palette['background_black'],
                                padx=15, pady=8, cursor='hand2', relief=tk.RAISED, bd=2)
             save_btn.pack(side=tk.LEFT, padx=5)
 
             # Refresh button
             refresh_btn = tk.Button(controls_frame, text="🔄 Refresh",
                                   command=lambda: self.refresh_3d_visualization(viz_window, state_vector),
-                                  font=('Arial', 10, 'bold'), bg='#f39c12', fg='#000000',
+                                  font=('Arial', 10, 'bold'), bg=palette['refresh_button_background'], fg=palette['background_black'],
                                   padx=15, pady=8, cursor='hand2', relief=tk.RAISED, bd=2)
             refresh_btn.pack(side=tk.LEFT, padx=5)
 
             # Close button
             close_btn = tk.Button(controls_frame, text="❌ Close",
                                 command=viz_window.destroy,
-                                font=('Arial', 10, 'bold'), bg='#ff6b6b', fg='#ffffff',
+                                font=('Arial', 10, 'bold'), bg=palette['close_button_background'], fg=palette['close_button_text_color'],
                                 padx=15, pady=8, cursor='hand2', relief=tk.RAISED, bd=2)
             close_btn.pack(side=tk.RIGHT, padx=5)
 
             # Add some state information
-            state_info_frame = tk.Frame(viz_window, bg='#2a2a2a', relief=tk.RAISED, bd=1)
+            state_info_frame = tk.Frame(viz_window, bg=palette['background_3'], relief=tk.RAISED, bd=1)
             state_info_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
 
             # Calculate and display state information
@@ -659,7 +665,7 @@ class SandboxMode:
             info_text += f"Active basis states: {significant_states}/{2**self.num_qubits}"
 
             state_label = tk.Label(state_info_frame, text=info_text,
-                                 font=('Arial', 10), fg='#ffffff', bg='#2a2a2a')
+                                 font=('Arial', 10), fg='#ffffff', bg=palette['background_3'])
             state_label.pack(pady=8)
 
             # Play success sound
@@ -710,7 +716,7 @@ class SandboxMode:
 
             if filename:
                 fig.savefig(filename, dpi=300, bbox_inches='tight',
-                          facecolor='#1a1a1a', edgecolor='none')
+                          facecolor=palette['background'], edgecolor='none')
                 messagebox.showinfo("Success", f"Visualization saved as {filename}")
                 self.play_sound('success', self.play_success_sound_fallback)
 
@@ -732,26 +738,26 @@ class SandboxMode:
         """Setup the results display area on the right side"""
         # Enhanced title
         results_title = tk.Label(parent, text="📊 Quantum State Analysis",
-                                font=('Arial', 14, 'bold'), fg='#00ff88', bg='#2a2a2a')
+                                font=('Arial', 14, 'bold'), fg=palette['state_analysis_title_color'], bg=palette['background_3'])
         results_title.pack(pady=(10, 15))
 
         # Results container with styling
-        results_container = tk.Frame(parent, bg='#1a1a1a', relief=tk.SUNKEN, bd=3)
+        results_container = tk.Frame(parent, bg=palette['background'], relief=tk.SUNKEN, bd=3)
         results_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
 
         # Enhanced results text with scrollbar
-        text_frame = tk.Frame(results_container, bg='#1a1a1a')
+        text_frame = tk.Frame(results_container, bg=palette['background'])
         text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         self.results_text = tk.Text(text_frame, width=40,  # Fixed width for right panel
-                                   font=('Consolas', 9), bg='#0a0a0a', fg='#00ff88',
-                                   relief=tk.FLAT, bd=0, insertbackground='#00ff88',
-                                   selectbackground='#4ecdc4', selectforeground='#000000',
+                                   font=('Consolas', 9), bg=palette['background_2'], fg=palette['results_text_color'],
+                                   relief=tk.FLAT, bd=0, insertbackground=palette['results_background'],
+                                   selectbackground=palette['results_select_background'], selectforeground=palette['background_black'],
                                    wrap=tk.WORD)
 
         # Add scrollbar
         scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.results_text.yview,
-                                bg='#3a3a3a', troughcolor='#1a1a1a', activebackground='#4ecdc4')
+                                bg=palette['background_4'], troughcolor=palette['background'], activebackground=palette['scrollbar_active_background'])
         self.results_text.configure(yscrollcommand=scrollbar.set)
 
         self.results_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -770,15 +776,15 @@ class SandboxMode:
         """Setup single-qubit gate controls with centered 2x3 grid layout"""
         # Create a frame that works with ttk parent
         container = tk.Frame(parent)
-        container.configure(bg='#2a2a2a')
+        container.configure(bg=palette['background_3'])
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Target qubit selection at top
-        qubit_frame = tk.Frame(container, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+        qubit_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
         qubit_frame.pack(fill=tk.X, pady=(0, 15), padx=5, ipady=8)
 
         tk.Label(qubit_frame, text="🎯 Target Qubit:",
-                font=('Arial', 11, 'bold'), fg='#ffffff', bg='#3a3a3a').pack(side=tk.LEFT, padx=(10, 5))
+                font=('Arial', 11, 'bold'), fg=palette['target_qubit_title_color'], bg=palette['background_4']).pack(side=tk.LEFT, padx=(10, 5))
 
         self.target_qubit_var = tk.IntVar(value=0)
         self.target_qubit_combo = ttk.Combobox(qubit_frame, textvariable=self.target_qubit_var,
@@ -788,16 +794,16 @@ class SandboxMode:
 
         # Gate buttons section
         gates_title = tk.Label(container, text="Single-Qubit Gates:",
-                            font=('Arial', 12, 'bold'), fg='#ffffff', bg='#2a2a2a')
+                            font=('Arial', 12, 'bold'), fg=palette['single_qubit_gates_title_color'], bg=palette['background_3'])
         gates_title.pack(pady=(5, 10))
 
         # Create centered container for the grid
-        grid_container = tk.Frame(container, bg='#2a2a2a')
+        grid_container = tk.Frame(container, bg=palette['background_3'])
         grid_container.pack(expand=True)  # This centers the grid
 
         gate_colors = {
-            'H': '#ff6b6b', 'X': '#4ecdc4', 'Y': '#45b7d1',
-            'Z': '#96ceb4', 'S': '#feca57', 'T': '#ff9ff3'
+            'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'],
+            'Z': palette['Z_color'], 'S': palette['S_color'], 'T': palette['T_color']
         }
 
         gate_descriptions = {
@@ -813,7 +819,7 @@ class SandboxMode:
 
         # Create centered 2x3 grid (2 rows, 3 columns)
         for row in range(2):
-            row_frame = tk.Frame(grid_container, bg='#2a2a2a')
+            row_frame = tk.Frame(grid_container, bg=palette['background_3'])
             row_frame.pack(pady=5)
 
             for col in range(3):
@@ -824,49 +830,49 @@ class SandboxMode:
                     description = gate_descriptions.get(gate, '')
 
                     # Create button container with fixed size
-                    btn_container = tk.Frame(row_frame, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+                    btn_container = tk.Frame(row_frame, bg=palette['background_4'], relief=tk.RAISED, bd=1)
                     btn_container.pack(side=tk.LEFT, padx=8, pady=2)
 
                     # Create button with fixed dimensions
                     btn = tk.Button(btn_container, text=gate,
                                     command=lambda g=gate: self.add_single_gate(g),
                                     font=('Arial', 12, 'bold'),
-                                    bg=color, fg='#000000',
+                                    bg=color, fg=palette['background_black'],
                                     width=8, height=2, cursor='hand2',
                                     relief=tk.FLAT, bd=0)
                     btn.pack(padx=3, pady=3)
 
                     # Description label
                     desc_label = tk.Label(btn_container, text=description,
-                                        font=('Arial', 8), fg='#cccccc', bg='#3a3a3a')
+                                        font=('Arial', 8), fg=palette['gate_description_color'], bg=palette['background_4'])
                     desc_label.pack(pady=(0, 3))
 
     def setup_multi_gate_controls(self, parent):
         """Setup multi-qubit gate controls with enhanced styling"""
         # Create a frame that works with ttk parent
         container = tk.Frame(parent)
-        container.configure(bg='#2a2a2a')
+        container.configure(bg=palette['background_3'])
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Title
         title_label = tk.Label(container, text="Multi-Qubit Gates:",
-                              font=('Arial', 12, 'bold'), fg='#ffffff', bg='#2a2a2a')
+                              font=('Arial', 12, 'bold'), fg=palette['multi_qubit_gates_title_color'], bg=palette['background_3'])
         title_label.pack(pady=(0, 10))
 
         # CNOT Gate section with compact layout
-        cnot_frame = tk.Frame(container, bg='#3a3a3a', relief=tk.RAISED, bd=2)
+        cnot_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
         cnot_frame.pack(fill=tk.X, pady=3, ipady=10)
 
         cnot_title = tk.Label(cnot_frame, text="🔗 CNOT Gate",
-                            font=('Arial', 10, 'bold'), fg='#ffeaa7', bg='#3a3a3a')
+                            font=('Arial', 10, 'bold'), fg=palette['CNOT_gate_title_color'], bg=palette['background_4'])
         cnot_title.pack(pady=(3, 5))
 
-        cnot_controls = tk.Frame(cnot_frame, bg='#3a3a3a')
+        cnot_controls = tk.Frame(cnot_frame, bg=palette['background_4'])
         cnot_controls.pack()
 
         # CNOT Controls in compact layout
         tk.Label(cnot_controls, text="Control:", font=('Arial', 9),
-                fg='#ffffff', bg='#3a3a3a').pack(side=tk.LEFT, padx=(5, 2))
+                fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(5, 2))
 
         self.cnot_control_var = tk.IntVar(value=0)
         self.cnot_control_combo = ttk.Combobox(cnot_controls, textvariable=self.cnot_control_var,
@@ -875,7 +881,7 @@ class SandboxMode:
         self.cnot_control_combo.pack(side=tk.LEFT, padx=2)
 
         tk.Label(cnot_controls, text="T:", font=('Arial', 9),
-                fg='#ffffff', bg='#3a3a3a').pack(side=tk.LEFT, padx=(5, 2))
+                fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(5, 2))
 
         self.cnot_target_var = tk.IntVar(value=1 if self.num_qubits > 1 else 0)
         self.cnot_target_combo = ttk.Combobox(cnot_controls, textvariable=self.cnot_target_var,
@@ -886,24 +892,24 @@ class SandboxMode:
         # CNOT button
         cnot_btn = tk.Button(cnot_controls, text="Add",
                             command=self.add_cnot_gate,
-                            font=('Arial', 9, 'bold'), bg='#ffeaa7', fg='#000000',
+                            font=('Arial', 9, 'bold'), bg=palette['CNOT_gate_title_color'], fg=palette['background_black'],
                             padx=10, pady=3, cursor='hand2', relief=tk.RAISED, bd=1)
         cnot_btn.pack(side=tk.LEFT, padx=8)
 
         # CZ Gate section with compact layout
-        cz_frame = tk.Frame(container, bg='#3a3a3a', relief=tk.RAISED, bd=2)
+        cz_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
         cz_frame.pack(fill=tk.X, pady=3, ipady=10)
 
         cz_title = tk.Label(cz_frame, text="⭐ CZ Gate",
-                           font=('Arial', 10, 'bold'), fg='#a29bfe', bg='#3a3a3a')
+                           font=('Arial', 10, 'bold'), fg=palette['CZ_gate_title_color'], bg=palette['background_4'])
         cz_title.pack(pady=(3, 5))
 
-        cz_controls = tk.Frame(cz_frame, bg='#3a3a3a')
+        cz_controls = tk.Frame(cz_frame, bg=palette['background_4'])
         cz_controls.pack()
 
         # CZ Controls in compact layout
         tk.Label(cz_controls, text="Control:", font=('Arial', 9),
-                fg='#ffffff', bg='#3a3a3a').pack(side=tk.LEFT, padx=(5, 2))
+                fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(5, 2))
 
         self.cz_control_var = tk.IntVar(value=0)
         self.cz_control_combo = ttk.Combobox(cz_controls, textvariable=self.cz_control_var,
@@ -912,7 +918,7 @@ class SandboxMode:
         self.cz_control_combo.pack(side=tk.LEFT, padx=2)
 
         tk.Label(cz_controls, text="Target:", font=('Arial', 9),
-                fg='#ffffff', bg='#3a3a3a').pack(side=tk.LEFT, padx=(5, 2))
+                fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(5, 2))
 
         self.cz_target_var = tk.IntVar(value=1 if self.num_qubits > 1 else 0)
         self.cz_target_combo = ttk.Combobox(cz_controls, textvariable=self.cz_target_var,
@@ -923,25 +929,25 @@ class SandboxMode:
         # CZ button
         cz_btn = tk.Button(cz_controls, text="Add",
                           command=self.add_cz_gate,
-                          font=('Arial', 9, 'bold'), bg='#a29bfe', fg='#000000',
+                          font=('Arial', 9, 'bold'), bg=palette['CZ_gate_title_color'], fg=palette['background_black'],
                           padx=10, pady=3, cursor='hand2', relief=tk.RAISED, bd=1)
         cz_btn.pack(side=tk.LEFT, padx=8)
 
         # Toffoli Gate section (only show if 3+ qubits) with compact layout
         if self.num_qubits >= 3:
-            toffoli_frame = tk.Frame(container, bg='#3a3a3a', relief=tk.RAISED, bd=2)
+            toffoli_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
             toffoli_frame.pack(fill=tk.X, pady=3, ipady=10)
 
             toffoli_title = tk.Label(toffoli_frame, text="🎯 Toffoli Gate",
-                                   font=('Arial', 10, 'bold'), fg='#fd79a8', bg='#3a3a3a')
+                                   font=('Arial', 10, 'bold'), fg=palette['toffoli_gate_title_color'], bg=palette['background_4'])
             toffoli_title.pack(pady=(3, 5))
 
-            toffoli_controls = tk.Frame(toffoli_frame, bg='#3a3a3a')
+            toffoli_controls = tk.Frame(toffoli_frame, bg=palette['background_4'])
             toffoli_controls.pack()
 
             # Toffoli Controls in compact layout
             tk.Label(toffoli_controls, text="C1:", font=('Arial', 9),
-                    fg='#ffffff', bg='#3a3a3a').pack(side=tk.LEFT, padx=(3, 1))
+                    fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(3, 1))
 
             self.toffoli_c1_var = tk.IntVar(value=0)
             self.toffoli_c1_combo = ttk.Combobox(toffoli_controls, textvariable=self.toffoli_c1_var,
@@ -950,7 +956,7 @@ class SandboxMode:
             self.toffoli_c1_combo.pack(side=tk.LEFT, padx=1)
 
             tk.Label(toffoli_controls, text="C2:", font=('Arial', 9),
-                    fg='#ffffff', bg='#3a3a3a').pack(side=tk.LEFT, padx=(3, 1))
+                    fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(3, 1))
 
             self.toffoli_c2_var = tk.IntVar(value=1)
             self.toffoli_c2_combo = ttk.Combobox(toffoli_controls, textvariable=self.toffoli_c2_var,
@@ -959,7 +965,7 @@ class SandboxMode:
             self.toffoli_c2_combo.pack(side=tk.LEFT, padx=1)
 
             tk.Label(toffoli_controls, text="Target:", font=('Arial', 9),
-                    fg='#ffffff', bg='#3a3a3a').pack(side=tk.LEFT, padx=(3, 1))
+                    fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(3, 1))
 
             self.toffoli_target_var = tk.IntVar(value=2)
             self.toffoli_target_combo = ttk.Combobox(toffoli_controls, textvariable=self.toffoli_target_var,
@@ -970,28 +976,28 @@ class SandboxMode:
             # Toffoli button
             toffoli_btn = tk.Button(toffoli_controls, text="Add",
                                   command=self.add_toffoli_gate,
-                                  font=('Arial', 9, 'bold'), bg='#fd79a8', fg='#000000',
+                                  font=('Arial', 9, 'bold'), bg=palette['toffoli_add_button_background'], fg=palette['background_black'],
                                   padx=8, pady=3, cursor='hand2', relief=tk.RAISED, bd=1)
             toffoli_btn.pack(side=tk.LEFT, padx=5)
 
     def setup_gate_panel(self, parent):
         """Setup the gate selection panel"""
-        gate_frame = tk.Frame(parent, bg='#2a2a2a')
+        gate_frame = tk.Frame(parent, bg=palette['background_3'])
         gate_frame.pack(fill=tk.X, padx=20, pady=10)
 
         tk.Label(gate_frame, text="Available Gates:",
-                font=('Arial', 12, 'bold'), fg='#ffffff', bg='#2a2a2a').pack(anchor=tk.W)
+                font=('Arial', 12, 'bold'), fg=palette['available_gates_title_color'], bg=palette['background_3']).pack(anchor=tk.W)
 
         # Gate buttons and qubit selection
-        buttons_frame = tk.Frame(gate_frame, bg='#2a2a2a')
+        buttons_frame = tk.Frame(gate_frame, bg=palette['background_3'])
         buttons_frame.pack(fill=tk.X, pady=5)
 
         # Qubit selection for single-qubit gates
-        qubit_select_frame = tk.Frame(buttons_frame, bg='#2a2a2a')
+        qubit_select_frame = tk.Frame(buttons_frame, bg=palette['background_3'])
         qubit_select_frame.pack(side=tk.LEFT, padx=(0, 20))
 
         tk.Label(qubit_select_frame, text="Target Qubit:",
-                font=('Arial', 10), fg='#ffffff', bg='#2a2a2a').pack()
+                font=('Arial', 10), fg=palette['target_qubit_title_color'], bg=palette['background_3']).pack()
 
         self.target_qubit_var = tk.IntVar(value=0)
         self.target_qubit_combo = ttk.Combobox(qubit_select_frame, textvariable=self.target_qubit_var,
@@ -1000,18 +1006,18 @@ class SandboxMode:
         self.target_qubit_combo.pack()
 
         # Single-qubit gates
-        single_gates_frame = tk.Frame(buttons_frame, bg='#2a2a2a')
+        single_gates_frame = tk.Frame(buttons_frame, bg=palette['background_3'])
         single_gates_frame.pack(side=tk.LEFT, padx=10)
 
         tk.Label(single_gates_frame, text="Single-Qubit Gates:",
-                font=('Arial', 10), fg='#ffffff', bg='#2a2a2a').pack()
+                font=('Arial', 10), fg=palette['single_qubit_gates_title_color'], bg=palette['background_3']).pack()
 
-        single_gates_buttons = tk.Frame(single_gates_frame, bg='#2a2a2a')
+        single_gates_buttons = tk.Frame(single_gates_frame, bg=palette['background_3'])
         single_gates_buttons.pack()
 
         gate_colors = {
-            'H': '#ff6b6b', 'X': '#4ecdc4', 'Y': '#45b7d1', 'Z': '#96ceb4',
-            'S': '#feca57', 'T': '#ff9ff3'
+            'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'],
+            'Z': palette['Z_color'], 'S': palette['S_color'], 'T': palette['T_color']
         }
 
         single_gates = ['H', 'X', 'Y', 'Z', 'S', 'T']
@@ -1019,23 +1025,23 @@ class SandboxMode:
             color = gate_colors.get(gate, '#ffffff')
             btn = tk.Button(single_gates_buttons, text=gate,
                         command=lambda g=gate: self.add_single_gate(g),
-                        font=('Arial', 10, 'bold'), bg=color, fg='#000000',
+                        font=('Arial', 10, 'bold'), bg=color, fg=palette['background_black'],
                         width=6, height=1)
             btn.pack(side=tk.LEFT, padx=2, pady=2)
 
         # Multi-qubit gates section
-        multi_gates_frame = tk.Frame(buttons_frame, bg='#2a2a2a')
+        multi_gates_frame = tk.Frame(buttons_frame, bg=palette['background_3'])
         multi_gates_frame.pack(side=tk.LEFT, padx=20)
 
         tk.Label(multi_gates_frame, text="Multi-Qubit Gates:",
-                font=('Arial', 10), fg='#ffffff', bg='#2a2a2a').pack()
+                font=('Arial', 10), fg=palette['multi_qubit_gates_title_color'], bg=palette['background_3']).pack()
 
         # CNOT controls
-        cnot_frame = tk.Frame(multi_gates_frame, bg='#2a2a2a')
+        cnot_frame = tk.Frame(multi_gates_frame, bg=palette['background_3'])
         cnot_frame.pack(pady=2)
 
         tk.Label(cnot_frame, text="CNOT - Control:", font=('Arial', 9),
-                fg='#ffffff', bg='#2a2a2a').pack(side=tk.LEFT)
+                fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT)
 
         self.cnot_control_var = tk.IntVar(value=0)
         self.cnot_control_combo = ttk.Combobox(cnot_frame, textvariable=self.cnot_control_var,
@@ -1044,7 +1050,7 @@ class SandboxMode:
         self.cnot_control_combo.pack(side=tk.LEFT, padx=2)
 
         tk.Label(cnot_frame, text="Target:", font=('Arial', 9),
-                fg='#ffffff', bg='#2a2a2a').pack(side=tk.LEFT, padx=(5, 0))
+                fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT, padx=(5, 0))
 
         self.cnot_target_var = tk.IntVar(value=1 if self.num_qubits > 1 else 0)
         self.cnot_target_combo = ttk.Combobox(cnot_frame, textvariable=self.cnot_target_var,
@@ -1054,16 +1060,16 @@ class SandboxMode:
 
         cnot_btn = tk.Button(cnot_frame, text="CNOT",
                             command=self.add_cnot_gate,
-                            font=('Arial', 9, 'bold'), bg='#ffeaa7', fg='#000000',
+                            font=('Arial', 9, 'bold'), bg=palette['CNOT_color'], fg=palette['background_black'],
                             width=6, height=1)
         cnot_btn.pack(side=tk.LEFT, padx=5)
 
         # CZ controls
-        cz_frame = tk.Frame(multi_gates_frame, bg='#2a2a2a')
+        cz_frame = tk.Frame(multi_gates_frame, bg=palette['background_3'])
         cz_frame.pack(pady=2)
 
         tk.Label(cz_frame, text="CZ - Control:", font=('Arial', 9),
-                fg='#ffffff', bg='#2a2a2a').pack(side=tk.LEFT)
+                fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT)
 
         self.cz_control_var = tk.IntVar(value=0)
         self.cz_control_combo = ttk.Combobox(cz_frame, textvariable=self.cz_control_var,
@@ -1072,7 +1078,7 @@ class SandboxMode:
         self.cz_control_combo.pack(side=tk.LEFT, padx=2)
 
         tk.Label(cz_frame, text="Target:", font=('Arial', 9),
-                fg='#ffffff', bg='#2a2a2a').pack(side=tk.LEFT, padx=(5, 0))
+                fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT, padx=(5, 0))
 
         self.cz_target_var = tk.IntVar(value=1 if self.num_qubits > 1 else 0)
         self.cz_target_combo = ttk.Combobox(cz_frame, textvariable=self.cz_target_var,
@@ -1082,17 +1088,17 @@ class SandboxMode:
 
         cz_btn = tk.Button(cz_frame, text="CZ",
                         command=self.add_cz_gate,
-                        font=('Arial', 9, 'bold'), bg='#a29bfe', fg='#000000',
+                        font=('Arial', 9, 'bold'), bg=palette['CZ_gate_title_color'], fg=palette['background_black'],
                         width=6, height=1)
         cz_btn.pack(side=tk.LEFT, padx=5)
 
         # Toffoli controls (if 3+ qubits)
         if self.num_qubits >= 3:
-            toffoli_frame = tk.Frame(multi_gates_frame, bg='#2a2a2a')
+            toffoli_frame = tk.Frame(multi_gates_frame, bg=palette['background_3'])
             toffoli_frame.pack(pady=2)
 
             tk.Label(toffoli_frame, text="Toffoli - C1:", font=('Arial', 9),
-                    fg='#ffffff', bg='#2a2a2a').pack(side=tk.LEFT)
+                    fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT)
 
             self.toffoli_c1_var = tk.IntVar(value=0)
             self.toffoli_c1_combo = ttk.Combobox(toffoli_frame, textvariable=self.toffoli_c1_var,
@@ -1101,7 +1107,7 @@ class SandboxMode:
             self.toffoli_c1_combo.pack(side=tk.LEFT, padx=2)
 
             tk.Label(toffoli_frame, text="C2:", font=('Arial', 9),
-                    fg='#ffffff', bg='#2a2a2a').pack(side=tk.LEFT, padx=(5, 0))
+                    fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT, padx=(5, 0))
 
             self.toffoli_c2_var = tk.IntVar(value=1)
             self.toffoli_c2_combo = ttk.Combobox(toffoli_frame, textvariable=self.toffoli_c2_var,
@@ -1110,7 +1116,7 @@ class SandboxMode:
             self.toffoli_c2_combo.pack(side=tk.LEFT, padx=2)
 
             tk.Label(toffoli_frame, text="T:", font=('Arial', 9),
-                    fg='#ffffff', bg='#2a2a2a').pack(side=tk.LEFT, padx=(5, 0))
+                    fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT, padx=(5, 0))
 
             self.toffoli_target_var = tk.IntVar(value=2)
             self.toffoli_target_combo = ttk.Combobox(toffoli_frame, textvariable=self.toffoli_target_var,
@@ -1120,7 +1126,7 @@ class SandboxMode:
 
             toffoli_btn = tk.Button(toffoli_frame, text="Toffoli",
                                 command=self.add_toffoli_gate,
-                                font=('Arial', 9, 'bold'), bg='#fd79a8', fg='#000000',
+                                font=('Arial', 9, 'bold'), bg=palette['Toffoli_color'], fg=palette['background_black'],
                                 width=6, height=1)
             toffoli_btn.pack(side=tk.LEFT, padx=5)
 
@@ -1397,10 +1403,10 @@ class SandboxMode:
         # Draw enhanced background grid
         for i in range(0, self.canvas_width, 50):
             self.circuit_canvas.create_line(i, 0, i, self.canvas_height,
-                                          fill='#1a1a1a', width=1)
+                                          fill=palette['background'], width=1)
 
         # Draw enhanced qubit wires with colors
-        wire_colors = ['#ff6b6b', '#4ecdc4', '#f39c12', '#a29bfe']
+        wire_colors = [palette['quantum_wire_1'], palette['quantum_wire_2'], palette['quantum_wire_3'], palette['quantum_wire_4']]
 
         for qubit in range(self.num_qubits):
             y_pos = (qubit + 1) * qubit_spacing + 20
@@ -1415,7 +1421,7 @@ class SandboxMode:
             # Enhanced qubit label with background
             label_bg = self.circuit_canvas.create_rectangle(wire_start - 35, y_pos - 12,
                                                           wire_start - 5, y_pos + 12,
-                                                          fill='#3a3a3a', outline=color, width=2)
+                                                          fill=palette['background_4'], outline=color, width=2)
 
             self.circuit_canvas.create_text(wire_start - 20, y_pos,
                                           text=f"q{qubit}", fill='#ffffff',
@@ -1440,6 +1446,12 @@ class SandboxMode:
             'S': '#feca57', 'T': '#ff9ff3', 'CNOT': '#ffeaa7', 'CZ': '#a29bfe'
         }
 
+        gate_colors = {
+            'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'],
+            'Z': palette['Z_color'], 'S': palette['S_color'], 'T': palette['T_color'],
+            'CNOT': palette['CNOT_color'], 'CZ': palette['CZ_color']
+        }
+
         for i, (gate, qubits) in enumerate(self.placed_gates):
             x = gate_x_start + i * gate_spacing
             color = gate_colors.get(gate, '#ffffff')
@@ -1453,7 +1465,7 @@ class SandboxMode:
                     # 3D shadow effect
                     self.circuit_canvas.create_rectangle(x - 22, y_pos - 17,
                                                         x + 22, y_pos + 17,
-                                                        fill='#000000', outline='')
+                                                        fill=palette['background_black'], outline='')
 
                     # Main gate with gradient effect
                     self.circuit_canvas.create_rectangle(x - 20, y_pos - 15,
@@ -1467,9 +1479,9 @@ class SandboxMode:
 
                     # Gate symbol with shadow
                     self.circuit_canvas.create_text(x + 1, y_pos + 1, text=gate,
-                                                   fill='#000000', font=('Arial', 11, 'bold'))
+                                                   fill=palette['background_black'], font=('Arial', 11, 'bold'))
                     self.circuit_canvas.create_text(x, y_pos, text=gate,
-                                                   fill='#000000', font=('Arial', 12, 'bold'))
+                                                   fill=palette['background_black'], font=('Arial', 12, 'bold'))
 
             elif len(qubits) == 2 and gate in ['CNOT', 'CZ']:
                 # Enhanced two-qubit gate
@@ -1481,7 +1493,7 @@ class SandboxMode:
                     # Enhanced control dot with 3D effect
                     self.circuit_canvas.create_oval(x - 10, control_y - 10,
                                                    x + 10, control_y + 10,
-                                                   fill='#000000', outline='')
+                                                   fill=palette['background_black'], outline='')
                     self.circuit_canvas.create_oval(x - 8, control_y - 8,
                                                    x + 8, control_y + 8,
                                                    fill='#ffffff', outline='#cccccc', width=2)
@@ -1496,7 +1508,7 @@ class SandboxMode:
                         # Enhanced CNOT target
                         self.circuit_canvas.create_oval(x - 17, target_y - 17,
                                                        x + 17, target_y + 17,
-                                                       fill='#000000', outline='')
+                                                       fill=palette['background_black'], outline='')
                         self.circuit_canvas.create_oval(x - 15, target_y - 15,
                                                        x + 15, target_y + 15,
                                                        fill='', outline='#ffffff', width=3)
@@ -1513,7 +1525,7 @@ class SandboxMode:
                         # Enhanced CZ target
                         self.circuit_canvas.create_oval(x - 10, target_y - 10,
                                                        x + 10, target_y + 10,
-                                                       fill='#000000', outline='')
+                                                       fill=palette['background_black'], outline='')
                         self.circuit_canvas.create_oval(x - 8, target_y - 8,
                                                        x + 8, target_y + 8,
                                                        fill='#ffffff', outline='#cccccc', width=2)

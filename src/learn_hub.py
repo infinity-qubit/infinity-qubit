@@ -9,6 +9,14 @@ from tkinter import ttk, scrolledtext
 import webbrowser
 import math
 import random
+import sys
+
+sys.path.append('..')
+from run import PROJECT_ROOT, get_resource_path
+from q_utils import get_colors_from_file, extract_color_palette
+
+color_file_path = get_resource_path('config/color_palette.json')
+palette = extract_color_palette(get_colors_from_file(color_file_path), 'learn_hub')
 
 class LearnHub:
     def __init__(self, root):
@@ -28,7 +36,7 @@ class LearnHub:
         y = (screen_height - window_height) // 2
 
         self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        self.root.configure(bg='#0a0a0a')
+        self.root.configure(bg=palette['background_2'])
         self.root.resizable(True, True)
 
         # Initialize particles for animation
@@ -74,22 +82,22 @@ class LearnHub:
     def create_learn_hub_ui(self):
         """Create the enhanced learn hub interface"""
         # Main container with gradient-like effect
-        main_frame = tk.Frame(self.root, bg='#0a0a0a')
+        main_frame = tk.Frame(self.root, bg=palette['background_2'])
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Add subtle top border
-        top_border = tk.Frame(main_frame, bg='#00ff88', height=3)
+        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=3)
         top_border.pack(fill=tk.X)
 
         # Content frame - removed padding to fill entire window
-        content_frame = tk.Frame(main_frame, bg='#2a2a2a')
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True)  # Removed padx=25, pady=25
 
         # Create animated header with internal padding
         self.create_animated_header(content_frame)
 
         # Create a container to center the notebook
-        notebook_container = tk.Frame(content_frame, bg='#2a2a2a')
+        notebook_container = tk.Frame(content_frame, bg=palette['background_3'])
         notebook_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=(0, 25))  # Added padding here instead
 
         # Create notebook for tabs - centered
@@ -110,18 +118,18 @@ class LearnHub:
 
     def create_animated_header(self, parent):
         """Create an animated quantum-themed header"""
-        header_frame = tk.Frame(parent, bg='#2a2a2a')
+        header_frame = tk.Frame(parent, bg=palette['background_3'])
         header_frame.pack(fill=tk.X, padx=25, pady=(25, 20))  # Added padding here for internal spacing
 
         # Add a top navigation bar
-        nav_frame = tk.Frame(header_frame, bg='#2a2a2a')
+        nav_frame = tk.Frame(header_frame, bg=palette['background_3'])
         nav_frame.pack(fill=tk.X, pady=(0, 10))
 
         # Back to Main Screen button - top right
         back_main_btn = tk.Button(nav_frame, text="🏠 Main Screen",
                                 command=self.back_to_menu,
                                 font=('Arial', 10, 'bold'),
-                                bg='#3a3a3a', fg='#4ecdc4',
+                                bg=palette['background_4'], fg=palette['main_menu_button_background'],
                                 padx=15, pady=8,
                                 cursor='hand2',
                                 relief=tk.FLAT,
@@ -131,15 +139,15 @@ class LearnHub:
 
         # Add hover effect to top button
         def on_nav_enter(event):
-            back_main_btn.configure(bg='#4ecdc4', fg='#000000')
+            back_main_btn.configure(bg=palette['main_menu_button_background'], fg=palette['background_black'])
         def on_nav_leave(event):
-            back_main_btn.configure(bg='#3a3a3a', fg='#4ecdc4')
+            back_main_btn.configure(bg=palette['background_4'], fg=palette['main_menu_button_background'])
 
         back_main_btn.bind("<Enter>", on_nav_enter)
         back_main_btn.bind("<Leave>", on_nav_leave)
 
         # Quantum circuit animation canvas
-        self.circuit_canvas = tk.Canvas(header_frame, height=120, bg='#2a2a2a',
+        self.circuit_canvas = tk.Canvas(header_frame, height=120, bg=palette['background_3'],
                                     highlightthickness=0)
         self.circuit_canvas.pack(fill=tk.X, pady=(0, 15))
 
@@ -147,26 +155,26 @@ class LearnHub:
         self.root.after(100, self.draw_quantum_circuit)
 
         # Title with shadow effect
-        title_frame = tk.Frame(header_frame, bg='#2a2a2a')
+        title_frame = tk.Frame(header_frame, bg=palette['background_3'])
         title_frame.pack()
 
         # Shadow title
         shadow_title = tk.Label(title_frame, text="🚀 Quantum Computing Learn Hub",
                             font=('Arial', 32, 'bold'),
-                            fg='#003322', bg='#2a2a2a')
+                            fg='#003322', bg=palette['background_3'])
         shadow_title.place(x=3, y=3)
 
         # Main title with gradient-like effect
         main_title = tk.Label(title_frame, text="🚀 Quantum Computing Learn Hub",
                             font=('Arial', 32, 'bold'),
-                            fg='#00ff88', bg='#2a2a2a')
+                            fg=palette['title_color'], bg=palette['background_3'])
         main_title.pack(pady=(0, 8))
 
         # Enhanced subtitle with pulsing effect
         self.subtitle_label = tk.Label(header_frame,
                                     text="✨ Explore quantum computing concepts and resources ✨",
                                     font=('Arial', 14, 'italic'),
-                                    fg='#4ecdc4', bg='#2a2a2a')
+                                    fg=palette['subtitle_color'], bg=palette['background_3'])
         self.subtitle_label.pack()
 
         # Learning progress indicator
@@ -192,7 +200,7 @@ class LearnHub:
                 height = 120   # fallback height
 
             # Draw quantum wires with glow effect
-            wire_colors = ['#ff6b6b', '#4ecdc4', '#f39c12']
+            wire_colors = [palette['quantum_wire_1'], palette['quantum_wire_2'], palette['quantum_wire_3']]
             wire_spacing = height // 4  # Adaptive spacing based on canvas height
 
             for i in range(3):
@@ -207,10 +215,10 @@ class LearnHub:
             # Draw quantum gates with enhanced styling - adaptive positioning
             gate_spacing = (width - 200) // 4  # Adaptive gate spacing
             gate_info = [
-                {'symbol': 'H', 'color': '#ff6b6b', 'x': 100 + gate_spacing},
-                {'symbol': 'X', 'color': '#4ecdc4', 'x': 100 + 2 * gate_spacing},
-                {'symbol': 'Z', 'color': '#f39c12', 'x': 100 + 3 * gate_spacing},
-                {'symbol': 'CNOT', 'color': '#9b59b6', 'x': 100 + 4 * gate_spacing, 'double': True}
+                {'symbol': 'H', 'color': palette['H_color'], 'x': 100 + gate_spacing},
+                {'symbol': 'X', 'color': palette['X_color'], 'x': 100 + 2 * gate_spacing},
+                {'symbol': 'Z', 'color': palette['Z_color'], 'x': 100 + 3 * gate_spacing},
+                {'symbol': 'CNOT', 'color': palette['CNOT_color'], 'x': 100 + 4 * gate_spacing, 'double': True}
             ]
 
             for gate in gate_info:
@@ -252,7 +260,7 @@ class LearnHub:
 
                 # 3D shadow effect
                 self.circuit_canvas.create_rectangle(x-17, y-12, x+17, y+12,
-                                                fill='#000000', outline='')
+                                                fill=palette['background_black'], outline='')
                 # Main gate
                 self.circuit_canvas.create_rectangle(x-15, y-10, x+15, y+10,
                                                 fill=color, outline='white', width=2)
@@ -265,15 +273,15 @@ class LearnHub:
 
     def create_learning_progress(self, parent):
         """Create a visual learning progress indicator"""
-        progress_frame = tk.Frame(parent, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        progress_frame = tk.Frame(parent, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         progress_frame.pack(fill=tk.X, pady=(15, 0))
 
         tk.Label(progress_frame, text="📈 Learning Journey",
                 font=('Arial', 14, 'bold'),
-                fg='#00ff88', bg='#2a2a2a').pack()  # Changed from #1a1a1a to #2a2a2a
+                fg=palette['learning_journey_title_color'], bg=palette['background_3']).pack()  # Changed from #1a1a1a to #2a2a2a
 
         # Progress steps with enhanced visuals
-        steps_container = tk.Frame(progress_frame, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        steps_container = tk.Frame(progress_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         steps_container.pack(pady=10)
 
         steps = [
@@ -284,30 +292,30 @@ class LearnHub:
         ]
 
         for i, (step, completed, color, icon) in enumerate(steps):
-            step_frame = tk.Frame(steps_container, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+            step_frame = tk.Frame(steps_container, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
             step_frame.pack(side=tk.LEFT, padx=15)
 
             # Enhanced circle with glow
             canvas = tk.Canvas(step_frame, width=40, height=40,
-                            bg='#2a2a2a', highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
+                            bg=palette['background_3'], highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
             canvas.pack()
 
             # Glow effect for completed steps
             if completed:
                 canvas.create_oval(2, 2, 38, 38, fill=color, outline=color, width=3)
-                canvas.create_oval(8, 8, 32, 32, fill='#2a2a2a', outline='white', width=2)  # Changed from #1a1a1a to #2a2a2a
+                canvas.create_oval(8, 8, 32, 32, fill=palette['background_3'], outline='white', width=2)  # Changed from #1a1a1a to #2a2a2a
                 canvas.create_text(20, 20, text="✓", fill='white', font=('Arial', 14, 'bold'))
             else:
                 canvas.create_oval(8, 8, 32, 32, fill='', outline=color, width=2)
 
             # Step label with icon
-            tk.Label(step_frame, text=f"{icon} {step}", fg=color, bg='#2a2a2a',  # Changed from #1a1a1a to #2a2a2a
+            tk.Label(step_frame, text=f"{icon} {step}", fg=color, bg=palette['background_3'],  # Changed from #1a1a1a to #2a2a2a
                     font=('Arial', 10, 'bold')).pack(pady=(5, 0))
 
             # Connection line (except for last step)
             if i < len(steps) - 1:
                 line_canvas = tk.Canvas(steps_container, width=30, height=5,
-                                    bg='#2a2a2a', highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
+                                    bg=palette['background_3'], highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
                 line_canvas.pack(side=tk.LEFT)
                 line_canvas.create_line(0, 2, 30, 2, fill='#555555', width=2)  # Made line lighter for better visibility
 
@@ -318,24 +326,24 @@ class LearnHub:
 
         # Enhanced notebook styling - Updated for gray background
         style.configure('TNotebook',
-                    background='#2a2a2a',  # Changed from #1a1a1a to #2a2a2a
+                    background=palette['background_3'],  # Changed from #1a1a1a to #2a2a2a
                     borderwidth=0,
                     tabmargins=[2, 5, 2, 0])
 
         style.configure('TNotebook.Tab',
-                    background='#3a3a3a',  # Slightly darker for contrast
+                    background=palette['background_4'],  # Slightly darker for contrast
                     foreground='#ffffff',
                     padding=[25, 15],
                     borderwidth=0,
                     font=('Arial', 11, 'bold'))
 
         style.map('TNotebook.Tab',
-                background=[('selected', '#00ff88'),
-                            ('active', '#4ecdc4')],
-                foreground=[('selected', '#000000'),
-                            ('active', '#ffffff')])
+                background=[('selected', palette['tnotebook_selected_background']),
+                            ('active', palette['tnotebook_active_background'])],
+                foreground=[('selected', palette['background_black']),
+                            ('active', palette['tnotebook_active_foreground'])])
 
-        style.configure('TFrame', background='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        style.configure('TFrame', background=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
 
         # Center the tabs by configuring tab positioning
         style.configure('TNotebook', tabposition='n')
@@ -346,21 +354,21 @@ class LearnHub:
         self.notebook.add(concepts_frame, text="📚 Basic Concepts")
 
         # Main container with padding - changed to match text area background
-        main_container = tk.Frame(concepts_frame, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        main_container = tk.Frame(concepts_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
         # Enhanced scrollable text area
-        text_frame = tk.Frame(main_container, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        text_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         text_frame.pack(fill=tk.BOTH, expand=True)
 
         concepts_text = scrolledtext.ScrolledText(text_frame,
                                                 wrap=tk.WORD,
                                                 width=80, height=25,
-                                                bg='#2a2a2a', fg='#ffffff',
+                                                bg=palette['background_3'], fg=palette['concepts_text_color'],
                                                 font=('Consolas', 11),
-                                                insertbackground='#00ff88',
-                                                selectbackground='#4ecdc4',
-                                                selectforeground='#000000',
+                                                insertbackground=palette['concepts_text_insert_background'],
+                                                selectbackground=palette['concepts_text_select_background'],
+                                                selectforeground=palette['background_black'],
                                                 padx=20, pady=15)
         concepts_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -434,17 +442,17 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
         self.notebook.add(gates_frame, text="⚡ Quantum Gates")
 
         # Main container - changed to match card background
-        main_container = tk.Frame(gates_frame, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        main_container = tk.Frame(gates_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
         # Create a canvas for horizontal scrolling with enhanced styling
-        canvas_frame = tk.Frame(main_container, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        canvas_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         canvas_frame.pack(fill=tk.BOTH, expand=True)
 
         # Use horizontal scrollbar instead of vertical
-        canvas = tk.Canvas(canvas_frame, bg='#2a2a2a', highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
+        canvas = tk.Canvas(canvas_frame, bg=palette['background_3'], highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
         scrollbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=canvas.xview)
-        scrollable_frame = tk.Frame(canvas, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        scrollable_frame = tk.Frame(canvas, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
 
         scrollable_frame.bind(
             "<Configure>",
@@ -470,12 +478,12 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
         ]
 
         # Create one single row with all gates
-        row_frame = tk.Frame(scrollable_frame, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        row_frame = tk.Frame(scrollable_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         row_frame.pack(fill=tk.BOTH, expand=True, pady=20)
 
         # Add all gates to the single row
         for name, description, formula, color, icon, difficulty in gates:
-            gate_container = tk.Frame(row_frame, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+            gate_container = tk.Frame(row_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
             gate_container.pack(side=tk.LEFT, fill=tk.Y, padx=15)
 
             self.create_enhanced_gate_card_horizontal(gate_container, name, description,
@@ -492,7 +500,7 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
 
     def create_enhanced_gate_card_horizontal(self, parent, name, description, formula, color, icon, difficulty):
         """Create enhanced cards for quantum gates with horizontal layout and hover effects"""
-        card_frame = tk.Frame(parent, bg='#2a2a2a', relief=tk.FLAT, bd=0, width=200, height=250)  # Fixed size
+        card_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.FLAT, bd=0, width=200, height=250)  # Fixed size
         card_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=8)
         card_frame.pack_propagate(False)  # Maintain fixed size
 
@@ -502,60 +510,60 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
         glow_frame.pack_forget()
 
         # Main content frame
-        content_frame = tk.Frame(card_frame, bg='#2a2a2a')
+        content_frame = tk.Frame(card_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=12)
 
         # Header with icon and title
-        header_frame = tk.Frame(content_frame, bg='#2a2a2a')
+        header_frame = tk.Frame(content_frame, bg=palette['background_3'])
         header_frame.pack(fill=tk.X, pady=(0, 8))
 
         # Gate icon - centered
         icon_label = tk.Label(header_frame, text=icon,
-                            font=('Arial', 24), bg='#2a2a2a')  # Increased icon size
+                            font=('Arial', 24), bg=palette['background_3'])  # Increased icon size
         icon_label.pack()
 
         # Title - centered
         name_label = tk.Label(header_frame, text=name,
                             font=('Arial', 12, 'bold'),  # Slightly smaller font
-                            fg=color, bg='#2a2a2a')
+                            fg=color, bg=palette['background_3'])
         name_label.pack(pady=(5, 0))
 
         # Difficulty stars - centered
         stars = "⭐" * difficulty + "☆" * (5 - difficulty)
         difficulty_label = tk.Label(header_frame, text=f"{stars}",
                                 font=('Arial', 8),  # Smaller font
-                                fg='#f39c12', bg='#2a2a2a')
+                                fg=palette['difficulty_label_color'], bg=palette['background_3'])
         difficulty_label.pack()
 
         # Description - centered
         desc_label = tk.Label(content_frame, text=description,
                             font=('Arial', 9),  # Smaller font
-                            fg='#ffffff', bg='#2a2a2a',
+                            fg=palette['description_label_color'], bg=palette['background_3'],
                             wraplength=170, justify=tk.CENTER)
         desc_label.pack(pady=(0, 5))
 
         # Formula - centered
         formula_label = tk.Label(content_frame, text=formula,
                                 font=('Arial', 8, 'italic'),  # Smaller font
-                                fg='#cccccc', bg='#2a2a2a',
+                                fg=palette['formula_label_color'], bg=palette['background_3'],
                                 wraplength=170, justify=tk.CENTER)
         formula_label.pack()
 
         # Hover effects
         def on_enter(event):
-            card_frame.configure(bg='#3a3a3a')
-            content_frame.configure(bg='#3a3a3a')
-            header_frame.configure(bg='#3a3a3a')
+            card_frame.configure(bg=palette['background_4'])
+            content_frame.configure(bg=palette['background_4'])
+            header_frame.configure(bg=palette['background_4'])
             for widget in [icon_label, name_label, difficulty_label, desc_label, formula_label]:
-                widget.configure(bg='#3a3a3a')
+                widget.configure(bg=palette['background_4'])
             glow_frame.pack(fill=tk.X, before=content_frame)
 
         def on_leave(event):
-            card_frame.configure(bg='#2a2a2a')
-            content_frame.configure(bg='#2a2a2a')
-            header_frame.configure(bg='#2a2a2a')
+            card_frame.configure(bg=palette['background_3'])
+            content_frame.configure(bg=palette['background_3'])
+            header_frame.configure(bg=palette['background_3'])
             for widget in [icon_label, name_label, difficulty_label, desc_label, formula_label]:
-                widget.configure(bg='#2a2a2a')
+                widget.configure(bg=palette['background_3'])
             glow_frame.pack_forget()
 
         card_frame.bind("<Enter>", on_enter)
@@ -572,21 +580,21 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
         self.notebook.add(algorithms_frame, text="🧠 Algorithms")
 
         # Main container - changed to match text area background
-        main_container = tk.Frame(algorithms_frame, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        main_container = tk.Frame(algorithms_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
         # Enhanced scrollable text area
-        text_frame = tk.Frame(main_container, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        text_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         text_frame.pack(fill=tk.BOTH, expand=True)
 
         algorithms_text = scrolledtext.ScrolledText(text_frame,
                                                 wrap=tk.WORD,
                                                 width=80, height=25,
-                                                bg='#2a2a2a', fg='#ffffff',
+                                                bg=palette['background_3'], fg=palette['algorithms_text_color'],
                                                 font=('Consolas', 11),
-                                                insertbackground='#00ff88',
-                                                selectbackground='#4ecdc4',
-                                                selectforeground='#000000',
+                                                insertbackground=palette['algorithms_text_insert_background'],
+                                                selectbackground=palette['algorithms_text_select_background'],
+                                                selectforeground=palette['background_black'],
                                                 padx=20, pady=15)
         algorithms_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -691,13 +699,13 @@ The quantum future awaits! 🌟🚀
         self.notebook.add(resources_frame, text="🔗 Resources")
 
         # Main container
-        main_container = tk.Frame(resources_frame, bg='#2a2a2a')
+        main_container = tk.Frame(resources_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
         # Create scrollable frame with horizontal scrolling
-        canvas = tk.Canvas(main_container, bg='#2a2a2a', highlightthickness=0)
+        canvas = tk.Canvas(main_container, bg=palette['background_3'], highlightthickness=0)
         scrollbar = ttk.Scrollbar(main_container, orient="horizontal", command=canvas.xview)
-        scrollable_frame = tk.Frame(canvas, bg='#2a2a2a')
+        scrollable_frame = tk.Frame(canvas, bg=palette['background_3'])
 
         scrollable_frame.bind(
             "<Configure>",
@@ -714,7 +722,7 @@ The quantum future awaits! 🌟🚀
         self.create_section_header_horizontal(scrollable_frame, "📚 Learning Resources", "#00ff88")
 
         # Resources in horizontal layout
-        resources_row = tk.Frame(scrollable_frame, bg='#2a2a2a')
+        resources_row = tk.Frame(scrollable_frame, bg=palette['background_3'])
         resources_row.pack(fill=tk.X, pady=10)
 
         resources = [
@@ -731,7 +739,7 @@ The quantum future awaits! 🌟🚀
         ]
 
         for title, url, description, icon, rating in resources:
-            resource_container = tk.Frame(resources_row, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+            resource_container = tk.Frame(resources_row, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
             resource_container.pack(side=tk.LEFT, fill=tk.Y, padx=10)
             self.create_enhanced_resource_card_horizontal(resource_container, title, url, description, icon, rating)
 
@@ -742,7 +750,7 @@ The quantum future awaits! 🌟🚀
         self.create_section_header_horizontal(scrollable_frame, "🛠️ Quantum Computing Tools", "#f39c12")
 
         # Tools in horizontal layout
-        tools_row = tk.Frame(scrollable_frame, bg='#2a2a2a')
+        tools_row = tk.Frame(scrollable_frame, bg=palette['background_3'])
         tools_row.pack(fill=tk.X, pady=10)
 
         tools = [
@@ -757,7 +765,7 @@ The quantum future awaits! 🌟🚀
         ]
 
         for title, url, description, icon, rating in tools:
-            tool_container = tk.Frame(tools_row, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+            tool_container = tk.Frame(tools_row, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
             tool_container.pack(side=tk.LEFT, fill=tk.Y, padx=10)
             self.create_enhanced_resource_card_horizontal(tool_container, title, url, description, icon, rating)
 
@@ -772,32 +780,32 @@ The quantum future awaits! 🌟🚀
 
     def create_enhanced_resource_card_horizontal(self, parent, title, url, description, icon, rating):
         """Create enhanced resource cards with horizontal layout and hover effects"""
-        card_frame = tk.Frame(parent, bg='#2a2a2a', relief=tk.FLAT, bd=0, width=250, height=300)
+        card_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.FLAT, bd=0, width=250, height=300)
         card_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=8)
         card_frame.pack_propagate(False)  # Maintain fixed size
 
         # Glow frame
-        glow_frame = tk.Frame(card_frame, bg='#4ecdc4', height=2)
+        glow_frame = tk.Frame(card_frame, bg=palette['glow_frame_color'], height=2)
         glow_frame.pack(fill=tk.X)
         glow_frame.pack_forget()
 
         # Content frame
-        content_frame = tk.Frame(card_frame, bg='#2a2a2a')
+        content_frame = tk.Frame(card_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
 
         # Header with icon
-        header_frame = tk.Frame(content_frame, bg='#2a2a2a')
+        header_frame = tk.Frame(content_frame, bg=palette['background_3'])
         header_frame.pack(fill=tk.X, pady=(0, 10))
 
         # Icon - centered and larger
         icon_label = tk.Label(header_frame, text=icon,
-                            font=('Arial', 28), bg='#2a2a2a')
+                            font=('Arial', 28), bg=palette['background_3'])
         icon_label.pack()
 
         # Title - centered with wrapping
         title_label = tk.Label(header_frame, text=title,
                             font=('Arial', 12, 'bold'),
-                            fg='#4ecdc4', bg='#2a2a2a',
+                            fg=palette['enhanced_title_color'], bg=palette['background_3'],
                             cursor='hand2', wraplength=220, justify=tk.CENTER)
         title_label.pack(pady=(5, 0))
         title_label.bind("<Button-1>", lambda e: self.open_url(url))
@@ -806,19 +814,19 @@ The quantum future awaits! 🌟🚀
         stars = "⭐" * rating + "☆" * (5 - rating)
         rating_label = tk.Label(header_frame, text=stars,
                             font=('Arial', 10),
-                            fg='#f39c12', bg='#2a2a2a')
+                            fg=palette['rating_label_color'], bg=palette['background_3'])
         rating_label.pack(pady=(5, 0))
 
         # Description - centered with wrapping
         desc_label = tk.Label(content_frame, text=description,
                             font=('Arial', 10),
-                            fg='#cccccc', bg='#2a2a2a',
+                            fg=palette['enhanced_description_color'], bg=palette['background_3'],
                             wraplength=220, justify=tk.CENTER)
         desc_label.pack(pady=(10, 15))
 
         # Try it button - centered
         try_btn = tk.Button(content_frame, text="Try It →",
-                        bg='#00ff88', fg='#000000',
+                        bg=palette['try_it_button_background'], fg=palette['background_black'],
                         font=('Arial', 10, 'bold'),
                         padx=20, pady=8,
                         cursor='hand2',
@@ -827,19 +835,19 @@ The quantum future awaits! 🌟🚀
 
         # Hover effects
         def on_enter(event):
-            card_frame.configure(bg='#3a3a3a')
-            content_frame.configure(bg='#3a3a3a')
-            header_frame.configure(bg='#3a3a3a')
+            card_frame.configure(bg=palette['background_4'])
+            content_frame.configure(bg=palette['background_4'])
+            header_frame.configure(bg=palette['background_4'])
             for widget in [icon_label, title_label, rating_label, desc_label]:
-                widget.configure(bg='#3a3a3a')
+                widget.configure(bg=palette['background_4'])
             glow_frame.pack(fill=tk.X, before=content_frame)
 
         def on_leave(event):
-            card_frame.configure(bg='#2a2a2a')
-            content_frame.configure(bg='#2a2a2a')
-            header_frame.configure(bg='#2a2a2a')
+            card_frame.configure(bg=palette['background_3'])
+            content_frame.configure(bg=palette['background_3'])
+            header_frame.configure(bg=palette['background_3'])
             for widget in [icon_label, title_label, rating_label, desc_label]:
-                widget.configure(bg='#2a2a2a')
+                widget.configure(bg=palette['background_3'])
             glow_frame.pack_forget()
 
         card_frame.bind("<Enter>", on_enter)
@@ -852,24 +860,24 @@ The quantum future awaits! 🌟🚀
 
     def create_separator_horizontal(self, parent):
         """Create a horizontal separator for horizontal layout"""
-        separator_frame = tk.Frame(parent, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        separator_frame = tk.Frame(parent, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         separator_frame.pack(fill=tk.X, pady=30)
 
         # Gradient-like separator
-        colors = ['#4ecdc4', '#00ff88', '#4ecdc4']
+        colors = [palette['gradient_separator_1'], palette['gradient_separator_2'], palette['gradient_separator_3']]
         for i, color in enumerate(colors):
             line = tk.Frame(separator_frame, bg=color, height=2)
             line.pack(fill=tk.X, pady=1)
 
     def create_section_header_horizontal(self, parent, title, color):
         """Create an enhanced section header for horizontal layout"""
-        header_frame = tk.Frame(parent, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+        header_frame = tk.Frame(parent, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         header_frame.pack(fill=tk.X, pady=(20, 15))
 
         # Title with underline effect
         title_label = tk.Label(header_frame, text=title,
                             font=('Arial', 18, 'bold'),
-                            fg=color, bg='#2a2a2a')  # Changed from #1a1a1a to #2a2a2a
+                            fg=color, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
         title_label.pack()
 
         # Underline
@@ -878,13 +886,13 @@ The quantum future awaits! 🌟🚀
 
     def create_section_header(self, parent, title, color):
         """Create an enhanced section header"""
-        header_frame = tk.Frame(parent, bg='#1a1a1a')
+        header_frame = tk.Frame(parent, bg=palette['background'])
         header_frame.pack(fill=tk.X, pady=(20, 15))
 
         # Title with underline effect
         title_label = tk.Label(header_frame, text=title,
                               font=('Arial', 18, 'bold'),
-                              fg=color, bg='#1a1a1a')
+                              fg=color, bg=palette['background'])
         title_label.pack(anchor=tk.W)
 
         # Underline
@@ -893,34 +901,34 @@ The quantum future awaits! 🌟🚀
 
     def create_enhanced_resource_card(self, parent, title, url, description, icon, rating):
         """Create enhanced resource cards with ratings and hover effects"""
-        card_frame = tk.Frame(parent, bg='#2a2a2a', relief=tk.FLAT, bd=0)
+        card_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.FLAT, bd=0)
         card_frame.pack(fill=tk.X, pady=8)
 
         # Glow frame
-        glow_frame = tk.Frame(card_frame, bg='#4ecdc4', height=2)
+        glow_frame = tk.Frame(card_frame, bg=palette['glow_frame_color'], height=2)
         glow_frame.pack(fill=tk.X)
         glow_frame.pack_forget()
 
         # Content frame
-        content_frame = tk.Frame(card_frame, bg='#2a2a2a')
+        content_frame = tk.Frame(card_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=15)
 
         # Header
-        header_frame = tk.Frame(content_frame, bg='#2a2a2a')
+        header_frame = tk.Frame(content_frame, bg=palette['background_3'])
         header_frame.pack(fill=tk.X, pady=(0, 8))
 
         # Icon
         icon_label = tk.Label(header_frame, text=icon,
-                             font=('Arial', 20), bg='#2a2a2a')
+                             font=('Arial', 20), bg=palette['background_3'])
         icon_label.pack(side=tk.LEFT, padx=(0, 15))
 
         # Title and rating
-        title_frame = tk.Frame(header_frame, bg='#2a2a2a')
+        title_frame = tk.Frame(header_frame, bg=palette['background_3'])
         title_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         title_label = tk.Label(title_frame, text=title,
                               font=('Arial', 14, 'bold'),
-                              fg='#4ecdc4', bg='#2a2a2a',
+                              fg=palette['enhanced_title_color'], bg=palette['background_3'],
                               cursor='hand2')
         title_label.pack(anchor=tk.W)
         title_label.bind("<Button-1>", lambda e: self.open_url(url))
@@ -929,12 +937,12 @@ The quantum future awaits! 🌟🚀
         stars = "⭐" * rating + "☆" * (5 - rating)
         rating_label = tk.Label(title_frame, text=f"Rating: {stars}",
                                font=('Arial', 10),
-                               fg='#f39c12', bg='#2a2a2a')
+                               fg=palette['rating_label_color'], bg=palette['background_3'])
         rating_label.pack(anchor=tk.W)
 
         # Try it button
         try_btn = tk.Button(header_frame, text="Try It →",
-                           bg='#00ff88', fg='#000000',
+                           bg=palette['try_it_button_background'], fg=palette['background_black'],
                            font=('Arial', 10, 'bold'),
                            padx=15, pady=5,
                            cursor='hand2',
@@ -944,26 +952,26 @@ The quantum future awaits! 🌟🚀
         # Description
         desc_label = tk.Label(content_frame, text=description,
                              font=('Arial', 11),
-                             fg='#cccccc', bg='#2a2a2a')
+                             fg=palette['enhanced_description_color'], bg=palette['background_3'])
         desc_label.pack(anchor=tk.W)
 
         # Hover effects
         def on_enter(event):
-            card_frame.configure(bg='#3a3a3a')
-            content_frame.configure(bg='#3a3a3a')
-            header_frame.configure(bg='#3a3a3a')
-            title_frame.configure(bg='#3a3a3a')
+            card_frame.configure(bg=palette['background_4'])
+            content_frame.configure(bg=palette['background_4'])
+            header_frame.configure(bg=palette['background_4'])
+            title_frame.configure(bg=palette['background_4'])
             for widget in [icon_label, title_label, rating_label, desc_label]:
-                widget.configure(bg='#3a3a3a')
+                widget.configure(bg=palette['background_4'])
             glow_frame.pack(fill=tk.X, before=content_frame)
 
         def on_leave(event):
-            card_frame.configure(bg='#2a2a2a')
-            content_frame.configure(bg='#2a2a2a')
-            header_frame.configure(bg='#2a2a2a')
-            title_frame.configure(bg='#2a2a2a')
+            card_frame.configure(bg=palette['background_3'])
+            content_frame.configure(bg=palette['background_3'])
+            header_frame.configure(bg=palette['background_3'])
+            title_frame.configure(bg=palette['background_3'])
             for widget in [icon_label, title_label, rating_label, desc_label]:
-                widget.configure(bg='#2a2a2a')
+                widget.configure(bg=palette['background_3'])
             glow_frame.pack_forget()
 
         card_frame.bind("<Enter>", on_enter)
@@ -971,29 +979,29 @@ The quantum future awaits! 🌟🚀
 
     def create_separator(self, parent):
         """Create an animated separator"""
-        separator_frame = tk.Frame(parent, bg='#1a1a1a')
+        separator_frame = tk.Frame(parent, bg=palette['background'])
         separator_frame.pack(fill=tk.X, pady=25)
 
         # Gradient-like separator
-        colors = ['#4ecdc4', '#00ff88', '#4ecdc4']
+        colors = [palette['gradient_separator_1'], palette['gradient_separator_2'], palette['gradient_separator_3']]
         for i, color in enumerate(colors):
             line = tk.Frame(separator_frame, bg=color, height=1)
             line.pack(fill=tk.X, pady=1)
 
     def create_enhanced_footer(self, parent):
         """Create enhanced footer with gradient buttons"""
-        footer_frame = tk.Frame(parent, bg='#2a2a2a')
+        footer_frame = tk.Frame(parent, bg=palette['background_3'])
         footer_frame.pack(fill=tk.X, padx=25, pady=(25, 25))  # Added padding here for internal spacing
 
         # Create a centered button container
-        button_container = tk.Frame(footer_frame, bg='#2a2a2a')
+        button_container = tk.Frame(footer_frame, bg=palette['background_3'])
         button_container.pack(expand=True)
 
         # Back to Main Screen button with enhanced styling
         back_btn = tk.Button(button_container, text="🏠 Back to Main Screen",
                             command=self.back_to_menu,
                             font=('Arial', 14, 'bold'),
-                            bg='#4ecdc4', fg='#000000',
+                            bg=palette['main_menu_button_background'], fg=palette['background_black'],
                             padx=30, pady=15,
                             cursor='hand2',
                             relief=tk.FLAT,
@@ -1005,7 +1013,7 @@ The quantum future awaits! 🌟🚀
         close_btn = tk.Button(button_container, text="❌ Close Application",
                             command=self.close_window,
                             font=('Arial', 14, 'bold'),
-                            bg='#ff6b6b', fg='#ffffff',
+                            bg=palette['close_button_background'], fg=palette['close_button_text_color'],
                             padx=30, pady=15,
                             cursor='hand2',
                             relief=tk.FLAT,
@@ -1015,24 +1023,24 @@ The quantum future awaits! 🌟🚀
 
         # Add enhanced hover effects to back button
         def on_back_enter(event):
-            back_btn.configure(bg='#00ff88', fg='#000000')
+            back_btn.configure(bg=palette['main_menu_button_hover_background'], fg=palette['background_black'])
         def on_back_leave(event):
-            back_btn.configure(bg='#4ecdc4', fg='#000000')
+            back_btn.configure(bg=palette['main_menu_button_background'], fg=palette['background_black'])
 
         back_btn.bind("<Enter>", on_back_enter)
         back_btn.bind("<Leave>", on_back_leave)
 
         # Add enhanced hover effects to close button
         def on_close_enter(event):
-            close_btn.configure(bg='#e74c3c', fg='#ffffff')
+            close_btn.configure(bg=palette['close_button_hover_background'], fg=palette['close_button_text_color'])
         def on_close_leave(event):
-            close_btn.configure(bg='#ff6b6b', fg='#ffffff')
+            close_btn.configure(bg=palette['close_button_background'], fg=palette['close_button_text_color'])
 
         close_btn.bind("<Enter>", on_close_enter)
         close_btn.bind("<Leave>", on_close_leave)
 
         # Add a separator line above the buttons
-        separator = tk.Frame(footer_frame, bg='#4ecdc4', height=2)
+        separator = tk.Frame(footer_frame, bg=palette['separator_line_color'], height=2)
         separator.pack(fill=tk.X, pady=(0, 15))
 
     def animate_circuit(self):
@@ -1117,7 +1125,7 @@ The quantum future awaits! 🌟🚀
         menu_root = tk.Tk()
         menu_root.title("Infinity Qubit - Main Menu")
         menu_root.geometry("400x300")
-        menu_root.configure(bg='#1a1a1a')
+        menu_root.configure(bg=palette['background'])
 
         # Center the window
         menu_root.update_idletasks()
@@ -1128,24 +1136,24 @@ The quantum future awaits! 🌟🚀
         # Title
         title_label = tk.Label(menu_root, text="🚀 Infinity Qubit",
                             font=('Arial', 24, 'bold'),
-                            fg='#00ff88', bg='#1a1a1a')
+                            fg=palette['title_color'], bg=palette['background'])
         title_label.pack(pady=30)
 
         # Subtitle
         subtitle_label = tk.Label(menu_root, text="Main Menu",
                                 font=('Arial', 16),
-                                fg='#4ecdc4', bg='#1a1a1a')
+                                fg=palette['subtitle_color'], bg=palette['background'])
         subtitle_label.pack(pady=10)
 
         # Menu options
-        button_frame = tk.Frame(menu_root, bg='#1a1a1a')
+        button_frame = tk.Frame(menu_root, bg=palette['background'])
         button_frame.pack(expand=True)
 
         # Learn Hub button
         learn_btn = tk.Button(button_frame, text="📚 Learn Hub",
                             command=lambda: self.reopen_learn_hub(menu_root),
                             font=('Arial', 12, 'bold'),
-                            bg='#4ecdc4', fg='#000000',
+                            bg=palette['learn_button_background'], fg=palette['background_black'],
                             padx=20, pady=10,
                             cursor='hand2', width=15)
         learn_btn.pack(pady=5)
@@ -1153,14 +1161,14 @@ The quantum future awaits! 🌟🚀
         # Placeholder for other modes
         placeholder_label = tk.Label(button_frame, text="Other game modes coming soon...",
                                     font=('Arial', 10, 'italic'),
-                                    fg='#888888', bg='#1a1a1a')
+                                    fg=palette['placeholder_text_color'], bg=palette['background'])
         placeholder_label.pack(pady=20)
 
         # Close button
         close_btn = tk.Button(button_frame, text="❌ Exit",
                             command=menu_root.destroy,
                             font=('Arial', 12, 'bold'),
-                            bg='#ff6b6b', fg='#ffffff',
+                            bg=palette['close_button_background'], fg=palette['close_button_text_color'],
                             padx=20, pady=10,
                             cursor='hand2', width=15)
         close_btn.pack(pady=5)

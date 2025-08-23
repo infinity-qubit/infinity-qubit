@@ -10,6 +10,11 @@ import sys
 
 sys.path.append('..')
 from run import PROJECT_ROOT, get_resource_path
+from q_utils import get_colors_from_file, extract_color_palette
+
+# Get color palette
+color_file_path = get_resource_path('config/color_palette.json')
+palette = extract_color_palette(get_colors_from_file(color_file_path), 'puzzle_mode')
 
 class PuzzleMode:
     def __init__(self, root):
@@ -36,7 +41,7 @@ class PuzzleMode:
         y = (screen_height - window_height) // 2
 
         self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        self.root.configure(bg='#1a1a1a')
+        self.root.configure(bg=palette['background'])
 
         self.window_width = window_width
         self.window_height = window_height
@@ -55,7 +60,7 @@ class PuzzleMode:
     def load_puzzle_levels(self):
         """Load puzzle levels from JSON file"""
         try:
-            with open('puzzle_levels_temp.json', 'r', encoding='utf-8') as f:
+            with open(get_resource_path('config/puzzle_levels_temp.json'), 'r', encoding='utf-8') as f:
                 levels = json.load(f)
             print(f"✅ Loaded {len(levels)} puzzle levels from JSON")
             return levels
@@ -143,22 +148,22 @@ class PuzzleMode:
     def setup_ui(self):
         """Setup the user interface with sandbox-style layout"""
         # Main container with gradient-like effect
-        main_frame = tk.Frame(self.root, bg='#0a0a0a')
+        main_frame = tk.Frame(self.root, bg=palette['main_frame_background'])
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Add subtle top border
-        top_border = tk.Frame(main_frame, bg='#ff6b6b', height=3)
+        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=3)
         top_border.pack(fill=tk.X)
 
         # Content frame
-        content_frame = tk.Frame(main_frame, bg='#2a2a2a')
+        content_frame = tk.Frame(main_frame, bg=palette['background_2'])
         content_frame.pack(fill=tk.BOTH, expand=True)
 
         # Create header
         self.create_header(content_frame)
 
         # Main content container
-        main_container = tk.Frame(content_frame, bg='#2a2a2a')
+        main_container = tk.Frame(content_frame, bg=palette['background_2'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=(0, 25))
 
         # Level info panel (replaces control panel)
@@ -175,30 +180,30 @@ class PuzzleMode:
 
     def create_header(self, parent):
         """Create header with title and navigation"""
-        header_frame = tk.Frame(parent, bg='#2a2a2a')
+        header_frame = tk.Frame(parent, bg=palette['background_2'])
         header_frame.pack(fill=tk.X, padx=25, pady=(15, 10))
 
-        nav_frame = tk.Frame(header_frame, bg='#2a2a2a')
+        nav_frame = tk.Frame(header_frame, bg=palette['background_2'])
         nav_frame.pack(fill=tk.X)
 
         # Title on the left
         title_label = tk.Label(nav_frame, text="🧩 Infinity Qubit - Puzzle Mode",
                             font=('Arial', 20, 'bold'),
-                            fg='#ff6b6b', bg='#2a2a2a')
+                            fg=palette['title_color'], bg=palette['background_2'])
         title_label.pack(side=tk.LEFT)
 
         # Subtitle below title
         subtitle_label = tk.Label(nav_frame,
                                 text="Solve quantum puzzles with increasing difficulty",
                                 font=('Arial', 11, 'italic'),
-                                fg='#4ecdc4', bg='#2a2a2a')
+                                fg=palette['subtitle_color'], bg=palette['background_2'])
         subtitle_label.pack(side=tk.LEFT, padx=(10, 0))
 
         # Back to Main Menu button - top right
         main_menu_btn = tk.Button(nav_frame, text="🏠 Main Menu",
                                 command=self.return_to_main_menu,
                                 font=('Arial', 10, 'bold'),
-                                bg='#3a3a3a', fg='#4ecdc4',
+                                bg=palette['background_3'], fg=palette['main_menu_button_text_color'],
                                 padx=15, pady=8,
                                 cursor='hand2',
                                 relief=tk.FLAT,
@@ -207,79 +212,79 @@ class PuzzleMode:
 
         # Add hover effect
         def on_nav_enter(event):
-            main_menu_btn.configure(bg='#4ecdc4', fg='#000000')
+            main_menu_btn.configure(bg=palette['main_menu_button_text_color'], fg='#000000')
         def on_nav_leave(event):
-            main_menu_btn.configure(bg='#3a3a3a', fg='#4ecdc4')
+            main_menu_btn.configure(bg=palette['background_3'], fg=palette['main_menu_button_text_color'])
 
         main_menu_btn.bind("<Enter>", on_nav_enter)
         main_menu_btn.bind("<Leave>", on_nav_leave)
 
     def setup_level_info_panel(self, parent):
         """Setup the level information panel (replaces control panel)"""
-        info_frame = tk.Frame(parent, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        info_frame = tk.Frame(parent, bg=palette['background_2'], relief=tk.RAISED, bd=2)
         info_frame.pack(fill=tk.X, pady=(0, 20))
 
         # Title
         info_title = tk.Label(info_frame, text="🎯 Level Information",
-                            font=('Arial', 16, 'bold'), fg='#ff6b6b', bg='#2a2a2a')
+                            font=('Arial', 16, 'bold'), fg=palette['info_title_color'], bg=palette['background_2'])
         info_title.pack(pady=(15, 10))
 
         # Main info container
-        info_container = tk.Frame(info_frame, bg='#2a2a2a')
+        info_container = tk.Frame(info_frame, bg=palette['background_2'])
         info_container.pack(padx=20, pady=(0, 15))
 
         # Level details - left side
-        level_frame = tk.Frame(info_container, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+        level_frame = tk.Frame(info_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
         level_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15), pady=5, ipadx=15, ipady=10)
 
         self.level_label = tk.Label(level_frame, text="Level: 1",
-                                font=('Arial', 14, 'bold'), fg='#ffffff', bg='#3a3a3a')
+                                font=('Arial', 14, 'bold'), fg=palette['level_counter_color'], bg=palette['background_3'])
         self.level_label.pack(pady=(0, 5))
 
         self.level_name_label = tk.Label(level_frame, text="Level Name",
-                                    font=('Arial', 12, 'bold'), fg='#00ff88', bg='#3a3a3a')
+                                    font=('Arial', 12, 'bold'), fg=palette['level_name_color'], bg=palette['background_3'])
         self.level_name_label.pack(pady=2)
 
         self.level_description_label = tk.Label(level_frame, text="Description",
-                                            font=('Arial', 10), fg='#ffffff', bg='#3a3a3a',
+                                            font=('Arial', 10), fg=palette['description_title_color'], bg=palette['background_3'],
                                             wraplength=200)
         self.level_description_label.pack(pady=2)
 
         # Difficulty and score - right side
-        stats_frame = tk.Frame(info_container, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+        stats_frame = tk.Frame(info_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
         stats_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5, ipadx=15, ipady=10)
 
         self.difficulty_label = tk.Label(stats_frame, text="Difficulty: Beginner",
-                                    font=('Arial', 12, 'bold'), fg='#4ecdc4', bg='#3a3a3a')
+                                    font=('Arial', 12, 'bold'), fg=palette['difficulty_title_color'], bg=palette['background_3'])
         self.difficulty_label.pack(pady=(0, 5))
 
         self.score_label = tk.Label(stats_frame, text="Score: 0",
-                                font=('Arial', 12, 'bold'), fg='#ffd700', bg='#3a3a3a')
+                                font=('Arial', 12, 'bold'), fg=palette['score_counter_color'], bg=palette['background_3'])
         self.score_label.pack(pady=2)
 
         self.gates_limit_label = tk.Label(stats_frame, text="Max Gates: 1",
-                                        font=('Arial', 10), fg='#ffffff', bg='#3a3a3a')
+                                        font=('Arial', 10), fg=palette['max_gates_counter_color'], bg=palette['background_3'])
         self.gates_limit_label.pack(pady=2)
 
     def setup_circuit_area(self, parent):
         """Setup the circuit visualization area"""
-        circuit_frame = tk.Frame(parent, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        circuit_frame = tk.Frame(parent, bg=palette['background_2'], relief=tk.RAISED, bd=2)
         circuit_frame.pack(fill=tk.X, pady=(0, 15))
 
         # Title
         circuit_title = tk.Label(circuit_frame, text="🔧 Quantum Circuit Designer",
-                                font=('Arial', 14, 'bold'), fg='#ff6b6b', bg='#2a2a2a')
+                                font=('Arial', 14, 'bold'), fg=palette['main_circuit_title_color'], bg=palette['background_2'])
         circuit_title.pack(pady=(10, 8))
 
         # Circuit canvas
-        canvas_container = tk.Frame(circuit_frame, bg='#1a1a1a', relief=tk.SUNKEN, bd=3)
+        canvas_container = tk.Frame(circuit_frame, bg=palette['background'], relief=tk.SUNKEN, bd=3)
         canvas_container.pack(padx=20, pady=(0, 10))
 
         canvas_width = int(self.window_width * 0.85)
         canvas_height = int(self.window_height * 0.25)
 
         self.circuit_canvas = tk.Canvas(canvas_container, width=canvas_width, height=canvas_height,
-                                       bg='#0a0a0a', highlightthickness=0)
+                                       bg=palette['background_4'], highlightthickness=0)
         self.circuit_canvas.pack(padx=5, pady=5)
 
         self.canvas_width = canvas_width
@@ -287,28 +292,28 @@ class PuzzleMode:
 
     def setup_bottom_section(self, parent):
         """Setup the bottom section with gate palette, controls, and state analysis"""
-        bottom_frame = tk.Frame(parent, bg='#2a2a2a')
+        bottom_frame = tk.Frame(parent, bg=palette['background_2'])
         bottom_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
 
         # Left side - Gate Palette (40% width)
-        gate_frame = tk.Frame(bottom_frame, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        gate_frame = tk.Frame(bottom_frame, bg=palette['background_2'], relief=tk.RAISED, bd=2)
         gate_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
 
         tk.Label(gate_frame, text="🎨 Available Gates",
-                font=('Arial', 14, 'bold'), fg='#f39c12', bg='#2a2a2a').pack(pady=(10, 10))
+                font=('Arial', 14, 'bold'), fg=palette['available_gates_title_color'], bg=palette['background_2']).pack(pady=(10, 10))
 
         # Gate buttons container
-        self.gates_container = tk.Frame(gate_frame, bg='#2a2a2a')
+        self.gates_container = tk.Frame(gate_frame, bg=palette['background_2'])
         self.gates_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
 
         # Middle section - Puzzle Controls (30% width)
-        controls_frame = tk.Frame(bottom_frame, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        controls_frame = tk.Frame(bottom_frame, bg=palette['background_2'], relief=tk.RAISED, bd=2)
         controls_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5)
 
         self.setup_puzzle_controls(controls_frame)
 
         # Right side - Quantum State Analysis (30% width)
-        results_frame = tk.Frame(bottom_frame, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+        results_frame = tk.Frame(bottom_frame, bg=palette['background_2'], relief=tk.RAISED, bd=2)
         results_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 0))
 
         self.setup_state_analysis(results_frame)
@@ -317,24 +322,24 @@ class PuzzleMode:
         """Setup puzzle control buttons"""
         # Title
         control_title = tk.Label(parent, text="🎮 Puzzle Controls",
-                               font=('Arial', 14, 'bold'), fg='#ff6b6b', bg='#2a2a2a')
+                               font=('Arial', 14, 'bold'), fg=palette['controls_title_text_color'], bg=palette['background_2'])
         control_title.pack(pady=(10, 15))
 
         # Create buttons container
-        control_frame = tk.Frame(parent, bg='#2a2a2a', width=250, height=400)
+        control_frame = tk.Frame(parent, bg=palette['background_2'], width=250, height=400)
         control_frame.pack(pady=(0, 15), padx=15)
         control_frame.pack_propagate(False)
 
         # Control buttons
         buttons_data = [
-            ("🚀 Run Circuit", self.run_circuit, '#00ff88', '#000000'),
-            ("🔄 Clear Circuit", self.clear_circuit, '#ff6b6b', '#ffffff'),
-            ("💡 Hint", self.show_hint, '#4ecdc4', '#000000'),
-            ("⏭️ Skip Level", self.skip_level, '#f39c12', '#000000')
+            ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['run_button_text_color']),
+            ("🔄 Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
+            ("💡 Hint", self.show_hint, palette['hint_button_background'], palette['hint_button_text_color']),
+            ("⏭️ Skip Level", self.skip_level, palette['skip_button_background'], palette['skip_button_text_color'])
         ]
 
         for i, (text, command, bg_color, fg_color) in enumerate(buttons_data):
-            btn_container = tk.Frame(control_frame, bg='#3a3a3a', relief=tk.RAISED, bd=2)
+            btn_container = tk.Frame(control_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
             btn_container.pack(fill=tk.X, pady=12, padx=5)
 
             btn = tk.Button(btn_container, text=text, command=command,
@@ -346,7 +351,7 @@ class PuzzleMode:
             original_bg = bg_color
             def create_hover_functions(button, orig_color, orig_fg):
                 def on_enter(event):
-                    button.configure(bg='#ffffff', fg='#000000')
+                    button.configure(bg=palette['button_hover_background'], fg=palette['button_hover_text_color'])
                 def on_leave(event):
                     button.configure(bg=orig_color, fg=orig_fg)
                 return on_enter, on_leave
@@ -356,44 +361,44 @@ class PuzzleMode:
             btn.bind("<Leave>", on_leave)
 
         # Status info
-        status_frame = tk.Frame(control_frame, bg='#3a3a3a', relief=tk.SUNKEN, bd=1)
+        status_frame = tk.Frame(control_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=1)
         status_frame.pack(fill=tk.X, pady=(20, 0), padx=5)
 
         status_title = tk.Label(status_frame, text="📊 Circuit Status",
-                               font=('Arial', 10, 'bold'), fg='#4ecdc4', bg='#3a3a3a')
+                               font=('Arial', 10, 'bold'), fg=palette['circuit_status_title_color'], bg=palette['background_3'])
         status_title.pack(pady=(5, 3))
 
         self.gates_count_label = tk.Label(status_frame, text="Gates: 0",
-                                         font=('Arial', 9), fg='#ffffff', bg='#3a3a3a')
+                                         font=('Arial', 9), fg=palette['gates_counter_color'], bg=palette['background_3'])
         self.gates_count_label.pack(pady=2)
 
         self.gates_used_label = tk.Label(status_frame, text="Used: 0/1",
-                                        font=('Arial', 9), fg='#ffffff', bg='#3a3a3a')
+                                        font=('Arial', 9), fg=palette['used_gates_counter_color'], bg=palette['background_3'])
         self.gates_used_label.pack(pady=(0, 5))
 
     def setup_state_analysis(self, parent):
         """Setup quantum state analysis area"""
         # Title
         analysis_title = tk.Label(parent, text="📊 Quantum State Analysis",
-                                font=('Arial', 14, 'bold'), fg='#ff6b6b', bg='#2a2a2a')
+                                font=('Arial', 14, 'bold'), fg=palette['state_analysis_title_color'], bg=palette['background_2'])
         analysis_title.pack(pady=(10, 15))
 
         # Analysis container
-        analysis_container = tk.Frame(parent, bg='#1a1a1a', relief=tk.SUNKEN, bd=3)
+        analysis_container = tk.Frame(parent, bg=palette['background'], relief=tk.SUNKEN, bd=3)
         analysis_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
 
         # Text area with scrollbar
-        text_frame = tk.Frame(analysis_container, bg='#1a1a1a')
+        text_frame = tk.Frame(analysis_container, bg=palette['background'])
         text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         self.state_display = tk.Text(text_frame, width=40,
-                                   font=('Consolas', 9), bg='#0a0a0a', fg='#00ff88',
-                                   relief=tk.FLAT, bd=0, insertbackground='#00ff88',
-                                   selectbackground='#4ecdc4', selectforeground='#000000',
+                                   font=('Consolas', 9), bg=palette['background_4'], fg=palette['state_display_text_color'],
+                                   relief=tk.FLAT, bd=0, insertbackground=palette['state_display_insert_background'],
+                                   selectbackground=palette['state_display_select_background'], selectforeground=palette['state_display_select_foreground'],
                                    wrap=tk.WORD)
 
         scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.state_display.yview,
-                                bg='#3a3a3a', troughcolor='#1a1a1a', activebackground='#4ecdc4')
+                                bg=palette['background_3'], troughcolor=palette['background'], activebackground=palette['state_scrollbar_active_background'])
         self.state_display.configure(yscrollcommand=scrollbar.set)
 
         self.state_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -404,24 +409,6 @@ class PuzzleMode:
         # Clear existing gates
         for widget in self.gates_container.winfo_children():
             widget.destroy()
-
-        gate_colors = {
-            'H': '#ff6b6b', 'X': '#4ecdc4', 'Y': '#45b7d1', 'Z': '#96ceb4',
-            'S': '#feca57', 'T': '#ff9ff3', 'CNOT': '#ffeaa7', 'CZ': '#a29bfe',
-            'Toffoli': '#fd79a8'
-        }
-
-        gate_descriptions = {
-            'H': 'Hadamard',
-            'X': 'Pauli-X',
-            'Y': 'Pauli-Y',
-            'Z': 'Pauli-Z',
-            'S': 'S Gate',
-            'T': 'T Gate',
-            'CNOT': 'CNOT',
-            'CZ': 'CZ Gate',
-            'Toffoli': 'Toffoli'
-        }
 
         # Separate single and multi-qubit gates
         single_gates = [gate for gate in available_gates if gate in ['H', 'X', 'Y', 'Z', 'S', 'T']]
@@ -434,28 +421,29 @@ class PuzzleMode:
 
         # Create toggle button if both types of gates are available
         if single_gates and multi_gates:
-            toggle_frame = tk.Frame(self.gates_container, bg='#2a2a2a')
+            toggle_frame = tk.Frame(self.gates_container, bg=palette['background_2'])
             toggle_frame.pack(pady=(5, 15))
 
             self.toggle_btn = tk.Button(toggle_frame, text="🔄 Show Multi-Qubit Gates",
                                     command=self.toggle_gate_view,
                                     font=('Arial', 11, 'bold'),
-                                    bg='#4ecdc4', fg='#000000',
+                                    bg=palette['show_multi_qubit_gates_button_background'], fg=palette['show_multi_qubit_gates_button_text_color'],
                                     padx=20, pady=8,
                                     cursor='hand2', relief=tk.FLAT)
             self.toggle_btn.pack()
 
             # Add hover effect for toggle button
             def on_toggle_enter(event):
-                self.toggle_btn.configure(bg='#ffffff', fg='#000000')
+                self.toggle_btn.configure(bg=palette['show_multi_qubit_gates_button_active_background'], fg=palette['show_multi_qubit_gates_button_active_text_color'])
+
             def on_toggle_leave(event):
-                self.toggle_btn.configure(bg='#4ecdc4', fg='#000000')
+                self.toggle_btn.configure(bg=palette['show_multi_qubit_gates_button_background'], fg=palette['show_multi_qubit_gates_button_text_color'])
 
             self.toggle_btn.bind("<Enter>", on_toggle_enter)
             self.toggle_btn.bind("<Leave>", on_toggle_leave)
 
         # Create container for gate display
-        self.gate_display_frame = tk.Frame(self.gates_container, bg='#2a2a2a')
+        self.gate_display_frame = tk.Frame(self.gates_container, bg=palette['background_2'])
         self.gate_display_frame.pack(fill=tk.BOTH, expand=True)
 
         # Show initial gate set
@@ -468,9 +456,9 @@ class PuzzleMode:
             widget.destroy()
 
         gate_colors = {
-            'H': '#ff6b6b', 'X': '#4ecdc4', 'Y': '#45b7d1', 'Z': '#96ceb4',
-            'S': '#feca57', 'T': '#ff9ff3', 'CNOT': '#ffeaa7', 'CZ': '#a29bfe',
-            'Toffoli': '#fd79a8'
+            'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'], 'Z': palette['Z_color'],
+            'S': palette['S_color'], 'T': palette['T_color'], 'CNOT': palette['CNOT_color'], 'CZ': palette['CZ_color'],
+            'Toffoli': palette['Toffoli_color']
         }
 
         gate_descriptions = {
@@ -488,11 +476,11 @@ class PuzzleMode:
         if self.current_gate_view == 'single' and self.single_gates:
             # Display single-qubit gates
             single_title = tk.Label(self.gate_display_frame, text="Single-Qubit Gates:",
-                                font=('Arial', 12, 'bold'), fg='#ffffff', bg='#2a2a2a')
+                                font=('Arial', 12, 'bold'), fg=palette['single_qubit_gates_title_color'], bg=palette['background_2'])
             single_title.pack(pady=(5, 10))
 
             # Create grid for single gates
-            single_frame = tk.Frame(self.gate_display_frame, bg='#2a2a2a')
+            single_frame = tk.Frame(self.gate_display_frame, bg=palette['background_2'])
             single_frame.pack()
 
             cols = 3
@@ -501,31 +489,31 @@ class PuzzleMode:
                 col = i % cols
                 
                 if col == 0:  # Create new row frame
-                    row_frame = tk.Frame(single_frame, bg='#2a2a2a')
+                    row_frame = tk.Frame(single_frame, bg=palette['background_2'])
                     row_frame.pack(pady=5)
 
                 color = gate_colors.get(gate, '#ffffff')
                 description = gate_descriptions.get(gate, '')
 
-                btn_container = tk.Frame(row_frame, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+                btn_container = tk.Frame(row_frame, bg=palette['background_3'], relief=tk.RAISED, bd=1)
                 btn_container.pack(side=tk.LEFT, padx=8, pady=2)
 
                 btn = tk.Button(btn_container, text=gate,
                             command=lambda g=gate: self.add_gate(g),
                             font=('Arial', 12, 'bold'),
-                            bg=color, fg='#000000',
+                            bg=color, fg=palette['gate_symbol_color'],
                             width=8, height=2, cursor='hand2',
                             relief=tk.FLAT, bd=0)
                 btn.pack(padx=3, pady=3)
 
                 desc_label = tk.Label(btn_container, text=description,
-                                    font=('Arial', 8), fg='#cccccc', bg='#3a3a3a')
+                                    font=('Arial', 8), fg=palette['gate_description_color'], bg=palette['background_3'])
                 desc_label.pack(pady=(0, 3))
 
                 # Add hover effect
                 def create_hover_effect(button, orig_color):
                     def on_enter(event):
-                        button.configure(bg='#ffffff')
+                        button.configure(bg=palette['gate_hover_background'])
                     def on_leave(event):
                         button.configure(bg=orig_color)
                     return on_enter, on_leave
@@ -537,11 +525,11 @@ class PuzzleMode:
         elif self.current_gate_view == 'multi' and self.multi_gates:
             # Display multi-qubit gates in grid layout (same as single gates)
             multi_title = tk.Label(self.gate_display_frame, text="Multi-Qubit Gates:",
-                                font=('Arial', 12, 'bold'), fg='#ffffff', bg='#2a2a2a')
+                                font=('Arial', 12, 'bold'), fg=palette['multi_qubit_gates_title_color'], bg=palette['background_2'])
             multi_title.pack(pady=(5, 10))
 
             # Create grid for multi gates (same structure as single gates)
-            multi_frame = tk.Frame(self.gate_display_frame, bg='#2a2a2a')
+            multi_frame = tk.Frame(self.gate_display_frame, bg=palette['background_2'])
             multi_frame.pack()
 
             cols = 3  # Same number of columns as single gates
@@ -550,31 +538,31 @@ class PuzzleMode:
                 col = i % cols
                 
                 if col == 0:  # Create new row frame
-                    row_frame = tk.Frame(multi_frame, bg='#2a2a2a')
+                    row_frame = tk.Frame(multi_frame, bg=palette['background_2'])
                     row_frame.pack(pady=5)
 
                 color = gate_colors.get(gate, '#ffffff')
                 description = gate_descriptions.get(gate, '')
 
-                btn_container = tk.Frame(row_frame, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+                btn_container = tk.Frame(row_frame, bg=palette['background_3'], relief=tk.RAISED, bd=1)
                 btn_container.pack(side=tk.LEFT, padx=8, pady=2)
 
                 btn = tk.Button(btn_container, text=gate,
                             command=lambda g=gate: self.add_gate(g),
                             font=('Arial', 12, 'bold'),
-                            bg=color, fg='#000000',
+                            bg=color, fg=palette['gate_symbol_color'],
                             width=8, height=2, cursor='hand2',  # Same size as single gates
                             relief=tk.FLAT, bd=0)
                 btn.pack(padx=3, pady=3)
 
                 desc_label = tk.Label(btn_container, text=description,
-                                    font=('Arial', 8), fg='#cccccc', bg='#3a3a3a')
+                                    font=('Arial', 8), fg=palette['gate_description_color'], bg=palette['background_3'])
                 desc_label.pack(pady=(0, 3))
 
                 # Add hover effect
                 def create_hover_effect_multi(button, orig_color):
                     def on_enter(event):
-                        button.configure(bg='#ffffff')
+                        button.configure(bg=palette['gate_hover_background'])
                     def on_leave(event):
                         button.configure(bg=orig_color)
                     return on_enter, on_leave
@@ -588,10 +576,10 @@ class PuzzleMode:
             # Only single gates available, show them directly
             self.current_gate_view = 'single'
             single_title = tk.Label(self.gate_display_frame, text="Available Gates:",
-                                font=('Arial', 12, 'bold'), fg='#ffffff', bg='#2a2a2a')
+                                font=('Arial', 12, 'bold'), fg=palette['available_gates_title_color'], bg=palette['background_2'])
             single_title.pack(pady=(5, 10))
 
-            single_frame = tk.Frame(self.gate_display_frame, bg='#2a2a2a')
+            single_frame = tk.Frame(self.gate_display_frame, bg=palette['background_2'])
             single_frame.pack()
 
             cols = 3
@@ -600,35 +588,35 @@ class PuzzleMode:
                 col = i % cols
                 
                 if col == 0:
-                    row_frame = tk.Frame(single_frame, bg='#2a2a2a')
+                    row_frame = tk.Frame(single_frame, bg=palette['background_2'])
                     row_frame.pack(pady=5)
 
                 color = gate_colors.get(gate, '#ffffff')
                 description = gate_descriptions.get(gate, '')
 
-                btn_container = tk.Frame(row_frame, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+                btn_container = tk.Frame(row_frame, bg=palette['background_3'], relief=tk.RAISED, bd=1)
                 btn_container.pack(side=tk.LEFT, padx=8, pady=2)
 
                 btn = tk.Button(btn_container, text=gate,
                             command=lambda g=gate: self.add_gate(g),
                             font=('Arial', 12, 'bold'),
-                            bg=color, fg='#000000',
+                            bg=color, fg=palette['gate_symbol_color'],
                             width=8, height=2, cursor='hand2',
                             relief=tk.FLAT, bd=0)
                 btn.pack(padx=3, pady=3)
 
                 desc_label = tk.Label(btn_container, text=description,
-                                    font=('Arial', 8), fg='#cccccc', bg='#3a3a3a')
+                                    font=('Arial', 8), fg=palette['gate_description_color'], bg=palette['background_3'])
                 desc_label.pack(pady=(0, 3))
 
         elif not self.single_gates and self.multi_gates:
             # Only multi gates available, show them directly in grid
             self.current_gate_view = 'multi'
             multi_title = tk.Label(self.gate_display_frame, text="Available Gates:",
-                                font=('Arial', 12, 'bold'), fg='#ffffff', bg='#2a2a2a')
+                                font=('Arial', 12, 'bold'), fg=palette['available_gates_title_color'], bg=palette['background_2'])
             multi_title.pack(pady=(5, 10))
 
-            multi_frame = tk.Frame(self.gate_display_frame, bg='#2a2a2a')
+            multi_frame = tk.Frame(self.gate_display_frame, bg=palette['background_2'])
             multi_frame.pack()
 
             cols = 3
@@ -637,25 +625,25 @@ class PuzzleMode:
                 col = i % cols
                 
                 if col == 0:
-                    row_frame = tk.Frame(multi_frame, bg='#2a2a2a')
+                    row_frame = tk.Frame(multi_frame, bg=palette['background_2'])
                     row_frame.pack(pady=5)
 
                 color = gate_colors.get(gate, '#ffffff')
                 description = gate_descriptions.get(gate, '')
 
-                btn_container = tk.Frame(row_frame, bg='#3a3a3a', relief=tk.RAISED, bd=1)
+                btn_container = tk.Frame(row_frame, bg=palette['background_3'], relief=tk.RAISED, bd=1)
                 btn_container.pack(side=tk.LEFT, padx=8, pady=2)
 
                 btn = tk.Button(btn_container, text=gate,
                             command=lambda g=gate: self.add_gate(g),
                             font=('Arial', 12, 'bold'),
-                            bg=color, fg='#000000',
+                            bg=color, fg=palette['gate_symbol_color'],
                             width=8, height=2, cursor='hand2',
                             relief=tk.FLAT, bd=0)
                 btn.pack(padx=3, pady=3)
 
                 desc_label = tk.Label(btn_container, text=description,
-                                    font=('Arial', 9), fg='#cccccc', bg='#3a3a3a')
+                                    font=('Arial', 9), fg=palette['gate_description_color'], bg=palette['background_3'])
                 desc_label.pack(pady=(0, 5))
 
     def toggle_gate_view(self):
@@ -768,16 +756,16 @@ class PuzzleMode:
         dialog = tk.Toplevel(self.root)
         dialog.title("Select Qubit")
         dialog.geometry("300x150")
-        dialog.configure(bg='#2a2a2a')
+        dialog.configure(bg=palette['background_2'])
         dialog.transient(self.root)
         dialog.grab_set()
         
         result = [None]
         
         tk.Label(dialog, text=prompt, font=('Arial', 12), 
-                fg='#ffffff', bg='#2a2a2a').pack(pady=10)
+                fg=palette['prompt_text_color'], bg=palette['background_2']).pack(pady=10)
         
-        button_frame = tk.Frame(dialog, bg='#2a2a2a')
+        button_frame = tk.Frame(dialog, bg=palette['background_2'])
         button_frame.pack(pady=10)
         
         def select_qubit(qubit):
@@ -787,14 +775,14 @@ class PuzzleMode:
         for qubit in available_qubits:
             btn = tk.Button(button_frame, text=f"Qubit {qubit}", 
                            command=lambda q=qubit: select_qubit(q),
-                           font=('Arial', 10), bg='#4ecdc4', fg='#000000',
+                           font=('Arial', 10), bg=palette['qubit_selection_button_background'], fg=palette['qubit_selection_button_text_color'],
                            padx=15, pady=5, cursor='hand2')
             btn.pack(side=tk.LEFT, padx=5)
         
         # Cancel button
         cancel_btn = tk.Button(button_frame, text="Cancel", 
                               command=dialog.destroy,
-                              font=('Arial', 10), bg='#ff6b6b', fg='#ffffff',
+                              font=('Arial', 10), bg=palette['cancel_selection_button_background'], fg=palette['cancel_selection_button_text_color'],
                               padx=15, pady=5, cursor='hand2')
         cancel_btn.pack(side=tk.LEFT, padx=5)
         
@@ -1140,7 +1128,7 @@ class PuzzleMode:
         dialog = tk.Toplevel(self.root)
         dialog.title("🎉 Level Complete!")
         dialog.geometry("600x500")  # Increased from 500x400 to 600x500
-        dialog.configure(bg='#1a1a1a')
+        dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
         dialog.grab_set()
         
@@ -1152,23 +1140,23 @@ class PuzzleMode:
         dialog.geometry(f"600x500+{x}+{y}")
         
         # Main container with border
-        main_frame = tk.Frame(dialog, bg='#2a2a2a', relief=tk.RAISED, bd=3)
+        main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
         
         # Header with celebration emoji
-        header_frame = tk.Frame(main_frame, bg='#2a2a2a')
+        header_frame = tk.Frame(main_frame, bg=palette['background_2'])
         header_frame.pack(fill=tk.X, pady=(20, 15))
         
         celebration_label = tk.Label(header_frame, text="🎉✨🏆✨🎉",
-                                font=('Arial', 28), fg='#ffd700', bg='#2a2a2a')  # Increased font size
+                                font=('Arial', 28), fg='#ffd700', bg=palette['background_2'])  # Increased font size
         celebration_label.pack()
         
         title_label = tk.Label(header_frame, text="LEVEL COMPLETE!",
-                            font=('Arial', 24, 'bold'), fg='#00ff88', bg='#2a2a2a')  # Increased font size
+                            font=('Arial', 24, 'bold'), fg=palette['level_complete_title_color'], bg=palette['background_2'])  # Increased font size
         title_label.pack(pady=(10, 0))
         
         # Content frame
-        content_frame = tk.Frame(main_frame, bg='#3a3a3a', relief=tk.SUNKEN, bd=2)
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
         # Level info
@@ -1181,23 +1169,23 @@ class PuzzleMode:
     {self.get_performance_message(len(self.placed_gates), max_gates)}"""
         
         info_label = tk.Label(content_frame, text=info_text,
-                            font=('Arial', 16), fg='#ffffff', bg='#3a3a3a',  # Increased font size
+                            font=('Arial', 16), fg=palette['level_complete_info_label_text_color'], bg=palette['background_3'],  # Increased font size
                             justify=tk.CENTER)
         info_label.pack(expand=True, pady=30)  # Increased padding
         
         # Button frame with more space
-        button_frame = tk.Frame(main_frame, bg='#2a2a2a')
+        button_frame = tk.Frame(main_frame, bg=palette['background_2'])
         button_frame.pack(fill=tk.X, pady=(20, 25))  # Increased padding
         
         # Button container for horizontal layout
-        btn_container = tk.Frame(button_frame, bg='#2a2a2a')
+        btn_container = tk.Frame(button_frame, bg=palette['background_2'])
         btn_container.pack()
         
         # Next Level button - larger size
         next_btn = tk.Button(btn_container, text="🚀 Next Level",
                         command=lambda: [dialog.destroy(), self.proceed_to_next_level()],
                         font=('Arial', 16, 'bold'),  # Increased font size
-                        bg='#00ff88', fg='#000000',
+                        bg=palette['next_level_button_background'], fg=palette['next_level_button_text_color'],
                         padx=40, pady=15,  # Increased padding
                         cursor='hand2', relief=tk.FLAT)
         next_btn.pack(side=tk.LEFT, padx=20)  # Increased spacing
@@ -1206,21 +1194,21 @@ class PuzzleMode:
         close_btn = tk.Button(btn_container, text="❌ Close",
                             command=dialog.destroy,
                             font=('Arial', 16, 'bold'),  # Increased font size
-                            bg='#ff6b6b', fg='#ffffff',
+                            bg=palette['close_button_background'], fg=palette['close_button_hover_text_color'],
                             padx=40, pady=15,  # Increased padding
                             cursor='hand2', relief=tk.FLAT)
         close_btn.pack(side=tk.LEFT, padx=20)  # Increased spacing
         
         # Add hover effects
         def on_next_enter(event):
-            next_btn.configure(bg='#ffffff', fg='#000000')
+            next_btn.configure(bg=palette['next_level_button_hover_background'], fg=palette['next_level_button_text_color'])
         def on_next_leave(event):
-            next_btn.configure(bg='#00ff88', fg='#000000')
+            next_btn.configure(bg=palette['next_level_button_background'], fg=palette['next_level_button_text_color'])
             
         def on_close_enter(event):
-            close_btn.configure(bg='#ffffff', fg='#000000')
+            close_btn.configure(bg=palette['close_button_hover_text_color'], fg=palette['close_button_text_color'])
         def on_close_leave(event):
-            close_btn.configure(bg='#ff6b6b', fg='#ffffff')
+            close_btn.configure(bg=palette['close_button_background'], fg=palette['close_button_hover_text_color'])
             
         next_btn.bind("<Enter>", on_next_enter)
         next_btn.bind("<Leave>", on_next_leave)
@@ -1259,7 +1247,7 @@ class PuzzleMode:
         dialog = tk.Toplevel(self.root)
         dialog.title("🏆 Game Complete!")
         dialog.geometry("450x350")
-        dialog.configure(bg='#1a1a1a')
+        dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
         dialog.grab_set()
         
@@ -1270,23 +1258,23 @@ class PuzzleMode:
         ))
         
         # Main container with border
-        main_frame = tk.Frame(dialog, bg='#2a2a2a', relief=tk.RAISED, bd=3)
+        main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Header with celebration
-        header_frame = tk.Frame(main_frame, bg='#2a2a2a')
+        header_frame = tk.Frame(main_frame, bg=palette['background_2'])
         header_frame.pack(fill=tk.X, pady=(15, 10))
         
         celebration_label = tk.Label(header_frame, text="🏆🎊🌟🎊🏆",
-                                   font=('Arial', 24), fg='#ffd700', bg='#2a2a2a')
+                                   font=('Arial', 24), fg='#ffd700', bg=palette['background_2'])
         celebration_label.pack()
         
         title_label = tk.Label(header_frame, text="QUANTUM MASTER!",
-                             font=('Arial', 20, 'bold'), fg='#ff6b6b', bg='#2a2a2a')
+                             font=('Arial', 20, 'bold'), fg=palette['quantum_master_title_color'], bg=palette['background_2'])
         title_label.pack(pady=(5, 0))
         
         # Content frame
-        content_frame = tk.Frame(main_frame, bg='#3a3a3a', relief=tk.SUNKEN, bd=2)
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
         
         # Completion message
@@ -1301,12 +1289,12 @@ You've mastered all quantum puzzle levels!
 Thank you for playing Infinity Qubit! 💫"""
         
         completion_label = tk.Label(content_frame, text=completion_text,
-                                  font=('Arial', 12), fg='#ffffff', bg='#3a3a3a',
+                                  font=('Arial', 12), fg='#ffffff', bg=palette['background_3'],
                                   justify=tk.CENTER)
         completion_label.pack(expand=True, pady=20)
         
         # Button frame
-        button_frame = tk.Frame(main_frame, bg='#2a2a2a')
+        button_frame = tk.Frame(main_frame, bg=palette['background_2'])
         button_frame.pack(fill=tk.X, pady=(0, 15))
         
         # Return to menu button
@@ -1361,13 +1349,13 @@ Thank you for playing Infinity Qubit! 💫"""
         
         # Color code difficulty
         diff_colors = {
-            'Beginner': '#4ecdc4',
-            'Intermediate': '#f39c12', 
-            'Advanced': '#e74c3c',
-            'Expert': '#9b59b6',
-            'Master': '#ff6b6b'
+            'Beginner': palette['beginner_color'],
+            'Intermediate': palette['intermediate_color'], 
+            'Advanced': palette['advanced_color'],
+            'Expert': palette['expert_color'],
+            'Master': palette['master_color']
         }
-        self.difficulty_label.config(fg=diff_colors.get(level['difficulty'], '#ffffff'))
+        self.difficulty_label.config(fg=diff_colors.get(level['difficulty'], palette['difficulty_label_color']))
 
         # Clear previous state
         self.placed_gates = []
@@ -1458,10 +1446,10 @@ Thank you for playing Infinity Qubit! 💫"""
         # Draw enhanced background grid
         for i in range(0, self.canvas_width, 50):
             self.circuit_canvas.create_line(i, 0, i, self.canvas_height,
-                                          fill='#1a1a1a', width=1)
+                                          fill=palette['background'], width=1)
 
         # Draw enhanced qubit wires with colors
-        wire_colors = ['#ff6b6b', '#4ecdc4', '#f39c12', '#a29bfe']
+        wire_colors = [palette['quantum_wire_1'], palette['quantum_wire_2'], palette['quantum_wire_3'], palette['quantum_wire_4']]
 
         for qubit in range(num_qubits):
             y_pos = (qubit + 1) * qubit_spacing + 20
@@ -1475,7 +1463,7 @@ Thank you for playing Infinity Qubit! 💫"""
             # Enhanced qubit label with background
             self.circuit_canvas.create_rectangle(wire_start - 35, y_pos - 12,
                                                wire_start - 5, y_pos + 12,
-                                               fill='#3a3a3a', outline=color, width=2)
+                                               fill=palette['background_3'], outline=color, width=2)
 
             self.circuit_canvas.create_text(wire_start - 20, y_pos,
                                           text=f"q{qubit}", fill='#ffffff',
@@ -1493,9 +1481,9 @@ Thank you for playing Infinity Qubit! 💫"""
         gate_spacing = 100
 
         gate_colors = {
-            'H': '#ff6b6b', 'X': '#4ecdc4', 'Y': '#45b7d1', 'Z': '#96ceb4',
-            'S': '#feca57', 'T': '#ff9ff3', 'CNOT': '#ffeaa7', 'CZ': '#a29bfe',
-            'Toffoli': '#fd79a8'
+            'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'], 'Z': palette['Z_color'],
+            'S': palette['S_color'], 'T': palette['T_color'], 'CNOT': palette['CNOT_color'], 'CZ': palette['CZ_color'],
+            'Toffoli': palette['Toffoli_color']
         }
 
         for i, gate_info in enumerate(self.placed_gates):
@@ -1539,7 +1527,7 @@ Thank you for playing Infinity Qubit! 💫"""
 
         # Gate symbol
         self.circuit_canvas.create_text(x, y_pos, text=gate,
-                                       fill='#000000', font=('Arial', 12, 'bold'))
+                                       fill=palette['gate_symbol_color'], font=('Arial', 12, 'bold'))
 
     def draw_two_qubit_gate_enhanced(self, x, qubit_spacing, gate, qubits, color):
         """Draw enhanced two-qubit gate"""

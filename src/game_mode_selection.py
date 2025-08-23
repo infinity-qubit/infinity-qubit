@@ -12,8 +12,14 @@ from PIL import Image, ImageTk
 import threading
 import time
 
+from q_utils import get_colors_from_file, extract_color_palette
+
 sys.path.append('..')
 from run import PROJECT_ROOT, get_resource_path
+
+# Get color palette
+color_file_path = get_resource_path('config/color_palette.json')
+palette = extract_color_palette(get_colors_from_file(color_file_path), 'game_mode_selection')
 
 class GameModeSelection:
     def __init__(self):
@@ -33,7 +39,7 @@ class GameModeSelection:
         y = (screen_height - window_height) // 2
 
         self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        self.root.configure(bg='#000000')
+        self.root.configure(bg=palette['black'])
         self.root.resizable(False, False)
 
         # Store dimensions
@@ -78,7 +84,7 @@ class GameModeSelection:
                 return
 
             # Create video label
-            self.video_label = tk.Label(self.root, bg='#000000')
+            self.video_label = tk.Label(self.root, bg=palette['black'])
             self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
 
             # Start video playbook
@@ -141,7 +147,7 @@ class GameModeSelection:
         """Create animated fallback background if video fails"""
         # Create animated quantum-themed background
         canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
-                          bg='#0a0a0a', highlightthickness=0)
+                          bg=palette['background'], highlightthickness=0)
         canvas.place(x=0, y=0)
 
         # Draw animated particles/quantum effects
@@ -197,65 +203,65 @@ class GameModeSelection:
     def create_selection_ui(self):
         """Create the game mode selection interface with glassmorphism effect"""
         # Main container with semi-transparent background
-        main_frame = tk.Frame(self.root, bg='#1a1a1a')
+        main_frame = tk.Frame(self.root, bg=palette['background'])
         main_frame.place(relx=0.5, rely=0.5, anchor='center',
                         width=self.window_width-100, height=self.window_height-100)
 
         # Create glassmorphism background
         glass_canvas = tk.Canvas(main_frame, width=self.window_width-100,
                                 height=self.window_height-100,
-                                highlightthickness=0, bg='#1a1a1a')
+                                highlightthickness=0, bg=palette['background'])
         glass_canvas.place(x=0, y=0)
 
         # Draw glassmorphism background
         glass_canvas.create_rectangle(0, 0, self.window_width-100, self.window_height-100,
-                                    fill='#1a1a1a', stipple='gray50', outline='#4ecdc4', width=2)
+                                    fill=palette['background'], stipple='gray50', outline=palette['main_box_outline'], width=2)
 
         # Content frame
-        content_frame = tk.Frame(main_frame, bg='#1a1a1a')
+        content_frame = tk.Frame(main_frame, bg=palette['background'])
         content_frame.place(relx=0.5, rely=0.5, anchor='center')
 
         # Enhanced title with glow effect
-        title_frame = tk.Frame(content_frame, bg='#1a1a1a')
+        title_frame = tk.Frame(content_frame, bg=palette['background'])
         title_frame.pack(pady=(20, 10))
 
         # Shadow title for glow effect
         shadow_title = tk.Label(title_frame, text="🔬 Infinity Qubit",
                                font=('Arial', 36, 'bold'),
-                               fg='#003322', bg='#1a1a1a')
+                               fg=palette['shadow_title_color'], bg=palette['background'])
         shadow_title.place(x=3, y=3)
 
         # Main title
         title_label = tk.Label(title_frame, text="🔬 Infinity Qubit",
                               font=('Arial', 36, 'bold'),
-                              fg='#00ff88', bg='#1a1a1a')
+                              fg=palette['title_color'], bg=palette['background'])
         title_label.pack()
 
         # Enhanced subtitle with animation
         self.subtitle_label = tk.Label(content_frame, text="Choose Your Quantum Adventure",
                                       font=('Arial', 18, 'italic'),
-                                      fg='#ffffff', bg='#1a1a1a')
+                                      fg=palette['subtitle_color_1'], bg=palette['background'])
         self.subtitle_label.pack(pady=(5, 30))
 
         # Animate subtitle
         self.animate_subtitle()
 
         # Game mode buttons container
-        buttons_frame = tk.Frame(content_frame, bg='#1a1a1a')
+        buttons_frame = tk.Frame(content_frame, bg=palette['background'])
         buttons_frame.pack(pady=20)
 
         # Create enhanced game mode buttons
         self.create_enhanced_game_mode_buttons(buttons_frame)
 
         # Footer with enhanced styling
-        footer_frame = tk.Frame(content_frame, bg='#1a1a1a')
+        footer_frame = tk.Frame(content_frame, bg=palette['background'])
         footer_frame.pack(pady=(30, 20))
 
         # Enhanced exit button
         exit_btn = tk.Button(footer_frame, text="❌ Exit Game",
                             command=self.exit_game,
                             font=('Arial', 12, 'bold'),
-                            bg='#ff6b6b', fg='#ffffff',
+                            bg=palette['exit_button_color'], fg=palette['exit_text_color'],
                             padx=25, pady=10,
                             cursor='hand2',
                             relief=tk.FLAT,
@@ -265,21 +271,21 @@ class GameModeSelection:
         # Version info with enhanced styling
         version_label = tk.Label(footer_frame, text="Version 1.0 | Built with Qiskit & OpenCV",
                                 font=('Arial', 10),
-                                fg='#888888', bg='#1a1a1a')
+                                fg=palette['version_text_color'], bg=palette['background'])
         version_label.pack(side=tk.LEFT)
 
         # Add hover effects to exit button
         def on_exit_enter(event):
-            exit_btn.configure(bg='#ff5252')
+            exit_btn.configure(bg=palette['exit_button_hover_color'])
         def on_exit_leave(event):
-            exit_btn.configure(bg='#ff6b6b')
+            exit_btn.configure(bg=palette['exit_button_color'])
 
         exit_btn.bind("<Enter>", on_exit_enter)
         exit_btn.bind("<Leave>", on_exit_leave)
 
     def animate_subtitle(self):
         """Animate subtitle with color cycling"""
-        colors = ['#ffffff', '#4ecdc4', '#f39c12', '#e74c3c', '#9b59b6']
+        colors = [palette['subtitle_color_1'], palette['subtitle_color_2'], palette['subtitle_color_3'], palette['subtitle_color_4'], palette['subtitle_color_5']]
         color_index = [0]  # Use a list to make it mutable
 
         def cycle_color():
@@ -296,29 +302,29 @@ class GameModeSelection:
             {
                 'title': '📚 Tutorial Mode',
                 'description': 'Learn quantum gates\nwith an interactive tutorial',
-                'color': '#9b59b6',
-                'hover_color': '#b370d1',
+                'color': palette['tutorial_mode_button_color'],
+                'hover_color': palette['tutorial_mode_button_hover_color'],
                 'command': self.start_tutorial_mode
             },
             {
                 'title': '🎮 Puzzle Mode',
                 'description': 'Test your skills\nin Puzzle Mode',
-                'color': '#00ff88',
-                'hover_color': '#33ff99',
+                'color': palette['puzzle_mode_button_color'],
+                'hover_color': palette['puzzle_mode_button_hover_color'],
                 'command': self.start_puzzle_mode
             },
             {
                 'title': '🛠️ Sandbox Mode',
                 'description': 'Free-form circuit builder\nwith real-time visualization',
-                'color': '#f39c12',
-                'hover_color': '#f5b041',
+                'color': palette['sandbox_mode_button_color'],
+                'hover_color': palette['sandbox_mode_button_hover_color'],
                 'command': self.start_sandbox_mode
             },
             {
                 'title': '🚀 Learn Hub',
                 'description': 'Explore more quantum\ncomputing concepts',
-                'color': '#e74c3c',
-                'hover_color': '#ec7063',
+                'color': palette['learn_hub_button_color'],
+                'hover_color': palette['learn_hub_button_hover_color'],
                 'command': self.start_learn_hub_mode
             }
         ]
@@ -329,7 +335,7 @@ class GameModeSelection:
             col = i % 2
 
             # Enhanced button frame
-            btn_frame = tk.Frame(parent, bg='#2a2a2a', relief=tk.RAISED, bd=2)
+            btn_frame = tk.Frame(parent, bg=palette['button_outline_color'], relief=tk.RAISED, bd=2)
             btn_frame.grid(row=row, column=col, padx=15, pady=15, sticky='nsew')
 
             # Button with enhanced styling
@@ -338,7 +344,7 @@ class GameModeSelection:
                                 command=lambda cmd=config['command']: self.execute_command(cmd),
                                 font=('Arial', 12, 'bold'),
                                 bg=config['color'],
-                                fg='#000000',
+                                fg=palette['black'],
                                 relief=tk.FLAT,
                                 bd=0,
                                 cursor='hand2',

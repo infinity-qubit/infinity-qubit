@@ -1,0 +1,377 @@
+[{
+    "stage_name":"splash_screen",
+    "colors": {
+        "background": "#1a1a1a",
+        "title_color": "#00ff88",
+        "highlight": "#ff5733",
+        "sub-title_color": "#ffffff",
+        "loading_text_color": "#4ecdc4",
+        "version_text_color": "#888888",
+        "throughcolor": "#2a2a2a"
+    }
+},
+{
+    "stage_name":"game_mode_selection",
+    "colors": {
+        "black": "#000000",
+        "background": "#1a1a1a",
+        "main_box_outline": "#4ecdc4",
+        "shadow_title_color": "#003322",
+        "title_color": "#00ff88",
+        "subtitle_color_1": "#ffffff",
+        "subtitle_color_2": "#4ecdc4",
+        "subtitle_color_3": "#f39c12",
+        "subtitle_color_4": "#e74c3c",
+        "subtitle_color_5": "#9b59b6",
+
+        "tutorial_mode_button_color": "#9b59b6",
+        "tutorial_mode_button_hover_color": "#b370d1",
+
+        "puzzle_mode_button_color": "#00ff88",
+        "puzzle_mode_button_hover_color": "#33ff99",
+
+        "sandbox_mode_button_color": "#f39c12",
+        "sandbox_mode_button_hover_color": "#f5b041",
+
+        "learn_hub_button_color": "#e74c3c",
+        "learn_hub_button_hover_color": "#ec7063",
+
+        "button_outline_color": "#2a2a2a",
+
+        "exit_button_color": "#ff6b6b",
+        "exit_button_hover_color": "#ff5252",
+        "exit_text_color": "#ffffff",
+
+        "version_text_color": "#888888"
+    }
+},
+{
+    "stage_name":"tutorial_mode",
+    "colors": {
+        "background": "#1a1a1a",
+        "main_frame_background": "#0a0a0a",
+        "main_container_background": "#2a2a2a",
+        "background_2": "#3a3a3a",
+        "background_3": "#000",
+
+        "H_color": "#ff6b6b",
+        "S_color": "#74b9ff",
+        "T_color": "#a29bfe",
+        "CZ_color": "#fd79a8",
+        "X_color": "#4ecdc4",
+        "Y_color": "#55a3ff",
+        "Z_color": "#45b7d1",
+        "CNOT_color": "#ffeaa7",
+
+        "top_border_color": "#00ff88",
+        "about_quantum_gates_color": "#00ff88",
+        "explanation_text_color": "#ffffff",
+        "gates_title_color": "#00ff88",
+        "main_title_color": "#00ff88",
+        "main_subtitle_color": "#4ecdc4",
+        "main_menu_button_text_color": "#4ecdc4",
+        "close_button_text_color": "#ff6b6b",
+        "close_button_hover_text_color": "#ffffff",
+        "clear_button_background": "#ff6b6b",
+        "clear_button_text_color": "#ffffff",
+
+        "description_title_text_color": "#00ff88",
+        "description_text_color": "#ffffff",
+        "circuit_title_text_color": "#00ff88",
+        "results_title_text_color": "#00ff88",
+        "results_text_color": "#00ff88",
+        "results_background": "#00ff88",
+        "results_select_background": "#4ecdc4",
+
+        "scrollbar_active_background": "#4ecdc4",
+
+        "controls_title_text_color": "#00ff88",
+
+        "run_button_background": "#00ff88",
+
+        "gate_button_active_background": "#fff",
+        "gate_name_label_color": "#ffffff",
+
+        "quantum_wire_1": "#ff6b6b",
+        "quantum_wire_2": "#4ecdc4",
+        "quantum_wire_3": "#f39c12",
+        "quantum_wire_4": "#a29bfe",
+
+        "CNOT_control_dot_fill": "#ffffff",
+        "CNOT_control_dot_outline": "#cccccc",
+        "CNOT_connection_line_fill": "#ffffff",
+        "CNOT_target_outline": "#ffffff",
+        "CNOT_X_fill": "#ffffff",
+        "CZ_fill_1": "#ffffff",
+        "CZ_fill_2": "#cccccc",
+        "normal_gate_fill": "#fff",
+
+        "circuit_canvas_text_fill": "#ffffff"
+    }
+},
+{
+    "stage_name": "puzzle_mode",
+    "colors": {
+        "background": "#1a1a1a",
+        "main_frame_background": "#0a0a0a",
+        "background_2": "#2a2a2a",
+        "background_3": "#3a3a3a",
+        "background_4": "#0a0a0a",
+
+        "H_color": "#ff6b6b",
+        "S_color": "#74b9ff",
+        "T_color": "#a29bfe",
+        "CZ_color": "#fd79a8",
+        "X_color": "#4ecdc4",
+        "Y_color": "#55a3ff",
+        "Z_color": "#45b7d1",
+        "CNOT_color": "#ffeaa7",
+        "Toffoli_color": "#fd79a8",
+
+        "top_border_color": "#00ff88",
+        "title_color": "#ff6b6b",
+        "subtitle_color": "#4ecdc4",
+        "puzzle_title_color": "#00ff88",
+        "puzzle_subtitle_color": "#4ecdc4",
+        "info_title_color": "#ff6b6b",
+        "level_counter_color": "#ffffff",
+        "level_name_color": "#00ff88",
+        "description_title_color": "#ffffff",
+        "difficulty_title_color": "#4ecdc4",
+        "difficulty_label_color": "#ffffff",
+        "score_counter_color": "#ffd700",
+        "max_gates_counter_color": "#fff",
+        "main_circuit_title_color": "#ff6b6b",
+
+        "available_gates_title_color": "#f39c12",
+
+        "main_menu_button_text_color": "#4ecdc4",
+        "close_button_background": "#ff6b6b",
+        "close_button_text_color": "#ff6b6b",
+        "close_button_hover_text_color": "#ffffff",
+        "clear_button_background": "#ff6b6b",
+        "clear_button_text_color": "#ffffff",
+
+        "description_text_color": "#ffffff",
+        "circuit_title_text_color": "#00ff88",
+        "results_title_text_color": "#00ff88",
+        "results_text_color": "#00ff88",
+        "results_background": "#00ff88",
+        "results_select_background": "#4ecdc4",
+
+        "scrollbar_active_background": "#4ecdc4",
+
+        "controls_title_text_color": "#ff6b6b",
+
+        "run_button_background": "#00ff88",
+        "run_button_text_color": "#000000",
+        "hint_button_background": "#4ecdc4",
+        "hint_button_text_color": "#000000",
+        "skip_button_background": "#f39c12",
+        "skip_button_text_color": "#000000",
+
+        "button_hover_background": "#fff",
+        "button_hover_text_color": "#000",
+
+        "circuit_status_title_color": "#4ecdc4",
+        "gates_counter_color": "#fff",
+        "used_gates_counter_color": "#fff",
+
+        "state_analysis_title_color": "#ff6b6b",
+        "state_display_text_color": "#00ff88",
+        "state_display_insert_background": "#00ff88",
+        "state_display_select_background": "#4ecdc4",
+        "state_display_select_foreground": "#000000",
+        "state_scrollbar_active_background": "#4ecdc4",
+
+        "show_multi_qubit_gates_button_background": "#4ecdc4",
+        "show_multi_qubit_gates_button_text_color": "#000000",
+        "show_multi_qubit_gates_button_active_background": "#fff",
+        "show_multi_qubit_gates_buttton_active_text_color": "#000000",
+
+        "gate_button_active_background": "#fff",
+        "gate_name_label_color": "#ffffff",
+
+        "single_qubit_gates_title_color": "#fff",
+        "gate_symbol_color": "#000",
+        "gate_description_color": "#ccc",
+        "gate_hover_background": "#fff",
+
+        "multi_qubit_gates_title_color": "#fff",
+
+        "prompt_text_color": "#fff",
+        "qubit_selection_button_background": "#4ecdc4",
+        "qubit_selection_button_text_color": "#ffffff",
+        "cancel_selection_button_background": "#ff6b6b",
+        "cancel_selection_button_text_color": "#ffffff",
+
+        "level_complete_title_color": "#00ff88",
+        "level_complete_info_label_text_color": "#ffffff",
+        "next_level_button_background": "#00ff88",
+        "next_level_button_hover_background": "#ffffff",
+        "next_level_button_text_color": "#000000",
+
+        "quantum_master_title_color": "#ffd700",
+        "beginner_color": "#4ecdc4",
+        "intermediate_color": "#f39c12",
+        "advanced_color": "#e74c3c",
+        "expert_color": "#9b59b6",
+        "master_color": "#ff6b6b",
+
+        "quantum_wire_1": "#ff6b6b",
+        "quantum_wire_2": "#4ecdc4",
+        "quantum_wire_3": "#f39c12",
+        "quantum_wire_4": "#a29bfe"
+    }
+},
+{
+    "stage_name": "sandbox_mode",
+    "colors": {
+
+        "background": "#1a1a1a",
+        "background_2": "#0a0a0a",
+        "background_3": "#2a2a2a",
+        "background_4": "#3a3a3a",
+        "background_black": "#000",
+
+        "H_color": "#ff6b6b",
+        "S_color": "#74b9ff",
+        "T_color": "#a29bfe",
+        "CZ_color": "#a29bfe",
+        "X_color": "#4ecdc4",
+        "Y_color": "#55a3ff",
+        "Z_color": "#45b7d1",
+        "CNOT_color": "#ffeaa7",
+        "Toffoli_color": "#fd79a8",
+
+        "top_border_color": "#00ff88",
+        "title_color": "#00ff88",
+        "subtitle_color": "#4ecdc4",
+        "info_title_color": "#ff6b6b",
+
+        "main_menu_button_text_color": "#4ecdc4",
+        "close_button_background": "#ff6b6b",
+        "close_button_text_color": "#fff",
+        "close_button_hover_text_color": "#ffffff",
+        "clear_button_background": "#ff6b6b",
+        "clear_button_text_color": "#ffffff",
+
+        "qubit_number_title_color": "#fff",
+        "qubit_spinbox_color": "#00ff88",
+        "initial_state_title_color": "#fff",
+        "combobox_color": "#00ff88",
+        "circuit_designer_title_color": "#00ff88",
+        "gate_palette_title_color": "#f39c12",
+
+        "undo_button_background": "#f39c12",
+        "visualizer_button_background": "#9b59b6",
+        "visualizer_button_text_color": "#ffffff",
+
+
+        "circuit_title_text_color": "#00ff88",
+        "results_title_text_color": "#00ff88",
+        "results_text_color": "#00ff88",
+        "results_background": "#00ff88",
+        "results_select_background": "#4ecdc4",
+
+        "scrollbar_active_background": "#4ecdc4",
+
+        "controls_title_text_color": "#ff6b6b",
+
+        "run_button_background": "#00ff88",
+        "run_button_text_color": "#000000",
+
+        "button_hover_background": "#fff",
+        "button_hover_text_color": "#000",
+
+        "circuit_status_title_color": "#4ecdc4",
+        "gates_counter_color": "#fff",
+        "used_gates_counter_color": "#fff",
+        "3D_visualizer_title_color": "#00ff88",
+        "info_panel_text_color": "#4ecdc4",
+        "sphere_visualization_color": "#00ff88",
+
+        "save_image_background": "#4ecdc4",
+        "refresh_button_background": "#f39c12",
+
+        "target_qubit_title_color": "#fff",
+        "gate_description_color": "#ccc",
+        "multi_qubit_gates_title_color": "#fff",
+        "CNOT_gate_title_color": "#ffeaa7",
+        "CZ_gate_title_color": "#a29bfe",
+        "toffoli_gate_title_color": "#fd79a8",
+        "toffoli_add_button_background": "#fd79a8",
+
+        "quantum_wire_1": "#ff6b6b",
+        "quantum_wire_2": "#4ecdc4",
+        "quantum_wire_3": "#f39c12",
+        "quantum_wire_4": "#a29bfe",
+
+        "single_qubit_gates_title_color": "#fff",
+
+        "state_analysis_title_color": "#ff6b6b",
+        "state_display_text_color": "#00ff88",
+        "state_display_insert_background": "#00ff88",
+        "state_display_select_background": "#4ecdc4",
+        "state_display_select_foreground": "#000000",
+        "state_scrollbar_active_background": "#4ecdc4"
+    }
+},
+{
+    "stage_name": "learn_hub",
+    "colors": {
+        "background": "#1a1a1a",
+        "background_2": "#0a0a0a",
+        "background_3": "#2a2a2a",
+        "background_4": "#3a3a3a",
+        "background_black": "#000",
+
+        "top_border_color": "#00ff88",
+        "title_color": "#00ff88",
+        "subtitle_color": "#4ecdc4",
+        "info_title_color": "#ff6b6b",
+
+        "main_menu_button_background": "#4ecdc4",
+        "main_menu_button_hover_background": "#00ff88",
+        "quantum_wire_1": "#ff6b6b",
+        "quantum_wire_2": "#4ecdc4",
+        "quantum_wire_3": "#f39c12",
+
+        "H_color": "#ff6b6b",
+        "X_color": "#4ecdc4",
+        "Z_color": "#45b7d1",
+        "CNOT_color": "#ffeaa7",
+
+        "learning_journey_title_color": "#00ff88",
+        "tnotebook_selected_background": "#00ff88",
+        "tnotebook_active_background": "#4ecdc4",
+        "tnotebook_active_foreground": "#fff",
+
+        "concepts_text_color": "#ffffff",
+        "concepts_text_insert_background": "#00ff88",
+        "concepts_text_select_background": "#4ecdc4",
+        "difficulty_label_color": "#f39c12",
+        "description_label_color": "#fff",
+        "formula_label_color": "#ccc",
+
+        "algorithms_text_color": "#fff",
+        "algorithms_text_insert_background": "#00ff88",
+        "algorithms_text_select_background": "#4ecdc4",
+
+        "glow_frame_color": "#4ecdc4",
+        "enhanced_title_color": "#4ecdc4",
+        "rating_label_color": "#f39c12",
+        "enhanced_description_color": "#ccc",
+        "try_it_button_background": "#00ff88",
+
+        "gradient_separator_1": "#4ecdc4",
+        "gradient_separator_2": "#00ff88",
+        "gradient_separator_3": "#4ecdc4",
+        "close_button_background": "#ff6b6b",
+        "close_button_text_color": "#fff",
+        "close_button_hover_background": "#e74c3c",
+        "separator_line_color": "#4ecdc4",
+        "learn_button_background": "#4ecdc4",
+        "placeholder_text_color": "#888"
+    }
+}]
