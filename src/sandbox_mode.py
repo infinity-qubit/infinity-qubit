@@ -23,6 +23,23 @@ class SandboxMode:
         self.root = root
         self.root.title("Quantum Sandbox Mode")
 
+        # Get screen dimensions for fullscreen
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        # Make window fullscreen without title bar
+        self.root.overrideredirect(True)
+        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
+        self.root.configure(bg=palette['background'])
+
+        # Store dimensions
+        self.window_width = screen_width
+        self.window_height = screen_height
+        
+        # Bind Escape key to exit fullscreen
+        self.root.bind('<Escape>', self.exit_fullscreen)
+        self.root.bind('<F11>', self.toggle_fullscreen)
+
         # Initialize sound system (optional - can reuse from main)
         try:
             if not pygame.mixer.get_init():
@@ -53,23 +70,9 @@ class SandboxMode:
             self.sound_enabled = False
             self.sounds = {}
 
-        # Get screen dimensions for adaptive sizing
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
-
-        window_width = int(screen_width * 0.8)
-        window_height = int(screen_height * 0.8)
-
-        # Center the window
-        x = (screen_width - window_width) // 2
-        y = (screen_height - window_height) // 2
-
-        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        self.root.configure(bg=palette['background'])
-
-        # Store dimensions
-        self.window_width = window_width
-        self.window_height = window_height
+        # Get screen dimensions for relative sizing
+        self.screen_width = screen_width
+        self.screen_height = screen_height
 
         # Sandbox state
         self.num_qubits = 1
@@ -80,6 +83,25 @@ class SandboxMode:
         # Setup UI
         self.setup_ui()
         self.update_circuit_display()
+
+    def exit_fullscreen(self, event=None):
+        """Exit fullscreen mode"""
+        self.root.overrideredirect(False)
+        self.root.state('normal')
+        self.root.geometry("1200x800")
+    
+    def toggle_fullscreen(self, event=None):
+        """Toggle fullscreen mode"""
+        is_fullscreen = self.root.overrideredirect()
+        if is_fullscreen:
+            self.root.overrideredirect(False)
+            self.root.state('normal')
+            self.root.geometry("1200x800")
+        else:
+            screen_width = self.root.winfo_screenwidth()
+            screen_height = self.root.winfo_screenheight()
+            self.root.overrideredirect(True)
+            self.root.geometry(f"{screen_width}x{screen_height}+0+0")
 
     def play_sound(self, sound_name, fallback_func=None):
         """Play a sound file or fallback to programmatic sound"""
@@ -203,8 +225,8 @@ class SandboxMode:
         main_frame = tk.Frame(self.root, bg=palette['background_2'])
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Add subtle top border
-        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=3)
+        # Add subtle top border with relative height
+        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=int(self.screen_height * 0.003))
         top_border.pack(fill=tk.X)
 
         # Content frame
@@ -214,9 +236,11 @@ class SandboxMode:
         # Create simplified header (no animation)
         self.create_simple_header(content_frame)
 
-        # Main content container
+        # Main content container with relative padding
         main_container = tk.Frame(content_frame, bg=palette['background_3'])
-        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=(0, 25))
+        main_container.pack(fill=tk.BOTH, expand=True, 
+                        padx=int(self.screen_width * 0.02), 
+                        pady=(0, int(self.screen_height * 0.02)))
 
         # Control panel
         self.setup_control_panel(main_container)
@@ -224,36 +248,40 @@ class SandboxMode:
         # Circuit display area
         self.setup_circuit_area(main_container)
 
-        # Note: setup_action_buttons and setup_results_area are now called from setup_bottom_section
-
     def create_simple_header(self, parent):
         """Create a simple header without animation to save space"""
         header_frame = tk.Frame(parent, bg=palette['background_3'])
-        header_frame.pack(fill=tk.X, padx=25, pady=(15, 10))
+        header_frame.pack(fill=tk.X, 
+                        padx=int(self.screen_width * 0.02), 
+                        pady=(int(self.screen_height * 0.015), int(self.screen_height * 0.01)))
 
         # Add a top navigation bar with title and menu button
         nav_frame = tk.Frame(header_frame, bg=palette['background_3'])
         nav_frame.pack(fill=tk.X)
 
-        # Title on the left
+        # Title on the left with relative font size
+        title_font_size = max(16, int(self.screen_width * 0.015))
         title_label = tk.Label(nav_frame, text="🛠️ Quantum Circuit Sandbox",
-                            font=('Arial', 20, 'bold'),
+                            font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_3'])
         title_label.pack(side=tk.LEFT)
 
-        # Subtitle below title
+        # Subtitle below title with relative font size
+        subtitle_font_size = max(10, int(self.screen_width * 0.008))
         subtitle_label = tk.Label(nav_frame,
                                 text="Build and simulate quantum circuits in real-time",
-                                font=('Arial', 11, 'italic'),
+                                font=('Arial', subtitle_font_size, 'italic'),
                                 fg=palette['subtitle_color'], bg=palette['background_3'])
-        subtitle_label.pack(side=tk.LEFT, padx=(10, 0))
+        subtitle_label.pack(side=tk.LEFT, padx=(int(self.screen_width * 0.008), 0))
 
-        # Back to Main Menu button - top right
+        # Back to Main Menu button - top right with relative sizing
+        button_font_size = max(9, int(self.screen_width * 0.007))
         main_menu_btn = tk.Button(nav_frame, text="🏠 Main Menu",
                                 command=self.return_to_main_menu,
-                                font=('Arial', 10, 'bold'),
+                                font=('Arial', button_font_size, 'bold'),
                                 bg=palette['background_4'], fg=palette['main_menu_button_text_color'],
-                                padx=15, pady=8,
+                                padx=int(self.screen_width * 0.01), 
+                                pady=int(self.screen_height * 0.008),
                                 cursor='hand2',
                                 relief=tk.FLAT,
                                 borderwidth=1)
@@ -292,36 +320,54 @@ class SandboxMode:
     def setup_control_panel(self, parent):
         """Setup the control panel with enhanced styling"""
         control_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        control_frame.pack(fill=tk.X, pady=(0, 20))
+        control_frame.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.02)))
 
-        # Enhanced title
+        # Enhanced title with relative font size
+        title_font_size = max(14, int(self.screen_width * 0.012))
         control_title = tk.Label(control_frame, text="🎛️ Circuit Configuration",
-                                font=('Arial', 16, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['background_3'])
-        control_title.pack(pady=(15, 10))
+                                font=('Arial', title_font_size, 'bold'), 
+                                fg=palette['circuit_title_text_color'], bg=palette['background_3'])
+        control_title.pack(pady=(int(self.screen_height * 0.012), int(self.screen_height * 0.008)))
 
-        # Main controls container
+        # Main controls container with relative padding
         controls_container = tk.Frame(control_frame, bg=palette['background_3'])
-        controls_container.pack(padx=20, pady=(0, 15))
+        controls_container.pack(padx=int(self.screen_width * 0.015), 
+                            pady=(0, int(self.screen_height * 0.012)))
 
-        # Qubit controls - left side
+        # Qubit controls - left side with relative sizing
         qubit_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-        qubit_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15), pady=5, ipadx=15, ipady=10)
+        qubit_frame.pack(side=tk.LEFT, fill=tk.Y, 
+                        padx=(0, int(self.screen_width * 0.012)), 
+                        pady=int(self.screen_height * 0.004), 
+                        ipadx=int(self.screen_width * 0.012), 
+                        ipady=int(self.screen_height * 0.008))
 
+        label_font_size = max(11, int(self.screen_width * 0.009))
         tk.Label(qubit_frame, text="⚛️ Number of Qubits",
-                font=('Arial', 12, 'bold'), fg=palette['qubit_number_title_color'], bg=palette['background_4']).pack(pady=(0, 5))
+                font=('Arial', label_font_size, 'bold'), 
+                fg=palette['qubit_number_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
 
         self.qubit_var = tk.IntVar(value=1)
+        spinbox_font_size = max(11, int(self.screen_width * 0.009))
         qubit_spinbox = tk.Spinbox(qubit_frame, from_=1, to=4, textvariable=self.qubit_var,
-                                command=self.on_qubit_change, font=('Arial', 12), width=8,
-                                bg=palette['background'], fg=palette['qubit_spinbox_color'], insertbackground=palette['qubit_spinbox_color'])
-        qubit_spinbox.pack(pady=5)
+                                command=self.on_qubit_change, 
+                                font=('Arial', spinbox_font_size), 
+                                width=int(self.screen_width * 0.006),
+                                bg=palette['background'], fg=palette['qubit_spinbox_color'], 
+                                insertbackground=palette['qubit_spinbox_color'])
+        qubit_spinbox.pack(pady=int(self.screen_height * 0.004))
 
-        # Initial state selection - right side
+        # Initial state selection - right side with relative sizing
         state_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-        state_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5, ipadx=15, ipady=10)
+        state_frame.pack(side=tk.LEFT, fill=tk.Y, 
+                        padx=int(self.screen_width * 0.004), 
+                        pady=int(self.screen_height * 0.004), 
+                        ipadx=int(self.screen_width * 0.012), 
+                        ipady=int(self.screen_height * 0.008))
 
         tk.Label(state_frame, text="🎯 Initial State",
-                font=('Arial', 12, 'bold'), fg=palette['initial_state_title_color'], bg=palette['background_4']).pack(pady=(0, 5))
+                font=('Arial', label_font_size, 'bold'), 
+                fg=palette['initial_state_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
 
         self.state_var = tk.StringVar(value="|0⟩")
         state_options = ["|0⟩", "|1⟩", "|+⟩", "|-⟩"]
@@ -329,38 +375,45 @@ class SandboxMode:
         # Custom styled combobox
         style = ttk.Style()
         style.configure('Custom.TCombobox',
-                       fieldbackground=palette['background'],
-                       background=palette['background_4'],
-                       foreground=palette['combobox_color'],
-                       arrowcolor=palette['combobox_color'])
+                    fieldbackground=palette['background'],
+                    background=palette['background_4'],
+                    foreground=palette['combobox_color'],
+                    arrowcolor=palette['combobox_color'])
 
+        combo_font_size = max(10, int(self.screen_width * 0.008))
         self.state_combo = ttk.Combobox(state_frame, textvariable=self.state_var,
                                     values=state_options, state="readonly",
-                                    font=('Arial', 11), width=8,
+                                    font=('Arial', combo_font_size), 
+                                    width=int(self.screen_width * 0.006),
                                     style='Custom.TCombobox')
-        self.state_combo.pack(pady=5)
+        self.state_combo.pack(pady=int(self.screen_height * 0.004))
         self.state_combo.bind('<<ComboboxSelected>>', self.on_state_change)
 
     def setup_circuit_area(self, parent):
         """Setup the circuit visualization area with enhanced styling"""
         circuit_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        circuit_frame.pack(fill=tk.X, pady=(0, 15))
+        circuit_frame.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.015)))
 
-        # Enhanced title with icon
+        # Enhanced title with icon and relative font size
+        title_font_size = max(12, int(self.screen_width * 0.01))
         circuit_title = tk.Label(circuit_frame, text="🔧 Quantum Circuit Designer",
-                                font=('Arial', 14, 'bold'), fg=palette['circuit_designer_title_color'], bg=palette['background_3'])
-        circuit_title.pack(pady=(10, 8))
+                                font=('Arial', title_font_size, 'bold'), 
+                                fg=palette['circuit_designer_title_color'], bg=palette['background_3'])
+        circuit_title.pack(pady=(int(self.screen_height * 0.01), int(self.screen_height * 0.008)))
 
-        # Circuit canvas with enhanced styling
+        # Circuit canvas with enhanced styling and relative sizing
         canvas_container = tk.Frame(circuit_frame, bg=palette['background'], relief=tk.SUNKEN, bd=3)
-        canvas_container.pack(padx=20, pady=(0, 10))
+        canvas_container.pack(padx=int(self.screen_width * 0.02), 
+                            pady=(0, int(self.screen_height * 0.01)))
 
-        canvas_width = int(self.window_width * 0.85)
-        canvas_height = int(self.window_height * 0.25)
+        # Use relative canvas dimensions
+        canvas_width = int(self.screen_width * 0.85)
+        canvas_height = int(self.screen_height * 0.25)
 
         self.circuit_canvas = tk.Canvas(canvas_container, width=canvas_width, height=canvas_height,
-                                       bg=palette['background_2'], highlightthickness=0)
-        self.circuit_canvas.pack(padx=5, pady=5)
+                                    bg=palette['background_2'], highlightthickness=0)
+        self.circuit_canvas.pack(padx=int(self.screen_width * 0.005), 
+                                pady=int(self.screen_height * 0.005))
 
         self.canvas_width = canvas_width
         self.canvas_height = canvas_height
@@ -489,7 +542,7 @@ class SandboxMode:
         try:
             # Check if there are any gates to visualize
             if not self.placed_gates:
-                messagebox.showinfo("3D Visualizer", "Add some gates to your circuit first to see the 3D visualization!")
+                self.show_custom_dialog("3D Visualizer", "Add some gates to your circuit first to see the 3D visualization!", "info")
                 self.play_sound('error', self.play_error_sound_fallback)
                 return
 
@@ -531,15 +584,152 @@ class SandboxMode:
             self.show_3d_visualization(final_state)
 
         except ImportError as ie:
-            messagebox.showerror("Import Error",
+            self.show_custom_dialog("Import Error", 
                 f"Missing required packages for 3D visualization.\n\n"
                 f"Please install: pip install matplotlib\n"
-                f"Error: {str(ie)}")
+                f"Error: {str(ie)}", "error")
             self.play_sound('error', self.play_error_sound_fallback)
         except Exception as e:
-            messagebox.showerror("3D Visualizer Error",
-                f"Error creating 3D visualization:\n{str(e)}")
+            self.show_custom_dialog("3D Visualizer Error",
+                f"Error creating 3D visualization:\n{str(e)}", "error")
             self.play_sound('error', self.play_error_sound_fallback)
+
+    def show_custom_dialog(self, title, message, dialog_type="info"):
+        """Show a custom dialog with the same background as the main window"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(title)
+        dialog.configure(bg=palette['background'])
+        
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+        
+        # Calculate relative sizing
+        dialog_width = int(self.screen_width * 0.25)
+        dialog_height = int(self.screen_height * 0.2)
+        x = (self.screen_width - dialog_width) // 2
+        y = (self.screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        
+        # Make dialog modal
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.focus_force()  # Force focus to dialog
+        
+        # Add a border since overrideredirect removes window decorations
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Main frame inside border
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'], relief=tk.FLAT, bd=0)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        
+        # Add title bar since we removed window decorations
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'], height=int(self.screen_height * 0.03))
+        title_bar.pack(fill=tk.X)
+        title_bar.pack_propagate(False)
+        
+        # Title in title bar
+        title_font_size = max(10, int(self.screen_width * 0.008))
+        title_bar_label = tk.Label(title_bar, text=f"● {title}",
+                                font=('Arial', title_font_size, 'bold'),
+                                fg=palette['title_color'], bg=palette['background_4'])
+        title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008), pady=int(self.screen_height * 0.005))
+        
+        # Close button in title bar
+        close_btn_font_size = max(8, int(self.screen_width * 0.006))
+        close_title_btn = tk.Button(title_bar, text="✕",
+                                command=dialog.destroy,
+                                font=('Arial', close_btn_font_size, 'bold'),
+                                bg=palette['background_4'], fg=palette['title_color'],
+                                padx=int(self.screen_width * 0.005), 
+                                pady=0,
+                                cursor='hand2', relief=tk.FLAT, bd=0)
+        close_title_btn.pack(side=tk.RIGHT, padx=int(self.screen_width * 0.005))
+        
+        # Content area
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.01))
+        
+        # Icon and message
+        icon_map = {"info": "ℹ️", "warning": "⚠️", "error": "❌", "success": "✅"}
+        icon = icon_map.get(dialog_type, "ℹ️")
+        
+        # Icon and title together
+        header_font_size = max(12, int(self.screen_width * 0.01))
+        header_label = tk.Label(content_frame, text=f"{icon} {title}",
+                            font=('Arial', header_font_size, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_3'])
+        header_label.pack(pady=(int(self.screen_height * 0.01), int(self.screen_height * 0.008)))
+        
+        # Message
+        message_font_size = max(10, int(self.screen_width * 0.008))
+        message_label = tk.Label(content_frame, text=message,
+                                font=('Arial', message_font_size),
+                                fg=palette['subtitle_color'], bg=palette['background_3'],
+                                wraplength=int(dialog_width * 0.8), justify=tk.CENTER)
+        message_label.pack(pady=int(self.screen_height * 0.01))
+        
+        # Button frame
+        button_frame = tk.Frame(content_frame, bg=palette['background_3'])
+        button_frame.pack(pady=(int(self.screen_height * 0.015), int(self.screen_height * 0.01)))
+        
+        # OK button with relative sizing
+        button_font_size = max(9, int(self.screen_width * 0.007))
+        ok_button = tk.Button(button_frame, text="OK",
+                            command=dialog.destroy,
+                            font=('Arial', button_font_size, 'bold'),
+                            bg=palette['background_4'], fg=palette['main_menu_button_text_color'],
+                            padx=int(self.screen_width * 0.015), 
+                            pady=int(self.screen_height * 0.008),
+                            cursor='hand2', relief=tk.RAISED, bd=2)
+        ok_button.pack()
+        
+        # Hover effects
+        def on_enter(event):
+            ok_button.configure(bg=palette['main_menu_button_text_color'], fg=palette['background_black'])
+        def on_leave(event):
+            ok_button.configure(bg=palette['background_4'], fg=palette['main_menu_button_text_color'])
+        
+        ok_button.bind("<Enter>", on_enter)
+        ok_button.bind("<Leave>", on_leave)
+        
+        # Hover effects for title bar close button
+        def on_close_enter(event):
+            close_title_btn.configure(bg=palette['background_black'], fg='#ff4444')
+        def on_close_leave(event):
+            close_title_btn.configure(bg=palette['background_4'], fg=palette['title_color'])
+        
+        close_title_btn.bind("<Enter>", on_close_enter)
+        close_title_btn.bind("<Leave>", on_close_leave)
+        
+        # Make title bar draggable (optional)
+        def start_move(event):
+            dialog.x = event.x
+            dialog.y = event.y
+        
+        def on_move(event):
+            deltax = event.x - dialog.x
+            deltay = event.y - dialog.y
+            x = dialog.winfo_x() + deltax
+            y = dialog.winfo_y() + deltay
+            dialog.geometry(f"+{x}+{y}")
+        
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_bar_label.bind("<Button-1>", start_move)
+        title_bar_label.bind("<B1-Motion>", on_move)
+        
+        # Focus handling
+        dialog.focus_set()
+        ok_button.focus_set()
+        
+        # Bind Enter and Escape keys
+        dialog.bind('<Return>', lambda e: dialog.destroy())
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
+        
+        # Wait for dialog to close
+        dialog.wait_window()
 
     def show_3d_visualization(self, state_vector):
         """Show the 3D quantum state visualization in a new window"""
@@ -549,36 +739,69 @@ class SandboxMode:
             viz_window.title("🌐 3D Quantum State Visualizer")
             viz_window.configure(bg=palette['background'])
 
-            # Set window size and center it
-            window_width = 900
-            window_height = 700
-            screen_width = viz_window.winfo_screenwidth()
-            screen_height = viz_window.winfo_screenheight()
-            x = (screen_width - window_width) // 2
-            y = (screen_height - window_height) // 2
+            # Make visualization window fullscreen-compatible and always on top
+            viz_window.overrideredirect(True)
+            viz_window.attributes('-topmost', True)
+
+            # Set window size and center it with relative sizing
+            window_width = int(self.screen_width * 0.7)
+            window_height = int(self.screen_height * 0.8)
+            x = (self.screen_width - window_width) // 2
+            y = (self.screen_height - window_height) // 2
             viz_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-            # Create header
-            header_frame = tk.Frame(viz_window, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-            header_frame.pack(fill=tk.X, padx=10, pady=(10, 5))
+            # Make window modal and force focus
+            viz_window.transient(self.root)
+            viz_window.grab_set()
+            viz_window.focus_force()
 
-            header_title = tk.Label(header_frame, text="🌐 3D Quantum State Visualization",
-                                   font=('Arial', 16, 'bold'), fg=palette['3D_visualizer_title_color'], bg=palette['background_3'])
-            header_title.pack(pady=10)
+            # Add border since overrideredirect removes window decorations
+            border_frame = tk.Frame(viz_window, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+            border_frame.pack(fill=tk.BOTH, expand=True)
 
-            # Create info panel
-            info_frame = tk.Frame(viz_window, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-            info_frame.pack(fill=tk.X, padx=10, pady=5)
+            # Main container inside border
+            main_container = tk.Frame(border_frame, bg=palette['background'], relief=tk.FLAT, bd=0)
+            main_container.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
 
+            # Custom title bar since we removed window decorations
+            title_bar = tk.Frame(main_container, bg=palette['background_4'], height=int(self.screen_height * 0.04))
+            title_bar.pack(fill=tk.X)
+            title_bar.pack_propagate(False)
+
+            # Title in title bar with relative font size
+            title_font_size = max(12, int(self.screen_width * 0.01))
+            title_bar_label = tk.Label(title_bar, text="🌐 3D Quantum State Visualizer",
+                                    font=('Arial', title_font_size, 'bold'),
+                                    fg=palette['3D_visualizer_title_color'], bg=palette['background_4'])
+            title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.008))
+
+            # Close button in title bar
+            close_btn_font_size = max(10, int(self.screen_width * 0.008))
+            close_title_btn = tk.Button(title_bar, text="✕ Close",
+                                    command=viz_window.destroy,
+                                    font=('Arial', close_btn_font_size, 'bold'),
+                                    bg=palette['background_4'], fg=palette['title_color'],
+                                    padx=int(self.screen_width * 0.008), 
+                                    pady=int(self.screen_height * 0.004),
+                                    cursor='hand2', relief=tk.FLAT, bd=0)
+            close_title_btn.pack(side=tk.RIGHT, padx=int(self.screen_width * 0.01))
+
+            # Info panel with relative sizing
+            info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
+            info_frame.pack(fill=tk.X, padx=int(window_width * 0.02), pady=int(window_height * 0.01))
+
+            info_font_size = max(10, int(self.screen_width * 0.008))
             info_text = tk.Label(info_frame,
                 text=f"Circuit: {self.num_qubits} qubits, {len(self.placed_gates)} gates | "
-                     f"Gates: {[gate for gate, _ in self.placed_gates]}",
-                font=('Arial', 10), fg=palette['info_panel_text_color'], bg=palette['background_3'])
-            info_text.pack(pady=8)
+                    f"Gates: {[gate for gate, _ in self.placed_gates]}",
+                font=('Arial', info_font_size), fg=palette['info_panel_text_color'], bg=palette['background_3'])
+            info_text.pack(pady=int(window_height * 0.01))
 
-            # Create visualization container
-            viz_container = tk.Frame(viz_window, bg=palette['background'], relief=tk.SUNKEN, bd=3)
-            viz_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+            # Visualization container with relative sizing
+            viz_container = tk.Frame(main_container, bg=palette['background'], relief=tk.SUNKEN, bd=3)
+            viz_container.pack(fill=tk.BOTH, expand=True, 
+                            padx=int(window_width * 0.02), 
+                            pady=int(window_height * 0.01))
 
             # Create matplotlib figure with dark theme
             plt.style.use('dark_background')
@@ -589,19 +812,22 @@ class SandboxMode:
                 try:
                     fig = plot_bloch_multivector(state_vector)
                     fig.suptitle('Single Qubit Bloch Sphere Visualization',
-                               fontsize=16, color=palette['sphere_visualization_color'], fontweight='bold')
+                            fontsize=max(14, int(self.screen_width * 0.012)), 
+                            color=palette['sphere_visualization_color'], fontweight='bold')
                 except Exception as bloch_error:
                     print(f"Bloch sphere error: {bloch_error}")
                     # Fallback to qsphere if bloch sphere fails
                     fig = plot_state_qsphere(state_vector)
                     fig.suptitle('Single Qubit Q-Sphere Visualization',
-                               fontsize=16, color=palette['sphere_visualization_color'], fontweight='bold')
+                            fontsize=max(14, int(self.screen_width * 0.012)), 
+                            color=palette['sphere_visualization_color'], fontweight='bold')
 
             else:
                 # For multiple qubits, show Q-sphere
                 fig = plot_state_qsphere(state_vector)
                 fig.suptitle(f'{self.num_qubits}-Qubit Q-Sphere Visualization',
-                           fontsize=16, color=palette['sphere_visualization_color'], fontweight='bold')
+                        fontsize=max(14, int(self.screen_width * 0.012)), 
+                        color=palette['sphere_visualization_color'], fontweight='bold')
 
             # Customize the plot appearance
             fig.patch.set_facecolor(palette['background'])
@@ -619,36 +845,53 @@ class SandboxMode:
             # Embed the matplotlib figure in tkinter
             canvas = FigureCanvasTkAgg(fig, viz_container)
             canvas.draw()
-            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, 
+                                    padx=int(window_width * 0.01), 
+                                    pady=int(window_height * 0.01))
 
-            # Add control buttons at the bottom
-            controls_frame = tk.Frame(viz_window, bg=palette['background_3'])
-            controls_frame.pack(fill=tk.X, padx=10, pady=5)
+            # Control buttons at the bottom with relative sizing
+            controls_frame = tk.Frame(main_container, bg=palette['background_3'])
+            controls_frame.pack(fill=tk.X, 
+                            padx=int(window_width * 0.02), 
+                            pady=int(window_height * 0.01))
+
+            # Button styling with relative font sizes
+            button_font_size = max(10, int(self.screen_width * 0.008))
+            button_padx = int(self.screen_width * 0.012)
+            button_pady = int(self.screen_height * 0.008)
 
             # Save button
             save_btn = tk.Button(controls_frame, text="💾 Save Image",
-                               command=lambda: self.save_3d_visualization(fig),
-                               font=('Arial', 10, 'bold'), bg=palette['save_image_background'], fg=palette['background_black'],
-                               padx=15, pady=8, cursor='hand2', relief=tk.RAISED, bd=2)
-            save_btn.pack(side=tk.LEFT, padx=5)
+                            command=lambda: self.save_3d_visualization(fig),
+                            font=('Arial', button_font_size, 'bold'), 
+                            bg=palette['save_image_background'], fg=palette['background_black'],
+                            padx=button_padx, pady=button_pady, 
+                            cursor='hand2', relief=tk.RAISED, bd=2)
+            save_btn.pack(side=tk.LEFT, padx=int(window_width * 0.008))
 
             # Refresh button
             refresh_btn = tk.Button(controls_frame, text="🔄 Refresh",
-                                  command=lambda: self.refresh_3d_visualization(viz_window, state_vector),
-                                  font=('Arial', 10, 'bold'), bg=palette['refresh_button_background'], fg=palette['background_black'],
-                                  padx=15, pady=8, cursor='hand2', relief=tk.RAISED, bd=2)
-            refresh_btn.pack(side=tk.LEFT, padx=5)
+                                command=lambda: self.refresh_3d_visualization(viz_window, state_vector),
+                                font=('Arial', button_font_size, 'bold'), 
+                                bg=palette['refresh_button_background'], fg=palette['background_black'],
+                                padx=button_padx, pady=button_pady, 
+                                cursor='hand2', relief=tk.RAISED, bd=2)
+            refresh_btn.pack(side=tk.LEFT, padx=int(window_width * 0.008))
 
             # Close button
             close_btn = tk.Button(controls_frame, text="❌ Close",
                                 command=viz_window.destroy,
-                                font=('Arial', 10, 'bold'), bg=palette['close_button_background'], fg=palette['close_button_text_color'],
-                                padx=15, pady=8, cursor='hand2', relief=tk.RAISED, bd=2)
-            close_btn.pack(side=tk.RIGHT, padx=5)
+                                font=('Arial', button_font_size, 'bold'), 
+                                bg=palette['close_button_background'], fg=palette['close_button_text_color'],
+                                padx=button_padx, pady=button_pady, 
+                                cursor='hand2', relief=tk.RAISED, bd=2)
+            close_btn.pack(side=tk.RIGHT, padx=int(window_width * 0.008))
 
-            # Add some state information
-            state_info_frame = tk.Frame(viz_window, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-            state_info_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+            # State information panel with relative sizing
+            state_info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
+            state_info_frame.pack(fill=tk.X, 
+                                padx=int(window_width * 0.02), 
+                                pady=(0, int(window_height * 0.015)))
 
             # Calculate and display state information
             state_data = state_vector.data
@@ -664,16 +907,46 @@ class SandboxMode:
             significant_states = sum(1 for amp in state_data if abs(amp) > 0.001)
             info_text += f"Active basis states: {significant_states}/{2**self.num_qubits}"
 
+            state_font_size = max(10, int(self.screen_width * 0.008))
             state_label = tk.Label(state_info_frame, text=info_text,
-                                 font=('Arial', 10), fg='#ffffff', bg=palette['background_3'])
-            state_label.pack(pady=8)
+                                font=('Arial', state_font_size), 
+                                fg='#ffffff', bg=palette['background_3'])
+            state_label.pack(pady=int(window_height * 0.01))
+
+            # Make title bar draggable
+            def start_move(event):
+                viz_window.x = event.x
+                viz_window.y = event.y
+
+            def on_move(event):
+                deltax = event.x - viz_window.x
+                deltay = event.y - viz_window.y
+                x = viz_window.winfo_x() + deltax
+                y = viz_window.winfo_y() + deltay
+                viz_window.geometry(f"+{x}+{y}")
+
+            title_bar.bind("<Button-1>", start_move)
+            title_bar.bind("<B1-Motion>", on_move)
+            title_bar_label.bind("<Button-1>", start_move)
+            title_bar_label.bind("<B1-Motion>", on_move)
+
+            # Hover effects for title bar close button
+            def on_close_enter(event):
+                close_title_btn.configure(bg=palette['background_black'], fg='#ff4444')
+            def on_close_leave(event):
+                close_title_btn.configure(bg=palette['background_4'], fg=palette['title_color'])
+
+            close_title_btn.bind("<Enter>", on_close_enter)
+            close_title_btn.bind("<Leave>", on_close_leave)
+
+            # Bind Escape key to close
+            viz_window.bind('<Escape>', lambda e: viz_window.destroy())
 
             # Play success sound
             self.play_sound('success', self.play_success_sound_fallback)
 
         except Exception as e:
-            messagebox.showerror("Visualization Error",
-                f"Error creating 3D visualization:\n{str(e)}")
+            self.show_custom_dialog("Visualization Error", f"Error creating 3D visualization:\n{str(e)}", "error")
             self.play_sound('error', self.play_error_sound_fallback)
             print(f"Full visualization error: {e}")
             import traceback
@@ -716,12 +989,12 @@ class SandboxMode:
 
             if filename:
                 fig.savefig(filename, dpi=300, bbox_inches='tight',
-                          facecolor=palette['background'], edgecolor='none')
-                messagebox.showinfo("Success", f"Visualization saved as {filename}")
+                        facecolor=palette['background'], edgecolor='none')
+                self.show_custom_dialog("Success", f"Visualization saved as {filename}", "success")
                 self.play_sound('success', self.play_success_sound_fallback)
 
         except Exception as e:
-            messagebox.showerror("Save Error", f"Error saving visualization:\n{str(e)}")
+            self.show_custom_dialog("Save Error", f"Error saving visualization:\n{str(e)}", "error")
             self.play_sound('error', self.play_error_sound_fallback)
 
     def refresh_3d_visualization(self, viz_window, state_vector):
@@ -731,7 +1004,7 @@ class SandboxMode:
             viz_window.destroy()
             self.open_3d_visualizer()
         except Exception as e:
-            messagebox.showerror("Refresh Error", f"Error refreshing visualization:\n{str(e)}")
+            self.show_custom_dialog("Refresh Error", f"Error refreshing visualization:\n{str(e)}", "error")
 
 
     def setup_results_area(self, parent):
@@ -1135,7 +1408,7 @@ class SandboxMode:
         target_qubit = self.target_qubit_var.get()
 
         if target_qubit >= self.num_qubits:
-            messagebox.showwarning("Warning", "Invalid target qubit selected")
+            self.show_custom_dialog("Warning", "Invalid target qubit selected", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
@@ -1146,7 +1419,7 @@ class SandboxMode:
     def add_cnot_gate(self):
         """Add a CNOT gate"""
         if self.num_qubits < 2:
-            messagebox.showwarning("Warning", "CNOT gate requires at least 2 qubits")
+            self.show_custom_dialog("Warning", "CNOT gate requires at least 2 qubits", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
@@ -1154,12 +1427,12 @@ class SandboxMode:
         target = self.cnot_target_var.get()
 
         if control == target:
-            messagebox.showwarning("Warning", "Control and target qubits must be different")
+            self.show_custom_dialog("Warning", "Control and target qubits must be different", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
         if control >= self.num_qubits or target >= self.num_qubits:
-            messagebox.showwarning("Warning", "Invalid qubit selection")
+            self.show_custom_dialog("Warning", "Invalid qubit selection", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
@@ -1170,7 +1443,7 @@ class SandboxMode:
     def add_cz_gate(self):
         """Add a CZ gate"""
         if self.num_qubits < 2:
-            messagebox.showwarning("Warning", "CZ gate requires at least 2 qubits")
+            self.show_custom_dialog("Warning", "CZ gate requires at least 2 qubits", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
@@ -1178,12 +1451,12 @@ class SandboxMode:
         target = self.cz_target_var.get()
 
         if control == target:
-            messagebox.showwarning("Warning", "Control and target qubits must be different")
+            self.show_custom_dialog("Warning", "Control and target qubits must be different", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
         if control >= self.num_qubits or target >= self.num_qubits:
-            messagebox.showwarning("Warning", "Invalid qubit selection")
+            self.show_custom_dialog("Warning", "Invalid qubit selection", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
@@ -1194,7 +1467,7 @@ class SandboxMode:
     def add_toffoli_gate(self):
         """Add a Toffoli gate"""
         if self.num_qubits < 3:
-            messagebox.showwarning("Warning", "Toffoli gate requires at least 3 qubits")
+            self.show_custom_dialog("Warning", "Toffoli gate requires at least 3 qubits", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
@@ -1203,12 +1476,12 @@ class SandboxMode:
         target = self.toffoli_target_var.get()
 
         if len(set([c1, c2, target])) != 3:
-            messagebox.showwarning("Warning", "All three qubits must be different")
+            self.show_custom_dialog("Warning", "All three qubits must be different", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
         if c1 >= self.num_qubits or c2 >= self.num_qubits or target >= self.num_qubits:
-            messagebox.showwarning("Warning", "Invalid qubit selection")
+            self.show_custom_dialog("Warning", "Invalid qubit selection", "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
 
