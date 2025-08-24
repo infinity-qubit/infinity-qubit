@@ -30,21 +30,14 @@ class GameModeSelection:
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
 
-        # Window dimensions (slightly larger for better video display)
-        window_width = 1000
-        window_height = 750
-
-        # Center the window
-        x = (screen_width - window_width) // 2
-        y = (screen_height - window_height) // 2
-
-        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        # Make window fullscreen without title bar
+        self.root.overrideredirect(True)
+        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
         self.root.configure(bg=palette['black'])
-        self.root.resizable(False, False)
-
+        
         # Store dimensions
-        self.window_width = window_width
-        self.window_height = window_height
+        self.window_width = screen_width
+        self.window_height = screen_height
 
         # Video background variables
         self.video_cap = None
@@ -67,8 +60,9 @@ class GameModeSelection:
         self.root.lift()
         self.root.focus_force()
 
-        # Handle window close event
-        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        # Handle window close event (ESC key to exit)
+        self.root.bind('<Escape>', lambda e: self.on_closing())
+        self.root.bind('<F11>', lambda e: self.on_closing())  # F11 to exit fullscreen
 
     def setup_video_background(self):
         """Setup video background"""
@@ -152,9 +146,10 @@ class GameModeSelection:
 
         # Draw animated particles/quantum effects
         self.particles = []
-        for i in range(50):
-            x = i * (self.window_width // 50)
-            y = i * (self.window_height // 50)
+        particle_count = int(self.window_width * self.window_height / 20000)  # Scale with resolution
+        for i in range(particle_count):
+            x = (i * 50) % self.window_width
+            y = (i * 30) % self.window_height
             self.particles.append([x, y, 1])
 
         self.animate_particles(canvas)
@@ -170,9 +165,10 @@ class GameModeSelection:
                     particle[0] = (particle[0] + particle[2]) % self.window_width
                     particle[1] = (particle[1] + particle[2] * 0.5) % self.window_height
 
-                    # Draw glowing dot
+                    # Draw glowing dot (scale size with resolution)
+                    dot_size = max(2, int(self.window_width / 500))
                     x, y = particle[0], particle[1]
-                    canvas.create_oval(x-2, y-2, x+2, y+2,
+                    canvas.create_oval(x-dot_size, y-dot_size, x+dot_size, y+dot_size,
                                      fill='#00ff88', outline='#4ecdc4',
                                      tags="particle", width=2)
 
@@ -201,76 +197,79 @@ class GameModeSelection:
                 pass
 
     def create_selection_ui(self):
-        """Create the game mode selection interface with glassmorphism effect"""
-        # Main container with semi-transparent background
+        """Create the game mode selection interface with glassmorphism effect using relative positioning"""
+        # Main container with semi-transparent background using relative positioning
         main_frame = tk.Frame(self.root, bg=palette['background'])
         main_frame.place(relx=0.5, rely=0.5, anchor='center',
-                        width=self.window_width-100, height=self.window_height-100)
+                        relwidth=0.9, relheight=0.85)
 
         # Create glassmorphism background
-        glass_canvas = tk.Canvas(main_frame, width=self.window_width-100,
-                                height=self.window_height-100,
-                                highlightthickness=0, bg=palette['background'])
-        glass_canvas.place(x=0, y=0)
+        glass_canvas = tk.Canvas(main_frame, highlightthickness=0, bg=palette['background'])
+        glass_canvas.place(relx=0, rely=0, relwidth=1, relheight=1)
 
         # Draw glassmorphism background
-        glass_canvas.create_rectangle(0, 0, self.window_width-100, self.window_height-100,
-                                    fill=palette['background'], stipple='gray50', outline=palette['main_box_outline'], width=2)
+        glass_canvas.bind('<Configure>', lambda e: self.update_glass_background(glass_canvas))
 
-        # Content frame
+        # Content frame with relative positioning
         content_frame = tk.Frame(main_frame, bg=palette['background'])
-        content_frame.place(relx=0.5, rely=0.5, anchor='center')
+        content_frame.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.95, relheight=0.95)
 
-        # Enhanced title with glow effect
+        # Enhanced title with glow effect - relative positioning
         title_frame = tk.Frame(content_frame, bg=palette['background'])
-        title_frame.pack(pady=(20, 10))
+        title_frame.place(relx=0.5, rely=0.1, anchor='center')
+
+        # Calculate font sizes based on screen resolution
+        title_font_size = max(24, int(self.window_width / 40))
+        subtitle_font_size = max(14, int(self.window_width / 80))
+        button_font_size = max(10, int(self.window_width / 100))
 
         # Shadow title for glow effect
         shadow_title = tk.Label(title_frame, text="🔬 Infinity Qubit",
-                               font=('Arial', 36, 'bold'),
+                               font=('Arial', title_font_size, 'bold'),
                                fg=palette['shadow_title_color'], bg=palette['background'])
         shadow_title.place(x=3, y=3)
 
         # Main title
         title_label = tk.Label(title_frame, text="🔬 Infinity Qubit",
-                              font=('Arial', 36, 'bold'),
+                              font=('Arial', title_font_size, 'bold'),
                               fg=palette['title_color'], bg=palette['background'])
         title_label.pack()
 
-        # Enhanced subtitle with animation
+        # Enhanced subtitle with animation - relative positioning
         self.subtitle_label = tk.Label(content_frame, text="Choose Your Quantum Adventure",
-                                      font=('Arial', 18, 'italic'),
+                                      font=('Arial', subtitle_font_size, 'italic'),
                                       fg=palette['subtitle_color_1'], bg=palette['background'])
-        self.subtitle_label.pack(pady=(5, 30))
+        self.subtitle_label.place(relx=0.5, rely=0.22, anchor='center')
 
         # Animate subtitle
         self.animate_subtitle()
 
-        # Game mode buttons container
+        # Game mode buttons container - relative positioning
         buttons_frame = tk.Frame(content_frame, bg=palette['background'])
-        buttons_frame.pack(pady=20)
+        buttons_frame.place(relx=0.5, rely=0.55, anchor='center', relwidth=0.8, relheight=0.5)
 
         # Create enhanced game mode buttons
-        self.create_enhanced_game_mode_buttons(buttons_frame)
+        self.create_enhanced_game_mode_buttons(buttons_frame, button_font_size)
 
-        # Footer with enhanced styling
+        # Footer with enhanced styling - relative positioning
         footer_frame = tk.Frame(content_frame, bg=palette['background'])
-        footer_frame.pack(pady=(30, 20))
+        footer_frame.place(relx=0.5, rely=0.9, anchor='center', relwidth=0.9)
 
-        # Enhanced exit button
+        # Enhanced exit button - relative positioning
         exit_btn = tk.Button(footer_frame, text="❌ Exit Game",
                             command=self.exit_game,
-                            font=('Arial', 12, 'bold'),
+                            font=('Arial', max(10, int(self.window_width / 120)), 'bold'),
                             bg=palette['exit_button_color'], fg=palette['exit_text_color'],
-                            padx=25, pady=10,
+                            padx=max(20, int(self.window_width / 80)), 
+                            pady=max(8, int(self.window_height / 120)),
                             cursor='hand2',
                             relief=tk.FLAT,
                             bd=0)
-        exit_btn.pack(side=tk.RIGHT, padx=10)
+        exit_btn.pack(side=tk.RIGHT)
 
-        # Version info with enhanced styling
-        version_label = tk.Label(footer_frame, text="Version 1.0 | Built with Qiskit & OpenCV",
-                                font=('Arial', 10),
+        # Version info with enhanced styling - relative positioning
+        version_label = tk.Label(footer_frame, text="Version 1.0 | Built with Qiskit & OpenCV | Press ESC to exit",
+                                font=('Arial', max(8, int(self.window_width / 150))),
                                 fg=palette['version_text_color'], bg=palette['background'])
         version_label.pack(side=tk.LEFT)
 
@@ -283,9 +282,21 @@ class GameModeSelection:
         exit_btn.bind("<Enter>", on_exit_enter)
         exit_btn.bind("<Leave>", on_exit_leave)
 
+    def update_glass_background(self, canvas):
+        """Update glassmorphism background when canvas is resized"""
+        canvas.delete("glass")
+        canvas.update_idletasks()
+        width = canvas.winfo_width()
+        height = canvas.winfo_height()
+        if width > 1 and height > 1:
+            canvas.create_rectangle(0, 0, width, height,
+                                  fill=palette['background'], stipple='gray50', 
+                                  outline=palette['main_box_outline'], width=2, tags="glass")
+
     def animate_subtitle(self):
         """Animate subtitle with color cycling"""
-        colors = [palette['subtitle_color_1'], palette['subtitle_color_2'], palette['subtitle_color_3'], palette['subtitle_color_4'], palette['subtitle_color_5']]
+        colors = [palette['subtitle_color_1'], palette['subtitle_color_2'], palette['subtitle_color_3'],
+                 palette['subtitle_color_4'], palette['subtitle_color_5']]
         color_index = [0]  # Use a list to make it mutable
 
         def cycle_color():
@@ -296,66 +307,67 @@ class GameModeSelection:
 
         cycle_color()
 
-    def create_enhanced_game_mode_buttons(self, parent):
-        """Create enhanced game mode selection buttons with better effects"""
+    def create_enhanced_game_mode_buttons(self, parent, font_size):
+        """Create enhanced game mode selection buttons with better effects using relative positioning"""
         button_configs = [
             {
                 'title': '📚 Tutorial Mode',
-                'description': 'Learn quantum gates\nwith an interactive tutorial',
                 'color': palette['tutorial_mode_button_color'],
                 'hover_color': palette['tutorial_mode_button_hover_color'],
                 'command': self.start_tutorial_mode
             },
             {
                 'title': '🎮 Puzzle Mode',
-                'description': 'Test your skills\nin Puzzle Mode',
                 'color': palette['puzzle_mode_button_color'],
                 'hover_color': palette['puzzle_mode_button_hover_color'],
                 'command': self.start_puzzle_mode
             },
             {
                 'title': '🛠️ Sandbox Mode',
-                'description': 'Free-form circuit builder\nwith real-time visualization',
                 'color': palette['sandbox_mode_button_color'],
                 'hover_color': palette['sandbox_mode_button_hover_color'],
                 'command': self.start_sandbox_mode
             },
             {
                 'title': '🚀 Learn Hub',
-                'description': 'Explore more quantum\ncomputing concepts',
                 'color': palette['learn_hub_button_color'],
                 'hover_color': palette['learn_hub_button_hover_color'],
                 'command': self.start_learn_hub_mode
             }
         ]
 
-        # Create buttons in a 2x2 grid
+        # Button positions using relative positioning (2x2 grid)
+        positions = [
+            (0.25, 0.35),  # Top left
+            (0.75, 0.35),  # Top right
+            (0.25, 0.75),  # Bottom left
+            (0.75, 0.75)   # Bottom right
+        ]
+
+        # Create buttons with relative positioning
         for i, config in enumerate(button_configs):
-            row = i // 2
-            col = i % 2
+            relx, rely = positions[i]
 
-            # Enhanced button frame
+            # Enhanced button frame with relative sizing
             btn_frame = tk.Frame(parent, bg=palette['button_outline_color'], relief=tk.RAISED, bd=2)
-            btn_frame.grid(row=row, column=col, padx=15, pady=15, sticky='nsew')
+            btn_frame.place(relx=relx, rely=rely, anchor='center', 
+                          relwidth=0.4, relheight=0.35)
 
-            # Button with enhanced styling
+            # Button with enhanced styling and scaled dimensions - only title text
             action_btn = tk.Button(btn_frame,
-                                text=f"{config['title']}\n\n{config['description']}",
+                                text=config['title'],
                                 command=lambda cmd=config['command']: self.execute_command(cmd),
-                                font=('Arial', 12, 'bold'),
+                                font=('Arial', font_size, 'bold'),
                                 bg=config['color'],
                                 fg=palette['black'],
                                 relief=tk.FLAT,
                                 bd=0,
                                 cursor='hand2',
-                                padx=30,
-                                pady=25,
-                                justify=tk.CENTER,
-                                wraplength=200,
-                                width=20,
-                                height=5)
+                                padx=max(15, int(self.window_width / 80)),
+                                pady=max(10, int(self.window_height / 80)),
+                                justify=tk.CENTER)
 
-            action_btn.pack(fill=tk.BOTH, expand=True)
+            action_btn.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.95, relheight=0.9)
 
             # Enhanced hover effects
             def create_hover_effect(btn, original, hover):

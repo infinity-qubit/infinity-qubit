@@ -11,7 +11,7 @@ def main():
     """Main entry point for the game"""
     try:
         from splash_screen import show_splash_screen
-        show_splash_screen()
+        show_splash_screen(fullscreen=True)
     except KeyboardInterrupt:
         print("\n👋 Thanks for trying Infinity Qubit!")
         sys.exit(0)
