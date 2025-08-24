@@ -23,21 +23,24 @@ class LearnHub:
         self.root = root
         self.root.title("Infinity Qubit - Learn Hub")
 
-        # Get screen dimensions
+        # Get screen dimensions for fullscreen
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
 
-        # Window dimensions
-        window_width = 1200
-        window_height = 800
-
-        # Center the window
-        x = (screen_width - window_width) // 2
-        y = (screen_height - window_height) // 2
-
-        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        # Make window fullscreen without title bar
+        self.root.overrideredirect(True)
+        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
         self.root.configure(bg=palette['background_2'])
-        self.root.resizable(True, True)
+
+        # Store dimensions for relative sizing
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.window_width = screen_width
+        self.window_height = screen_height
+
+        # Bind Escape key to exit fullscreen
+        self.root.bind('<Escape>', self.exit_fullscreen)
+        self.root.bind('<F11>', self.toggle_fullscreen)
 
         # Initialize particles for animation
         self.particles = []
@@ -56,6 +59,25 @@ class LearnHub:
         # Make window focused
         self.root.lift()
         self.root.focus_force()
+
+    def exit_fullscreen(self, event=None):
+        """Exit fullscreen mode"""
+        self.root.overrideredirect(False)
+        self.root.state('normal')
+        self.root.geometry("1200x800")
+        
+    def toggle_fullscreen(self, event=None):
+        """Toggle fullscreen mode"""
+        is_fullscreen = self.root.overrideredirect()
+        if is_fullscreen:
+            self.root.overrideredirect(False)
+            self.root.state('normal')
+            self.root.geometry("1200x800")
+        else:
+            screen_width = self.root.winfo_screenwidth()
+            screen_height = self.root.winfo_screenheight()
+            self.root.overrideredirect(True)
+            self.root.geometry(f"{screen_width}x{screen_height}+0+0")
 
     def start_animations(self):
         """Start background animations"""
@@ -85,20 +107,22 @@ class LearnHub:
         main_frame = tk.Frame(self.root, bg=palette['background_2'])
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Add subtle top border
-        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=3)
+        # Add subtle top border with relative height
+        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=int(self.screen_height * 0.003))
         top_border.pack(fill=tk.X)
 
-        # Content frame - removed padding to fill entire window
+        # Content frame - using relative padding
         content_frame = tk.Frame(main_frame, bg=palette['background_3'])
-        content_frame.pack(fill=tk.BOTH, expand=True)  # Removed padx=25, pady=25
+        content_frame.pack(fill=tk.BOTH, expand=True)
 
         # Create animated header with internal padding
         self.create_animated_header(content_frame)
 
-        # Create a container to center the notebook
+        # Create a container to center the notebook with relative padding
         notebook_container = tk.Frame(content_frame, bg=palette['background_3'])
-        notebook_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=(0, 25))  # Added padding here instead
+        notebook_container.pack(fill=tk.BOTH, expand=True, 
+                            padx=int(self.screen_width * 0.02), 
+                            pady=(0, int(self.screen_height * 0.02)))
 
         # Create notebook for tabs - centered
         self.notebook = ttk.Notebook(notebook_container)
@@ -119,18 +143,22 @@ class LearnHub:
     def create_animated_header(self, parent):
         """Create an animated quantum-themed header"""
         header_frame = tk.Frame(parent, bg=palette['background_3'])
-        header_frame.pack(fill=tk.X, padx=25, pady=(25, 20))  # Added padding here for internal spacing
+        header_frame.pack(fill=tk.X, 
+                        padx=int(self.screen_width * 0.02), 
+                        pady=(int(self.screen_height * 0.02), int(self.screen_height * 0.015)))
 
         # Add a top navigation bar
         nav_frame = tk.Frame(header_frame, bg=palette['background_3'])
-        nav_frame.pack(fill=tk.X, pady=(0, 10))
+        nav_frame.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.008)))
 
-        # Back to Main Screen button - top right
+        # Back to Main Screen button - top right with relative sizing
+        button_font_size = max(10, int(self.screen_width * 0.008))
         back_main_btn = tk.Button(nav_frame, text="🏠 Main Screen",
                                 command=self.back_to_menu,
-                                font=('Arial', 10, 'bold'),
+                                font=('Arial', button_font_size, 'bold'),
                                 bg=palette['background_4'], fg=palette['main_menu_button_background'],
-                                padx=15, pady=8,
+                                padx=int(self.screen_width * 0.012), 
+                                pady=int(self.screen_height * 0.008),
                                 cursor='hand2',
                                 relief=tk.FLAT,
                                 borderwidth=1,
@@ -146,34 +174,37 @@ class LearnHub:
         back_main_btn.bind("<Enter>", on_nav_enter)
         back_main_btn.bind("<Leave>", on_nav_leave)
 
-        # Quantum circuit animation canvas
-        self.circuit_canvas = tk.Canvas(header_frame, height=120, bg=palette['background_3'],
+        # Quantum circuit animation canvas with relative height
+        canvas_height = int(self.screen_height * 0.12)
+        self.circuit_canvas = tk.Canvas(header_frame, height=canvas_height, bg=palette['background_3'],
                                     highlightthickness=0)
-        self.circuit_canvas.pack(fill=tk.X, pady=(0, 15))
+        self.circuit_canvas.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.012)))
 
         # Draw quantum circuit after canvas is created
         self.root.after(100, self.draw_quantum_circuit)
 
-        # Title with shadow effect
+        # Title with shadow effect and relative font size
         title_frame = tk.Frame(header_frame, bg=palette['background_3'])
         title_frame.pack()
 
-        # Shadow title
+        # Shadow title with relative font size
+        title_font_size = max(24, int(self.screen_width * 0.025))
         shadow_title = tk.Label(title_frame, text="🚀 Quantum Computing Learn Hub",
-                            font=('Arial', 32, 'bold'),
+                            font=('Arial', title_font_size, 'bold'),
                             fg='#003322', bg=palette['background_3'])
         shadow_title.place(x=3, y=3)
 
         # Main title with gradient-like effect
         main_title = tk.Label(title_frame, text="🚀 Quantum Computing Learn Hub",
-                            font=('Arial', 32, 'bold'),
+                            font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_3'])
-        main_title.pack(pady=(0, 8))
+        main_title.pack(pady=(0, int(self.screen_height * 0.008)))
 
-        # Enhanced subtitle with pulsing effect
+        # Enhanced subtitle with pulsing effect and relative font size
+        subtitle_font_size = max(12, int(self.screen_width * 0.01))
         self.subtitle_label = tk.Label(header_frame,
                                     text="✨ Explore quantum computing concepts and resources ✨",
-                                    font=('Arial', 14, 'italic'),
+                                    font=('Arial', subtitle_font_size, 'italic'),
                                     fg=palette['subtitle_color'], bg=palette['background_3'])
         self.subtitle_label.pack()
 
@@ -273,16 +304,18 @@ class LearnHub:
 
     def create_learning_progress(self, parent):
         """Create a visual learning progress indicator"""
-        progress_frame = tk.Frame(parent, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-        progress_frame.pack(fill=tk.X, pady=(15, 0))
+        progress_frame = tk.Frame(parent, bg=palette['background_3'])
+        progress_frame.pack(fill=tk.X, pady=(int(self.screen_height * 0.012), 0))
 
+        # Title with relative font size
+        progress_title_font_size = max(12, int(self.screen_width * 0.01))
         tk.Label(progress_frame, text="📈 Learning Journey",
-                font=('Arial', 14, 'bold'),
-                fg=palette['learning_journey_title_color'], bg=palette['background_3']).pack()  # Changed from #1a1a1a to #2a2a2a
+                font=('Arial', progress_title_font_size, 'bold'),
+                fg=palette['learning_journey_title_color'], bg=palette['background_3']).pack()
 
         # Progress steps with enhanced visuals
-        steps_container = tk.Frame(progress_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-        steps_container.pack(pady=10)
+        steps_container = tk.Frame(progress_frame, bg=palette['background_3'])
+        steps_container.pack(pady=int(self.screen_height * 0.008))
 
         steps = [
             ("Basics", True, "#00ff88", "🎯"),
@@ -292,32 +325,36 @@ class LearnHub:
         ]
 
         for i, (step, completed, color, icon) in enumerate(steps):
-            step_frame = tk.Frame(steps_container, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-            step_frame.pack(side=tk.LEFT, padx=15)
+            step_frame = tk.Frame(steps_container, bg=palette['background_3'])
+            step_frame.pack(side=tk.LEFT, padx=int(self.screen_width * 0.012))
 
-            # Enhanced circle with glow
-            canvas = tk.Canvas(step_frame, width=40, height=40,
-                            bg=palette['background_3'], highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
+            # Enhanced circle with glow - relative sizing
+            circle_size = int(self.screen_width * 0.025)
+            canvas = tk.Canvas(step_frame, width=circle_size, height=circle_size,
+                            bg=palette['background_3'], highlightthickness=0)
             canvas.pack()
 
             # Glow effect for completed steps
             if completed:
-                canvas.create_oval(2, 2, 38, 38, fill=color, outline=color, width=3)
-                canvas.create_oval(8, 8, 32, 32, fill=palette['background_3'], outline='white', width=2)  # Changed from #1a1a1a to #2a2a2a
-                canvas.create_text(20, 20, text="✓", fill='white', font=('Arial', 14, 'bold'))
+                canvas.create_oval(2, 2, circle_size-2, circle_size-2, fill=color, outline=color, width=3)
+                canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill=palette['background_3'], outline='white', width=2)
+                canvas.create_text(circle_size//2, circle_size//2, text="✓", fill='white', 
+                                font=('Arial', max(10, int(self.screen_width * 0.01)), 'bold'))
             else:
-                canvas.create_oval(8, 8, 32, 32, fill='', outline=color, width=2)
+                canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill='', outline=color, width=2)
 
-            # Step label with icon
-            tk.Label(step_frame, text=f"{icon} {step}", fg=color, bg=palette['background_3'],  # Changed from #1a1a1a to #2a2a2a
-                    font=('Arial', 10, 'bold')).pack(pady=(5, 0))
+            # Step label with icon and relative font size
+            step_font_size = max(9, int(self.screen_width * 0.007))
+            tk.Label(step_frame, text=f"{icon} {step}", fg=color, bg=palette['background_3'],
+                    font=('Arial', step_font_size, 'bold')).pack(pady=(int(self.screen_height * 0.004), 0))
 
             # Connection line (except for last step)
             if i < len(steps) - 1:
-                line_canvas = tk.Canvas(steps_container, width=30, height=5,
-                                    bg=palette['background_3'], highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
+                line_width = int(self.screen_width * 0.02)
+                line_canvas = tk.Canvas(steps_container, width=line_width, height=5,
+                                    bg=palette['background_3'], highlightthickness=0)
                 line_canvas.pack(side=tk.LEFT)
-                line_canvas.create_line(0, 2, 30, 2, fill='#555555', width=2)  # Made line lighter for better visibility
+                line_canvas.create_line(0, 2, line_width, 2, fill='#555555', width=2)
 
     def style_notebook(self):
         """Apply enhanced styling to the notebook"""
@@ -991,35 +1028,42 @@ The quantum future awaits! 🌟🚀
     def create_enhanced_footer(self, parent):
         """Create enhanced footer with gradient buttons"""
         footer_frame = tk.Frame(parent, bg=palette['background_3'])
-        footer_frame.pack(fill=tk.X, padx=25, pady=(25, 25))  # Added padding here for internal spacing
+        footer_frame.pack(fill=tk.X, 
+                        padx=int(self.screen_width * 0.02), 
+                        pady=(int(self.screen_height * 0.02), int(self.screen_height * 0.02)))
 
         # Create a centered button container
         button_container = tk.Frame(footer_frame, bg=palette['background_3'])
         button_container.pack(expand=True)
 
+        # Button font size relative to screen
+        button_font_size = max(12, int(self.screen_width * 0.01))
+        button_padx = int(self.screen_width * 0.025)
+        button_pady = int(self.screen_height * 0.012)
+
         # Back to Main Screen button with enhanced styling
         back_btn = tk.Button(button_container, text="🏠 Back to Main Screen",
                             command=self.back_to_menu,
-                            font=('Arial', 14, 'bold'),
+                            font=('Arial', button_font_size, 'bold'),
                             bg=palette['main_menu_button_background'], fg=palette['background_black'],
-                            padx=30, pady=15,
+                            padx=button_padx, pady=button_pady,
                             cursor='hand2',
                             relief=tk.FLAT,
                             borderwidth=0,
-                            width=20)
-        back_btn.pack(side=tk.LEFT, padx=10)
+                            width=int(self.screen_width * 0.015))
+        back_btn.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008))
 
         # Close button with enhanced styling
         close_btn = tk.Button(button_container, text="❌ Close Application",
                             command=self.close_window,
-                            font=('Arial', 14, 'bold'),
+                            font=('Arial', button_font_size, 'bold'),
                             bg=palette['close_button_background'], fg=palette['close_button_text_color'],
-                            padx=30, pady=15,
+                            padx=button_padx, pady=button_pady,
                             cursor='hand2',
                             relief=tk.FLAT,
                             borderwidth=0,
-                            width=20)
-        close_btn.pack(side=tk.LEFT, padx=10)
+                            width=int(self.screen_width * 0.015))
+        close_btn.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008))
 
         # Add enhanced hover effects to back button
         def on_back_enter(event):
@@ -1039,9 +1083,9 @@ The quantum future awaits! 🌟🚀
         close_btn.bind("<Enter>", on_close_enter)
         close_btn.bind("<Leave>", on_close_leave)
 
-        # Add a separator line above the buttons
+        # Add a separator line above the buttons with relative sizing
         separator = tk.Frame(footer_frame, bg=palette['separator_line_color'], height=2)
-        separator.pack(fill=tk.X, pady=(0, 15))
+        separator.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.012)))
 
     def animate_circuit(self):
         """Animate the quantum circuit with subtle effects"""
