@@ -605,8 +605,8 @@ class SandboxMode:
         dialog.attributes('-topmost', True)
         
         # Calculate relative sizing
-        dialog_width = int(self.screen_width * 0.25)
-        dialog_height = int(self.screen_height * 0.2)
+        dialog_width = int(self.screen_width * 0.3)
+        dialog_height = int(self.screen_height * 0.25)
         x = (self.screen_width - dialog_width) // 2
         y = (self.screen_height - dialog_height) // 2
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
