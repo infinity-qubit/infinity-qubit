@@ -1046,34 +1046,38 @@ class SandboxMode:
         self.results_text.configure(state=tk.DISABLED)
 
     def setup_single_gate_controls(self, parent):
-        """Setup single-qubit gate controls with centered 2x3 grid layout"""
+        """Setup single-qubit gate controls with centered 2x3 grid layout using relative sizing"""
         # Create a frame that works with ttk parent
         container = tk.Frame(parent)
         container.configure(bg=palette['background_3'])
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Target qubit selection at top
+        # Target qubit selection at top with relative sizing
         qubit_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-        qubit_frame.pack(fill=tk.X, pady=(0, 15), padx=5, ipady=8)
+        qubit_frame.place(relx=0.5, rely=0.05, relwidth=1, relheight=0.1, anchor='center')
 
+        # Relative font size for qubit selection
+        qubit_label_font = max(9, int(self.screen_width * 0.008))
         tk.Label(qubit_frame, text="🎯 Target Qubit:",
-                font=('Arial', 11, 'bold'), fg=palette['target_qubit_title_color'], bg=palette['background_4']).pack(side=tk.LEFT, padx=(10, 5))
+                font=('Arial', qubit_label_font, 'bold'), 
+                fg=palette['target_qubit_title_color'], bg=palette['background_4']).place(
+                    relx=0.05, rely=0.5, anchor='w')
 
         self.target_qubit_var = tk.IntVar(value=0)
+        combo_font = max(8, int(self.screen_width * 0.007))
         self.target_qubit_combo = ttk.Combobox(qubit_frame, textvariable=self.target_qubit_var,
                                             values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', 10), width=5)
-        self.target_qubit_combo.pack(side=tk.LEFT, padx=5)
+                                            font=('Arial', combo_font), width=max(3, int(self.screen_width * 0.004)))
+        self.target_qubit_combo.place(relx=0.3, rely=0.5, anchor='w')
 
-        # Gate buttons section
+        # Gate buttons section title
+        title_font_size = max(10, int(self.screen_width * 0.009))
         gates_title = tk.Label(container, text="Single-Qubit Gates:",
-                            font=('Arial', 12, 'bold'), fg=palette['single_qubit_gates_title_color'], bg=palette['background_3'])
-        gates_title.pack(pady=(5, 10))
+                            font=('Arial', title_font_size, 'bold'), 
+                            fg=palette['single_qubit_gates_title_color'], bg=palette['background_3'])
+        gates_title.place(relx=0.5, rely=0.25, anchor='center')
 
-        # Create centered container for the grid
-        grid_container = tk.Frame(container, bg=palette['background_3'])
-        grid_container.pack(expand=True)  # This centers the grid
-
+        # Gate data
         gate_colors = {
             'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'],
             'Z': palette['Z_color'], 'S': palette['S_color'], 'T': palette['T_color']
@@ -1090,35 +1094,52 @@ class SandboxMode:
 
         single_gates = ['H', 'X', 'Y', 'Z', 'S', 'T']
 
-        # Create centered 2x3 grid (2 rows, 3 columns)
-        for row in range(2):
-            row_frame = tk.Frame(grid_container, bg=palette['background_3'])
-            row_frame.pack(pady=5)
+        # Calculate relative font sizes
+        button_font_size = max(10, int(self.screen_width * 0.009))
+        desc_font_size = max(7, int(self.screen_width * 0.0055))
+        
+        # Create 2x3 grid with relative positioning
+        button_positions = [
+            # Row 1: H, X, Y
+            (0.15, 0.45), (0.5, 0.45), (0.85, 0.45),
+            # Row 2: Z, S, T  
+            (0.15, 0.83), (0.5, 0.83), (0.85, 0.83)
+        ]
 
-            for col in range(3):
-                gate_index = row * 3 + col
-                if gate_index < len(single_gates):
-                    gate = single_gates[gate_index]
-                    color = gate_colors.get(gate, '#ffffff')
-                    description = gate_descriptions.get(gate, '')
+        for i, gate in enumerate(single_gates):
+            color = gate_colors.get(gate, '#ffffff')
+            description = gate_descriptions.get(gate, '')
+            relx, rely = button_positions[i]
 
-                    # Create button container with fixed size
-                    btn_container = tk.Frame(row_frame, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-                    btn_container.pack(side=tk.LEFT, padx=8, pady=2)
+            # Create button container with relative positioning
+            btn_container = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
+            btn_container.place(relx=relx, rely=rely, relwidth=0.25, relheight=0.3, anchor='center')
 
-                    # Create button with fixed dimensions
-                    btn = tk.Button(btn_container, text=gate,
-                                    command=lambda g=gate: self.add_single_gate(g),
-                                    font=('Arial', 12, 'bold'),
-                                    bg=color, fg=palette['background_black'],
-                                    width=8, height=2, cursor='hand2',
-                                    relief=tk.FLAT, bd=0)
-                    btn.pack(padx=3, pady=3)
+            # Create button with relative dimensions
+            btn = tk.Button(btn_container, text=gate,
+                            command=lambda g=gate: self.add_single_gate(g),
+                            font=('Arial', button_font_size, 'bold'),
+                            bg=color, fg=palette['background_black'],
+                            cursor='hand2', relief=tk.FLAT, bd=0)
+            btn.place(relx=0.5, rely=0.4, relwidth=0.8, relheight=0.7, anchor='center')
 
-                    # Description label
-                    desc_label = tk.Label(btn_container, text=description,
-                                        font=('Arial', 8), fg=palette['gate_description_color'], bg=palette['background_4'])
-                    desc_label.pack(pady=(0, 3))
+            # Description label with relative positioning
+            desc_label = tk.Label(btn_container, text=description,
+                                font=('Arial', desc_font_size), 
+                                fg=palette['gate_description_color'], bg=palette['background_4'])
+            desc_label.place(relx=0.5, rely=0.87, anchor='center')
+
+            # Add hover effects for better UX
+            def create_hover_effect(button, original_color):
+                def on_enter(event):
+                    button.configure(bg='#ffffff', fg=palette['background_black'])
+                def on_leave(event):
+                    button.configure(bg=original_color, fg=palette['background_black'])
+                return on_enter, on_leave
+
+            on_enter, on_leave = create_hover_effect(btn, color)
+            btn.bind("<Enter>", on_enter)
+            btn.bind("<Leave>", on_leave)
 
     def setup_multi_gate_controls(self, parent):
         """Setup multi-qubit gate controls with enhanced styling"""

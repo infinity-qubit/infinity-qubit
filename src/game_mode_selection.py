@@ -268,7 +268,7 @@ class GameModeSelection:
         exit_btn.pack(side=tk.RIGHT)
 
         # Version info with enhanced styling - relative positioning
-        version_label = tk.Label(footer_frame, text="Version 1.0 | Built with Qiskit & OpenCV | Press ESC to exit",
+        version_label = tk.Label(footer_frame, text="Version 1.0 | Built with Qiskit & OpenCV",
                                 font=('Arial', max(8, int(self.window_width / 150))),
                                 fg=palette['version_text_color'], bg=palette['background'])
         version_label.pack(side=tk.LEFT)

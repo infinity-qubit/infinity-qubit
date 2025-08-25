@@ -138,7 +138,7 @@ class LearnHub:
         self.create_resources_tab()
 
         # Enhanced footer
-        self.create_enhanced_footer(content_frame)
+        # self.create_enhanced_footer(content_frame)
 
     def create_animated_header(self, parent):
         """Create an animated quantum-themed header"""
@@ -1024,68 +1024,6 @@ The quantum future awaits! 🌟🚀
         for i, color in enumerate(colors):
             line = tk.Frame(separator_frame, bg=color, height=1)
             line.pack(fill=tk.X, pady=1)
-
-    def create_enhanced_footer(self, parent):
-        """Create enhanced footer with gradient buttons"""
-        footer_frame = tk.Frame(parent, bg=palette['background_3'])
-        footer_frame.pack(fill=tk.X, 
-                        padx=int(self.screen_width * 0.02), 
-                        pady=(int(self.screen_height * 0.02), int(self.screen_height * 0.02)))
-
-        # Create a centered button container
-        button_container = tk.Frame(footer_frame, bg=palette['background_3'])
-        button_container.pack(expand=True)
-
-        # Button font size relative to screen
-        button_font_size = max(12, int(self.screen_width * 0.01))
-        button_padx = int(self.screen_width * 0.025)
-        button_pady = int(self.screen_height * 0.012)
-
-        # Back to Main Screen button with enhanced styling
-        back_btn = tk.Button(button_container, text="🏠 Back to Main Screen",
-                            command=self.back_to_menu,
-                            font=('Arial', button_font_size, 'bold'),
-                            bg=palette['main_menu_button_background'], fg=palette['background_black'],
-                            padx=button_padx, pady=button_pady,
-                            cursor='hand2',
-                            relief=tk.FLAT,
-                            borderwidth=0,
-                            width=int(self.screen_width * 0.015))
-        back_btn.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008))
-
-        # Close button with enhanced styling
-        close_btn = tk.Button(button_container, text="❌ Close Application",
-                            command=self.close_window,
-                            font=('Arial', button_font_size, 'bold'),
-                            bg=palette['close_button_background'], fg=palette['close_button_text_color'],
-                            padx=button_padx, pady=button_pady,
-                            cursor='hand2',
-                            relief=tk.FLAT,
-                            borderwidth=0,
-                            width=int(self.screen_width * 0.015))
-        close_btn.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008))
-
-        # Add enhanced hover effects to back button
-        def on_back_enter(event):
-            back_btn.configure(bg=palette['main_menu_button_hover_background'], fg=palette['background_black'])
-        def on_back_leave(event):
-            back_btn.configure(bg=palette['main_menu_button_background'], fg=palette['background_black'])
-
-        back_btn.bind("<Enter>", on_back_enter)
-        back_btn.bind("<Leave>", on_back_leave)
-
-        # Add enhanced hover effects to close button
-        def on_close_enter(event):
-            close_btn.configure(bg=palette['close_button_hover_background'], fg=palette['close_button_text_color'])
-        def on_close_leave(event):
-            close_btn.configure(bg=palette['close_button_background'], fg=palette['close_button_text_color'])
-
-        close_btn.bind("<Enter>", on_close_enter)
-        close_btn.bind("<Leave>", on_close_leave)
-
-        # Add a separator line above the buttons with relative sizing
-        separator = tk.Frame(footer_frame, bg=palette['separator_line_color'], height=2)
-        separator.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.012)))
 
     def animate_circuit(self):
         """Animate the quantum circuit with subtle effects"""
