@@ -31,9 +31,19 @@ class TutorialWindow:
         # Create the window as a Toplevel but make it independent
         self.window = tk.Toplevel(parent)
         self.window.title("🎓 Quantum Gates Tutorial")
-        self.window.geometry("1920x1080")
+        
+        # Get screen dimensions for fullscreen
+        screen_width = self.window.winfo_screenwidth()
+        screen_height = self.window.winfo_screenheight()
+        
+        # Make window fullscreen without title bar
+        self.window.overrideredirect(True)
+        self.window.geometry(f"{screen_width}x{screen_height}+0+0")
         self.window.configure(bg=palette['background'])
-        self.window.resizable(False, False)
+        
+        # Store dimensions
+        self.window_width = screen_width
+        self.window_height = screen_height
         
         # Make window independent and visible even if parent is withdrawn
         self.window.transient()  # Remove parent dependency
@@ -43,8 +53,8 @@ class TutorialWindow:
         # Handle window close event
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
         
-        # Center window on screen instead of parent
-        self.center_window_on_screen()
+        # Handle ESC key to exit fullscreen
+        self.window.bind('<Escape>', lambda e: self.on_closing())
         
         # Gate information
         self.gate_info = {
@@ -121,7 +131,6 @@ class TutorialWindow:
         self.window.focus_force()
         
         # Play welcome sound
-        # self.play_sound('tutorial_open')
         self.play_sound('clear')
 
     def init_sound_system(self):
@@ -209,38 +218,40 @@ class TutorialWindow:
         self.window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
     def setup_ui(self):
-        """Setup the tutorial interface with enhanced layout matching sandbox"""
+        """Setup the tutorial interface with enhanced layout using relative positioning"""
         # Main container with gradient-like effect
         main_frame = tk.Frame(self.window, bg=palette['main_frame_background'])
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
         # Add subtle top border
-        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=3)
-        top_border.pack(fill=tk.X)
+        top_border = tk.Frame(main_frame, bg=palette['top_border_color'])
+        top_border.place(relx=0, rely=0, relwidth=1, relheight=0.005)
 
         # Content frame
         content_frame = tk.Frame(main_frame, bg=palette['main_container_background'])
-        content_frame.pack(fill=tk.BOTH, expand=True)
+        content_frame.place(relx=0, rely=0.005, relwidth=1, relheight=0.995)
 
         # Create header with navigation
         self.create_header(content_frame)
 
         # Main content container
         main_container = tk.Frame(content_frame, bg=palette['main_container_background'])
-        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=(0, 25))
+        main_container.place(relx=0.05, rely=0.15, relwidth=0.9, relheight=0.8)
 
         # Explanation text box
         explanation_frame = tk.Frame(main_container, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
-        explanation_frame.pack(fill=tk.X, pady=(0, 20))
+        explanation_frame.place(relx=0, rely=0, relwidth=1, relheight=0.35)
         
         explanation_title = tk.Label(explanation_frame, text="📚 About Quantum Gates",
-                                   font=('Arial', 14, 'bold'), fg=palette['about_quantum_gates_color'], bg=palette['main_container_background'])
-        explanation_title.pack(pady=(15, 10))
+                                   font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                                   fg=palette['about_quantum_gates_color'], bg=palette['main_container_background'])
+        explanation_title.place(relx=0.5, rely=0.1, anchor='center')
         
-        explanation_text = tk.Text(explanation_frame, height=6, width=80,
-                                  font=('Arial', 11), bg=palette['background'], fg=palette['explanation_text_color'],
-                                  wrap=tk.WORD, relief=tk.FLAT, padx=15, pady=10)
-        explanation_text.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
+        explanation_text = tk.Text(explanation_frame, 
+                                  font=('Arial', max(10, int(self.window_width / 150))), 
+                                  bg=palette['background'], fg=palette['explanation_text_color'],
+                                  wrap=tk.WORD, relief=tk.FLAT, bd=0)
+        explanation_text.place(relx=0.05, rely=0.2, relwidth=0.9, relheight=0.7)
         
         # Insert explanation text
         explanation = """Quantum gates are the fundamental building blocks of quantum circuits. Unlike classical logic gates that work with bits (0 or 1), quantum gates operate on qubits that can exist in superposition states. 
@@ -257,15 +268,16 @@ Click on any gate below to see an interactive demonstration of how it works!"""
         
         # Gates section with enhanced styling
         gates_frame = tk.Frame(main_container, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
-        gates_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
+        gates_frame.place(relx=0, rely=0.4, relwidth=1, relheight=0.6)
         
         gates_title = tk.Label(gates_frame, text="🎨 Interactive Gate Tutorials",
-                              font=('Arial', 16, 'bold'), fg=palette['gates_title_color'], bg=palette['main_container_background'])
-        gates_title.pack(pady=(15, 20))
+                              font=('Arial', max(16, int(self.window_width / 80)), 'bold'), 
+                              fg=palette['gates_title_color'], bg=palette['main_container_background'])
+        gates_title.place(relx=0.5, rely=0.1, anchor='center')
         
         # Gates grid with better organization
         gates_container = tk.Frame(gates_frame, bg=palette['main_container_background'])
-        gates_container.pack(expand=True)
+        gates_container.place(relx=0.1, rely=0.25, relwidth=0.8, relheight=0.65)
         
         # Gate order: H S T CZ (top row), X Y Z CNOT (bottom row)
         gate_order = [
@@ -273,46 +285,42 @@ Click on any gate below to see an interactive demonstration of how it works!"""
             ['X', 'Y', 'Z', 'CNOT']
         ]
         
+        # Create gates using relative positioning in 2x4 grid
         for row_idx, row in enumerate(gate_order):
-            row_frame = tk.Frame(gates_container, bg=palette['main_container_background'])
-            row_frame.pack(pady=15)
-            
             for col_idx, gate in enumerate(row):
-                self.create_enhanced_gate_button(row_frame, gate)
+                relx = col_idx * 0.25 + 0.125  # Center each gate in its column
+                rely = row_idx * 0.5 + 0.25    # Center each gate in its row
+                self.create_enhanced_gate_button(gates_container, gate, relx, rely)
 
     def create_header(self, parent):
-        """Create header with navigation matching sandbox style"""
+        """Create header with navigation using relative positioning"""
         header_frame = tk.Frame(parent, bg=palette['main_container_background'])
-        header_frame.pack(fill=tk.X, padx=25, pady=(15, 10))
-
-        # Navigation bar
-        nav_frame = tk.Frame(header_frame, bg=palette['main_container_background'])
-        nav_frame.pack(fill=tk.X)
+        header_frame.place(relx=0.05, rely=0.02, relwidth=0.9, relheight=0.12)
 
         # Title on the left
-        title_label = tk.Label(nav_frame, text="🎓 Quantum Gates Tutorial",
-                            font=('Arial', 20, 'bold'),
+        title_label = tk.Label(header_frame, text="🎓 Quantum Gates Tutorial",
+                            font=('Arial', max(20, int(self.window_width / 80)), 'bold'),
                             fg=palette['main_title_color'], bg=palette['main_container_background'])
-        title_label.pack(side=tk.LEFT)
+        title_label.place(relx=0, rely=0.2, anchor='w')
 
         # Subtitle below title
-        subtitle_label = tk.Label(nav_frame,
+        subtitle_label = tk.Label(header_frame,
                                 text="Learn quantum gates through interactive examples",
-                                font=('Arial', 11, 'italic'),
+                                font=('Arial', max(11, int(self.window_width / 140)), 'italic'),
                                 fg=palette['main_subtitle_color'], bg=palette['main_container_background'])
-        subtitle_label.pack(side=tk.LEFT, padx=(10, 0))
+        subtitle_label.place(relx=0, rely=0.7, anchor='w')
 
         # Navigation buttons on the right
         if self.return_callback:
-            main_menu_btn = tk.Button(nav_frame, text="🏠 Main Menu",
+            main_menu_btn = tk.Button(header_frame, text="🏠 Main Menu",
                                      command=self.return_to_main_menu,
-                                     font=('Arial', 10, 'bold'),
+                                     font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                                      bg=palette['background_2'], fg=palette['main_menu_button_text_color'],
                                      padx=15, pady=8,
                                      cursor='hand2',
                                      relief=tk.FLAT,
                                      borderwidth=1)
-            main_menu_btn.pack(side=tk.RIGHT)
+            main_menu_btn.place(relx=1, rely=0.5, anchor='e')
 
             # Add hover effect
             def on_nav_enter(event):
@@ -324,15 +332,15 @@ Click on any gate below to see an interactive demonstration of how it works!"""
             main_menu_btn.bind("<Enter>", on_nav_enter)
             main_menu_btn.bind("<Leave>", on_nav_leave)
         else:
-            close_btn = tk.Button(nav_frame, text="❌ Close Tutorial",
+            close_btn = tk.Button(header_frame, text="❌ Close Tutorial",
                                  command=self.window.destroy,
-                                 font=('Arial', 10, 'bold'),
+                                 font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                                  bg=palette['background_2'], fg=palette['close_button_text_color'],
                                  padx=15, pady=8,
                                  cursor='hand2',
                                  relief=tk.FLAT,
                                  borderwidth=1)
-            close_btn.pack(side=tk.RIGHT)
+            close_btn.place(relx=1, rely=0.5, anchor='e')
 
             # Add hover effect
             def on_close_enter(event):
@@ -343,6 +351,7 @@ Click on any gate below to see an interactive demonstration of how it works!"""
 
             close_btn.bind("<Enter>", on_close_enter)
             close_btn.bind("<Leave>", on_close_leave)
+
     
     def return_to_main_menu(self):
         """Return to main menu"""
@@ -360,26 +369,27 @@ Click on any gate below to see an interactive demonstration of how it works!"""
         else:
             self.window.destroy()
 
-    def create_enhanced_gate_button(self, parent, gate):
-        """Create enhanced gate button matching sandbox style"""
+    def create_enhanced_gate_button(self, parent, gate, relx, rely):
+        """Create enhanced gate button using relative positioning"""
         gate_container = tk.Frame(parent, bg=palette['background_2'], relief=tk.RAISED, bd=2)
-        gate_container.pack(side=tk.LEFT, padx=20, pady=10)
+        gate_container.place(relx=relx, rely=rely, anchor='center', relwidth=0.15, relheight=0.45)
         
         # Gate button with enhanced styling
         gate_info = self.gate_info[gate]
         btn = tk.Button(gate_container, text=gate,
                        command=lambda g=gate: self.open_gate_tutorial(g),
-                       font=('Arial', 16, 'bold'), 
+                       font=('Arial', max(16, int(self.window_width / 100)), 'bold'), 
                        bg=gate_info['color'], fg=palette['background_3'],
-                       width=6, height=3, relief=tk.FLAT, bd=0,
+                       relief=tk.FLAT, bd=0,
                        cursor='hand2',
                        activebackground=palette['gate_button_active_background'], activeforeground=palette['background_3'])
-        btn.pack(padx=8, pady=8)
+        btn.place(relx=0.5, rely=0.35, anchor='center', relwidth=0.85, relheight=0.6)
         
         # Gate name label with better styling
         name_label = tk.Label(gate_container, text=gate_info['name'],
-                             font=('Arial', 10, 'bold'), fg=palette['gate_name_label_color'], bg=palette['background_2'])
-        name_label.pack(pady=(0, 8))
+                             font=('Arial', max(8, int(self.window_width / 180)), 'bold'), 
+                             fg=palette['gate_name_label_color'], bg=palette['background_2'])
+        name_label.place(relx=0.5, rely=0.8, anchor='center')
 
         # Add hover effects
         original_bg = gate_info['color']
@@ -430,32 +440,33 @@ class GateTutorial:
         # Initialize sound system
         self.init_sound_system()
         
-        # Get screen dimensions for adaptive sizing
+        # Get screen dimensions for fullscreen
         screen_width = parent.winfo_screenwidth()
         screen_height = parent.winfo_screenheight()
-        window_width = int(screen_width * 0.8)
-        window_height = int(screen_height * 0.8)
         
         self.window = tk.Toplevel(parent)
         self.window.title(f"🎓 {gate_info['name']} Tutorial")
-        self.window.geometry(f"{window_width}x{window_height}")
+        
+        # Make window fullscreen without title bar
+        self.window.overrideredirect(True)
+        self.window.geometry(f"{screen_width}x{screen_height}+0+0")
         self.window.configure(bg=palette['background'])
-        self.window.resizable(False, False)
         
         # Store dimensions
-        self.window_width = window_width
-        self.window_height = window_height
+        self.window_width = screen_width
+        self.window_height = screen_height
         
         # Make window modal
         self.window.transient(parent)
         self.window.grab_set()
         self.window.focus_set()
         
-        self.center_window()
+        # Handle ESC key to exit fullscreen
+        self.window.bind('<Escape>', lambda e: self.close_tutorial())
+        
         self.setup_ui()
         
         # Play welcome sound
-        # self.play_sound('tutorial_open')
         self.play_sound('clear')
 
 
@@ -530,25 +541,25 @@ class GateTutorial:
         self.window.geometry(f"{self.window_width}x{self.window_height}+{x}+{y}")
     
     def setup_ui(self):
-        """Setup the gate tutorial interface with sandbox-style layout"""
+        """Setup the gate tutorial interface with fullscreen layout using relative positioning"""
         # Main container with gradient-like effect
         main_frame = tk.Frame(self.window, bg=palette['main_frame_background'])
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
         # Add subtle top border
-        top_border = tk.Frame(main_frame, bg=palette['top_border_color'], height=3)
-        top_border.pack(fill=tk.X)
+        top_border = tk.Frame(main_frame, bg=palette['top_border_color'])
+        top_border.place(relx=0, rely=0, relwidth=1, relheight=0.005)
 
         # Content frame
         content_frame = tk.Frame(main_frame, bg=palette['main_container_background'])
-        content_frame.pack(fill=tk.BOTH, expand=True)
+        content_frame.place(relx=0, rely=0.005, relwidth=1, relheight=0.995)
 
         # Create header
         self.create_header(content_frame)
 
         # Main content container
         main_container = tk.Frame(content_frame, bg=palette['main_container_background'])
-        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=(0, 25))
+        main_container.place(relx=0.05, rely=0.12, relwidth=0.9, relheight=0.83)
 
         # Description section
         self.setup_description_section(main_container)
@@ -560,37 +571,33 @@ class GateTutorial:
         self.setup_bottom_section(main_container)
 
     def create_header(self, parent):
-        """Create header matching sandbox style"""
+        """Create header using relative positioning"""
         header_frame = tk.Frame(parent, bg=palette['main_container_background'])
-        header_frame.pack(fill=tk.X, padx=25, pady=(15, 10))
-
-        # Navigation bar
-        nav_frame = tk.Frame(header_frame, bg=palette['main_container_background'])
-        nav_frame.pack(fill=tk.X)
+        header_frame.place(relx=0.05, rely=0.02, relwidth=0.9, relheight=0.08)
 
         # Title on the left
-        title_label = tk.Label(nav_frame, text=f"🎓 {self.gate_info['name']} Tutorial",
-                            font=('Arial', 18, 'bold'),
+        title_label = tk.Label(header_frame, text=f"🎓 {self.gate_info['name']} Tutorial",
+                            font=('Arial', max(18, int(self.window_width / 90)), 'bold'),
                             fg=palette['main_title_color'], bg=palette['main_container_background'])
-        title_label.pack(side=tk.LEFT)
+        title_label.place(relx=0, rely=0.2, anchor='w')
 
         # Subtitle
-        subtitle_label = tk.Label(nav_frame,
+        subtitle_label = tk.Label(header_frame,
                                 text="Interactive quantum gate exploration",
-                                font=('Arial', 10, 'italic'),
+                                font=('Arial', max(10, int(self.window_width / 150)), 'italic'),
                                 fg=palette['main_subtitle_color'], bg=palette['main_container_background'])
-        subtitle_label.pack(side=tk.LEFT, padx=(10, 0))
+        subtitle_label.place(relx=0, rely=0.7, anchor='w')
 
         # Close button on the right
-        close_btn = tk.Button(nav_frame, text="❌ Close",
+        close_btn = tk.Button(header_frame, text="❌ Close",
                              command=self.close_tutorial,
-                             font=('Arial', 10, 'bold'),
+                             font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                              bg=palette['background_2'], fg=palette['close_button_text_color'],
                              padx=15, pady=8,
                              cursor='hand2',
                              relief=tk.FLAT,
                              borderwidth=1)
-        close_btn.pack(side=tk.RIGHT)
+        close_btn.place(relx=1, rely=0.5, anchor='e')
 
         # Add hover effect
         def on_close_enter(event):
@@ -607,101 +614,104 @@ class GateTutorial:
         self.window.destroy()
 
     def setup_description_section(self, parent):
-        """Setup description section with enhanced styling"""
+        """Setup description section using relative positioning"""
         desc_frame = tk.Frame(parent, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
-        desc_frame.pack(fill=tk.X, pady=(0, 15))
+        desc_frame.place(relx=0, rely=0, relwidth=1, relheight=0.2)
         
         desc_title = tk.Label(desc_frame, text="📋 Gate Description",
-                             font=('Arial', 14, 'bold'), fg=palette['description_title_text_color'], bg=palette['main_container_background'])
-        desc_title.pack(pady=(15, 10))
+                             font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                             fg=palette['description_title_text_color'], bg=palette['main_container_background'])
+        desc_title.place(relx=0.5, rely=0.15, anchor='center')
         
         desc_label = tk.Label(desc_frame, text=self.gate_info['description'],
-                             font=('Arial', 12), fg=palette['description_text_color'], bg=palette['main_container_background'],
+                             font=('Arial', max(12, int(self.window_width / 120))), 
+                             fg=palette['description_text_color'], bg=palette['main_container_background'],
                              wraplength=int(self.window_width * 0.8), justify=tk.CENTER)
-        desc_label.pack(pady=(0, 8))
+        desc_label.place(relx=0.5, rely=0.5, anchor='center')
         
         example_label = tk.Label(desc_frame, text=f"Example: {self.gate_info['example']}",
-                                font=('Arial', 11, 'italic'), fg=self.gate_info['color'], bg=palette['main_container_background'])
-        example_label.pack(pady=(0, 12))
+                                font=('Arial', max(11, int(self.window_width / 130)), 'italic'), 
+                                fg=self.gate_info['color'], bg=palette['main_container_background'])
+        example_label.place(relx=0.5, rely=0.8, anchor='center')
 
     def setup_circuit_section(self, parent):
-        """Setup circuit visualization section"""
+        """Setup circuit visualization section using relative positioning"""
         circuit_frame = tk.Frame(parent, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
-        circuit_frame.pack(fill=tk.X, pady=(0, 15))
+        circuit_frame.place(relx=0, rely=0.25, relwidth=1, relheight=0.3)
         
         circuit_title = tk.Label(circuit_frame, text="🔧 Interactive Circuit Visualization",
-                                font=('Arial', 14, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['main_container_background'])
-        circuit_title.pack(pady=(10, 8))
+                                font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                                fg=palette['circuit_title_text_color'], bg=palette['main_container_background'])
+        circuit_title.place(relx=0.5, rely=0.1, anchor='center')
         
         # Canvas container with enhanced styling
         canvas_container = tk.Frame(circuit_frame, bg=palette['background'], relief=tk.SUNKEN, bd=3)
-        canvas_container.pack(padx=20, pady=(0, 10))
+        canvas_container.place(relx=0.05, rely=0.25, relwidth=0.9, relheight=0.65)
         
         canvas_width = int(self.window_width * 0.85)
-        canvas_height = int(self.window_height * 0.25)
+        canvas_height = int(self.window_height * 0.18)
         
         self.canvas = tk.Canvas(canvas_container, width=canvas_width, height=canvas_height,
                                bg=palette['main_frame_background'], highlightthickness=0)
-        self.canvas.pack(padx=5, pady=5)
+        self.canvas.place(relx=0.5, rely=0.5, anchor='center')
         
         self.canvas_width = canvas_width
         self.canvas_height = canvas_height
 
     def setup_bottom_section(self, parent):
-        """Setup bottom section with controls and results side by side"""
+        """Setup bottom section with controls and results using relative positioning"""
         bottom_frame = tk.Frame(parent, bg=palette['main_container_background'])
-        bottom_frame.pack(fill=tk.BOTH, expand=True)
+        bottom_frame.place(relx=0, rely=0.6, relwidth=1, relheight=0.4)
 
         # Left side - Gate Controls (40% width)
         controls_frame = tk.Frame(bottom_frame, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
-        controls_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        controls_frame.place(relx=0, rely=0, relwidth=0.48, relheight=1)
         
         self.setup_gate_controls(controls_frame)
 
         # Right side - Results (60% width)
         results_frame = tk.Frame(bottom_frame, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
-        results_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(10, 0))
+        results_frame.place(relx=0.52, rely=0, relwidth=0.48, relheight=1)
         
         self.setup_results_area(results_frame)
 
     def setup_gate_controls(self, parent):
-        """Setup gate control buttons"""
+        """Setup gate control buttons using relative positioning"""
         controls_title = tk.Label(parent, text="🎮 Gate Controls",
-                                 font=('Arial', 14, 'bold'), fg=palette['controls_title_text_color'], bg=palette['main_container_background'])
-        controls_title.pack(pady=(15, 20))
+                                 font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                                 fg=palette['controls_title_text_color'], bg=palette['main_container_background'])
+        controls_title.place(relx=0.5, rely=0.1, anchor='center')
         
         # Button container
         button_container = tk.Frame(parent, bg=palette['main_container_background'])
-        button_container.pack(expand=True)
+        button_container.place(relx=0.15, rely=0.25, relwidth=0.7, relheight=0.65)
         
         # Gate placement button
         self.gate_btn = tk.Button(button_container, text=f"Add {self.gate} Gate",
                                  command=self.add_gate,
-                                 font=('Arial', 12, 'bold'),
+                                 font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
                                  bg=self.gate_info['color'], fg=palette['background_3'],
-                                 padx=25, pady=12, cursor='hand2',
+                                 cursor='hand2',
                                  relief=tk.RAISED, bd=2)
-        self.gate_btn.pack(pady=10)
+        self.gate_btn.place(relx=0.5, rely=0.15, anchor='center', relwidth=0.3, relheight=0.3)
         
-        # Control buttons
-        controls_inner = tk.Frame(button_container, bg=palette['main_container_background'])
-        controls_inner.pack(pady=20)
-        
-        run_btn = tk.Button(controls_inner, text="🚀 Run Circuit",
+        # Run button
+        run_btn = tk.Button(button_container, text="🚀 Run Circuit",
                            command=self.run_circuit,
-                           font=('Arial', 11, 'bold'),
+                           font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
                            bg=palette['run_button_background'], fg=palette['background_3'],
-                           padx=20, pady=8, cursor='hand2',
+                           cursor='hand2',
                            relief=tk.RAISED, bd=2)
-        run_btn.pack(pady=5, fill=tk.X)
+        run_btn.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.3, relheight=0.3)
         
-        clear_btn = tk.Button(controls_inner, text="🔄 Clear Circuit",
+        # Clear button
+        clear_btn = tk.Button(button_container, text="🔄 Clear Circuit",
                              command=self.clear_circuit,
-                             font=('Arial', 11, 'bold'),
+                             font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
                              bg=palette['clear_button_background'], fg=palette['clear_button_text_color'],
-                             padx=20, pady=8, cursor='hand2',
+                             cursor='hand2',
                              relief=tk.RAISED, bd=2)
-        clear_btn.pack(pady=5, fill=tk.X)
+        clear_btn.place(relx=0.5, rely=0.85, anchor='center', relwidth=0.3, relheight=0.3)
 
         # Add hover effects
         def create_hover_effect(button, original_bg, original_fg):
@@ -720,20 +730,21 @@ class GateTutorial:
             btn.bind("<Leave>", on_leave)
 
     def setup_results_area(self, parent):
-        """Setup results display area"""
+        """Setup results display area using relative positioning"""
         results_title = tk.Label(parent, text="📊 Quantum State Analysis",
-                                font=('Arial', 14, 'bold'), fg=palette['results_title_text_color'], bg=palette['main_container_background'])
-        results_title.pack(pady=(15, 15))
+                                font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                                fg=palette['results_title_text_color'], bg=palette['main_container_background'])
+        results_title.place(relx=0.5, rely=0.08, anchor='center')
         
         # Results container with styling
         results_container = tk.Frame(parent, bg=palette['background'], relief=tk.SUNKEN, bd=3)
-        results_container.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
+        results_container.place(relx=0.05, rely=0.18, relwidth=0.9, relheight=0.75)
         
         # Results text with scrollbar
         text_frame = tk.Frame(results_container, bg=palette['background'])
-        text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        text_frame.place(relx=0.02, rely=0.02, relwidth=0.96, relheight=0.96)
         
-        self.results_text = tk.Text(text_frame, font=('Consolas', 10),
+        self.results_text = tk.Text(text_frame, font=('Consolas', max(9, int(self.window_width / 180))),
                                    bg=palette['main_frame_background'], fg=palette['results_text_color'],
                                    relief=tk.FLAT, bd=0, insertbackground=palette['results_background'],
                                    selectbackground=palette['results_select_background'], selectforeground=palette['background_3'],
@@ -741,11 +752,12 @@ class GateTutorial:
         
         # Add scrollbar
         scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.results_text.yview,
-                                bg=palette['background_2'], troughcolor=palette['background'], activebackground=palette['scrollbar_active_background'])
+                                bg=palette['background_2'], troughcolor=palette['background'], 
+                                activebackground=palette['scrollbar_active_background'])
         self.results_text.configure(yscrollcommand=scrollbar.set)
         
-        self.results_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.results_text.place(relx=0, rely=0, relwidth=0.97, relheight=1)
+        scrollbar.place(relx=0.97, rely=0, relwidth=0.03, relheight=1)
         
         # Initialize display
         self.draw_circuit()
@@ -772,8 +784,8 @@ class GateTutorial:
         # Determine number of qubits based on gate
         num_qubits = 2 if self.gate in ['CNOT', 'CZ'] else 1
         
-        # Circuit dimensions
-        wire_start = 80
+        # Circuit dimensions with better spacing
+        wire_start = 120  # Increased from 80 to add more left margin
         wire_end = self.canvas_width - 80
         qubit_spacing = max(60, self.canvas_height // (num_qubits + 2))
         
@@ -799,11 +811,11 @@ class GateTutorial:
                                       fill=color, width=thickness)
             
             # Enhanced qubit label with background
-            label_bg = self.canvas.create_rectangle(wire_start - 45, y_pos - 15,
-                                                  wire_start - 5, y_pos + 15,
+            label_bg = self.canvas.create_rectangle(wire_start - 60, y_pos - 15,
+                                                  wire_start - 20, y_pos + 15,
                                                   fill=palette['background_2'], outline=color, width=2)
             
-            self.canvas.create_text(wire_start - 25, y_pos,
+            self.canvas.create_text(wire_start - 40, y_pos,
                                   text=f"q{qubit}", fill=palette['circuit_canvas_text_fill'],
                                   font=('Arial', 12, 'bold'))
         
@@ -812,7 +824,7 @@ class GateTutorial:
 
     def draw_enhanced_gates(self, wire_start, qubit_spacing, num_qubits):
         """Draw gates with enhanced 3D styling"""
-        gate_x_start = wire_start + 120
+        gate_x_start = wire_start + 140  # Increased spacing from wire start
         gate_spacing = 80
         
         for i, gate in enumerate(self.placed_gates):
