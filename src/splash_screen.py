@@ -20,7 +20,7 @@ color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'splash_screen')
 
 class SplashScreen:
-    def __init__(self):
+    def __init__(self, fullscreen=True):
         self.splash = tk.Tk()
         self.splash.title("Infinity Qubit")
         
@@ -31,19 +31,34 @@ class SplashScreen:
         # Remove window decorations
         self.splash.overrideredirect(True)
         
-        # Get screen dimensions
-        screen_width = self.splash.winfo_screenwidth()
-        screen_height = self.splash.winfo_screenheight()
+        # Store fullscreen mode
+        self.fullscreen = fullscreen
         
-        # Splash screen dimensions
-        splash_width = 600
-        splash_height = 400
-        
-        # Center the splash screen
-        x = (screen_width - splash_width) // 2
-        y = (screen_height - splash_height) // 2
-        
-        self.splash.geometry(f"{splash_width}x{splash_height}+{x}+{y}")
+        if fullscreen:
+            # Set fullscreen mode
+            self.splash.attributes('-fullscreen', True)
+            # Get actual screen dimensions
+            screen_width = self.splash.winfo_screenwidth()
+            screen_height = self.splash.winfo_screenheight()
+            self.splash.geometry(f"{screen_width}x{screen_height}+0+0")
+            
+            # Add escape key binding for testing
+            self.splash.bind('<Escape>', lambda e: self.splash.quit())
+        else:
+            # Get screen dimensions
+            screen_width = self.splash.winfo_screenwidth()
+            screen_height = self.splash.winfo_screenheight()
+            
+            # Splash screen dimensions
+            splash_width = 600
+            splash_height = 400
+            
+            # Center the splash screen
+            x = (screen_width - splash_width) // 2
+            y = (screen_height - splash_height) // 2
+            
+            self.splash.geometry(f"{splash_width}x{splash_height}+{x}+{y}")
+
         self.splash.configure(bg=palette['background'])
         
         # Make splash screen stay on top
@@ -57,45 +72,73 @@ class SplashScreen:
         
     def create_splash_content(self):
         """Create the content for the splash screen"""
-        # Main container
-        main_frame = tk.Frame(self.splash, bg=palette['background'])
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        if self.fullscreen:
+            # For fullscreen, create a centered container
+            # Main container that fills the screen
+            outer_frame = tk.Frame(self.splash, bg=palette['background'])
+            outer_frame.pack(fill=tk.BOTH, expand=True)
+            
+            # Centered content container with fixed width
+            main_frame = tk.Frame(outer_frame, bg=palette['background'])
+            main_frame.place(relx=0.5, rely=0.5, anchor='center')
+            
+            # Scale fonts for fullscreen
+            title_font_size = 48
+            subtitle_font_size = 20
+            loading_font_size = 16
+            version_font_size = 12
+            canvas_width, canvas_height = 500, 120
+        else:
+            # Original windowed layout
+            main_frame = tk.Frame(self.splash, bg=palette['background'])
+            main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+            
+            # Original font sizes
+            title_font_size = 28
+            subtitle_font_size = 14
+            loading_font_size = 11
+            version_font_size = 9
+            canvas_width, canvas_height = 380, 90
         
-        # Title - increased top padding and adjusted font
+        # Title - adjusted font size based on mode
         title_label = tk.Label(main_frame, text="🔬 Infinity Qubit",
-                            font=('Arial', 28, 'bold'),  # Slightly smaller font
+                            font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background'])
-        title_label.pack(pady=(40, 15))  # More balanced padding
+        title_label.pack(pady=(40, 15))
         
-        # Subtitle - added more padding
+        # Subtitle - adjusted font size
         subtitle_label = tk.Label(main_frame, text="Quantum Computing Educational Game",
-                                font=('Arial', 14),  # Slightly smaller
+                                font=('Arial', subtitle_font_size),
                                 fg=palette['sub-title_color'], bg=palette['background'])
-        subtitle_label.pack(pady=(5, 30))  # Better spacing
+        subtitle_label.pack(pady=(5, 30))
         
-        # Quantum circuit animation area - reduced padding
+        # Quantum circuit animation area
         self.animation_frame = tk.Frame(main_frame, bg=palette['background'])
         self.animation_frame.pack(pady=15)
         
-        # Create animated quantum gates
-        self.create_quantum_animation()
+        # Create animated quantum gates with scaled canvas
+        self.create_quantum_animation(canvas_width, canvas_height)
         
-        # Loading text - increased padding and better positioning
+        # Loading text - adjusted font size
         self.loading_label = tk.Label(main_frame, text="Initializing quantum circuits...",
-                                    font=('Arial', 11),  # Slightly smaller
+                                    font=('Arial', loading_font_size),
                                     fg=palette['loading_text_color'], bg=palette['background'])
-        self.loading_label.pack(pady=(30, 15))  # More space above and below
+        self.loading_label.pack(pady=(30, 15))
         
-        # Progress bar
+        # Progress bar - scaled length
+        progress_length = 400 if self.fullscreen else 300
         self.progress = ttk.Progressbar(main_frame, mode='indeterminate', 
-                                    length=300, style='Splash.Horizontal.TProgressbar')
-        self.progress.pack(pady=(5, 20))  # Better spacing
+                                    length=progress_length, style='Splash.Horizontal.TProgressbar')
+        self.progress.pack(pady=(5, 20))
         
-        # Version info - with more space from bottom
+        # Version info - adjusted font size
         version_label = tk.Label(main_frame, text="Version 1.0 | Built with Qiskit",
-                                font=('Arial', 9),  # Smaller font
+                                font=('Arial', version_font_size),
                                 fg=palette['version_text_color'], bg=palette['background'])
-        version_label.pack(side=tk.BOTTOM, pady=(10, 15))  # More space from bottom
+        if self.fullscreen:
+            version_label.pack(pady=(20, 0))
+        else:
+            version_label.pack(side=tk.BOTTOM, pady=(10, 15))
         
         # Configure progress bar style
         style = ttk.Style()
@@ -107,24 +150,32 @@ class SplashScreen:
                     lightcolor=palette['background'],
                     darkcolor=palette['background'])
     
-    def create_quantum_animation(self):
-        """Create animated quantum circuit elements"""
-        # Create a simple quantum circuit visualization - slightly smaller
-        circuit_canvas = tk.Canvas(self.animation_frame, width=380, height=90,
+    def create_quantum_animation(self, canvas_width=380, canvas_height=90):
+        """Create animated quantum circuit elements with scalable dimensions"""
+        circuit_canvas = tk.Canvas(self.animation_frame, width=canvas_width, height=canvas_height,
                                 bg='#1a1a1a', highlightthickness=0)
-        circuit_canvas.pack(pady=10)  # Add some padding around canvas
+        circuit_canvas.pack(pady=10)
+        
+        # Scale wire spacing and positions based on canvas size
+        wire_spacing = canvas_height // 4
+        start_x = canvas_width // 8
+        end_x = canvas_width - start_x
         
         # Draw quantum wires
         for i in range(3):
-            y = 15 + i * 25  # Reduced spacing between wires
-            circuit_canvas.create_line(50, y, 330, y, fill='#ffffff', width=2)
-            circuit_canvas.create_text(30, y, text=f'q{i}', fill='#ffffff', font=('Arial', 9))
+            y = wire_spacing + i * wire_spacing
+            circuit_canvas.create_line(start_x, y, end_x, y, fill='#ffffff', width=2)
+            circuit_canvas.create_text(start_x - 20, y, text=f'q{i}', fill='#ffffff', 
+                                     font=('Arial', 10 if not self.fullscreen else 12))
         
-        # Store canvas reference for animation
+        # Store canvas reference and dimensions for animation
         self.circuit_canvas = circuit_canvas
+        self.canvas_width = canvas_width
+        self.wire_spacing = wire_spacing
         
-        # Initial gate positions
-        self.gate_positions = [100, 180, 260]
+        # Scale gate positions based on canvas width
+        gate_spacing = (end_x - start_x - 80) // 3
+        self.gate_positions = [start_x + 40 + i * gate_spacing for i in range(3)]
         self.gate_colors = ['#ff6b6b', '#4ecdc4', '#96ceb4']
         self.gate_labels = ['H', 'X', 'Z']
         
@@ -132,7 +183,6 @@ class SplashScreen:
     
     def draw_animated_gates(self):
         """Draw the animated quantum gates"""
-        # Check if animation should continue and canvas exists
         if not self.animation_active or not hasattr(self, 'circuit_canvas'):
             return
             
@@ -140,20 +190,50 @@ class SplashScreen:
             # Clear previous gates
             self.circuit_canvas.delete("gate")
             
+            # Scale gate size based on fullscreen mode
+            gate_size = 20 if self.fullscreen else 18
+            
             # Draw gates at current positions
             for i, (x, color, label) in enumerate(zip(self.gate_positions, self.gate_colors, self.gate_labels)):
-                y = 15 + i * 25  # Match the wire positions
+                y = self.wire_spacing + i * self.wire_spacing
                 
-                # Gate rectangle - slightly smaller
-                self.circuit_canvas.create_rectangle(x-18, y-12, x+18, y+12,
+                # Gate rectangle
+                self.circuit_canvas.create_rectangle(x-gate_size, y-gate_size//2, x+gate_size, y+gate_size//2,
                                                 fill=color, outline='#ffffff', width=2, tags="gate")
                 
                 # Gate label
+                font_size = 12 if self.fullscreen else 10
                 self.circuit_canvas.create_text(x, y, text=label, fill='#000000',
-                                            font=('Arial', 10, 'bold'), tags="gate")
+                                            font=('Arial', font_size, 'bold'), tags="gate")
         except tk.TclError:
-            # Canvas has been destroyed, stop animation
             self.animation_active = False
+    
+    def animate_gates(self):
+        """Animate the quantum gates movement"""
+        def move_gates():
+            if not self.animation_active:
+                return
+                
+            try:
+                if hasattr(self, 'circuit_canvas') and self.circuit_canvas.winfo_exists():
+                    # Move gates based on canvas width
+                    move_speed = 3 if self.fullscreen else 2
+                    reset_position = self.canvas_width // 8 + 20
+                    max_position = self.canvas_width - reset_position
+                    
+                    for i in range(len(self.gate_positions)):
+                        self.gate_positions[i] += move_speed
+                        if self.gate_positions[i] > max_position:
+                            self.gate_positions[i] = reset_position
+                    
+                    self.draw_animated_gates()
+                    
+                    if self.animation_active:
+                        self.splash.after(100, move_gates)
+            except tk.TclError:
+                self.animation_active = False
+        
+        move_gates()
     
     def animate_loading(self):
         """Animate the loading elements"""
@@ -192,31 +272,31 @@ class SplashScreen:
         
         update_text()
     
-    def animate_gates(self):
-        """Animate the quantum gates movement"""
-        def move_gates():
-            # Check if animation should continue
-            if not self.animation_active:
-                return
+    # def animate_gates(self):
+    #     """Animate the quantum gates movement"""
+    #     def move_gates():
+    #         # Check if animation should continue
+    #         if not self.animation_active:
+    #             return
                 
-            try:
-                if hasattr(self, 'circuit_canvas') and self.circuit_canvas.winfo_exists():
-                    # Move gates slightly
-                    for i in range(len(self.gate_positions)):
-                        self.gate_positions[i] += 2
-                        if self.gate_positions[i] > 350:  # Adjusted for smaller canvas
-                            self.gate_positions[i] = 80
+    #         try:
+    #             if hasattr(self, 'circuit_canvas') and self.circuit_canvas.winfo_exists():
+    #                 # Move gates slightly
+    #                 for i in range(len(self.gate_positions)):
+    #                     self.gate_positions[i] += 2
+    #                     if self.gate_positions[i] > 350:  # Adjusted for smaller canvas
+    #                         self.gate_positions[i] = 80
                     
-                    self.draw_animated_gates()
+    #                 self.draw_animated_gates()
                     
-                    # Continue animation if still active
-                    if self.animation_active:
-                        self.splash.after(100, move_gates)
-            except tk.TclError:
-                # Widget has been destroyed, stop animation
-                self.animation_active = False
+    #                 # Continue animation if still active
+    #                 if self.animation_active:
+    #                     self.splash.after(100, move_gates)
+    #         except tk.TclError:
+    #             # Widget has been destroyed, stop animation
+    #             self.animation_active = False
         
-        move_gates()
+    #     move_gates()
     
     def close_splash(self):
         """Close the splash screen and show game mode selection"""
@@ -253,10 +333,13 @@ class SplashScreen:
         """Run the splash screen"""
         self.splash.mainloop()
 
-def show_splash_screen():
+def show_splash_screen(fullscreen=True):
     """Show the splash screen before the game mode selection"""
-    splash = SplashScreen()
+    splash = SplashScreen(fullscreen)
     splash.run()
 
 if __name__ == "__main__":
-    show_splash_screen()
+    # Test in fullscreen
+    show_splash_screen(fullscreen=True)
+    # Or test in windowed mode
+    # show_splash_screen(fullscreen=False)
