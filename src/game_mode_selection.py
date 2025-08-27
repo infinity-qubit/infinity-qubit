@@ -166,25 +166,25 @@ class GameModeSelection:
             'tutorial': {
                 'title': '📚 Tutorial Mode',
                 'description': 'Perfect for beginners! Learn quantum computing fundamentals through interactive lessons and guided exercises.',
-                'features': ['• Step-by-step quantum gate tutorials', '• Interactive circuit builder', '• Qubit visualization', '• Progress tracking'],
+                'features': ['• Step-by-step quantum gate tutorials', '• Interactive circuit builder', '• Qubit visualization'],
                 'difficulty': 'Beginner'
             },
             'puzzle': {
                 'title': '🎮 Puzzle Mode',
                 'description': 'Challenge yourself with quantum puzzles! Solve increasingly complex quantum circuit problems.',
-                'features': ['• 50+ quantum puzzles', '• Multiple difficulty levels', '• Achievement system', '• Leaderboards'],
+                'features': ['• 30+ quantum puzzles', '• Multiple difficulty levels', '• Scoring system'],
                 'difficulty': 'Intermediate'
             },
             'sandbox': {
                 'title': '🛠️ Sandbox Mode',
                 'description': 'Unlimited creativity! Build and experiment with quantum circuits without restrictions.',
-                'features': ['• Free-form circuit design', '• Real quantum simulation', '• Save/load circuits', '• Export results'],
+                'features': ['• Free-form circuit design', '• Real quantum simulation', '• Visualize circuits in 3D'],
                 'difficulty': 'Advanced'
             },
             'learn_hub': {
                 'title': '🚀 Learn Hub',
                 'description': 'Comprehensive learning center with courses, documentation, and advanced quantum concepts.',
-                'features': ['• Structured courses', '• Reference materials', '• Advanced algorithms', '• Research papers'],
+                'features': ['• Reference materials', '• Advanced algorithms', '• Research papers'],
                 'difficulty': 'All Levels'
             }
         }
