@@ -155,6 +155,103 @@ class GameModeSelection:
         self.animate_particles(canvas)
         return canvas
 
+    def update_info_display(self, mode_key):
+        """Update the info display with selected mode information"""
+        # Clear existing content
+        for widget in self.info_frame.winfo_children():
+            widget.destroy()
+        
+        # Mode information dictionary
+        mode_info = {
+            'tutorial': {
+                'title': '📚 Tutorial Mode',
+                'description': 'Perfect for beginners! Learn quantum computing fundamentals through interactive lessons and guided exercises.',
+                'features': ['• Step-by-step quantum gate tutorials', '• Interactive circuit builder', '• Qubit visualization'],
+                'difficulty': 'Beginner'
+            },
+            'puzzle': {
+                'title': '🎮 Puzzle Mode',
+                'description': 'Challenge yourself with quantum puzzles! Solve increasingly complex quantum circuit problems.',
+                'features': ['• 30+ quantum puzzles', '• Multiple difficulty levels', '• Scoring system'],
+                'difficulty': 'Intermediate'
+            },
+            'sandbox': {
+                'title': '🛠️ Sandbox Mode',
+                'description': 'Unlimited creativity! Build and experiment with quantum circuits without restrictions.',
+                'features': ['• Free-form circuit design', '• Real quantum simulation', '• Visualize circuits in 3D'],
+                'difficulty': 'Advanced'
+            },
+            'learn_hub': {
+                'title': '🚀 Learn Hub',
+                'description': 'Comprehensive learning center with courses, documentation, and advanced quantum concepts.',
+                'features': ['• Reference materials', '• Advanced algorithms', '• Research papers'],
+                'difficulty': 'All Levels'
+            }
+        }
+        
+        info = mode_info.get(mode_key, {})
+        if not info:
+            return
+        
+        # Title
+        title_label = tk.Label(self.info_frame,
+                            text=info['title'],
+                            font=('Arial', max(16, int(self.window_width / 70)), 'bold'),
+                            fg=palette['title_color'],
+                            bg=palette['background'])
+        title_label.place(relx=0.5, rely=0.08, anchor='n')
+        
+        # Difficulty badge
+        difficulty_label = tk.Label(self.info_frame,
+                                text=f"Difficulty: {info['difficulty']}",
+                                font=('Arial', max(10, int(self.window_width / 120)), 'italic'),
+                                fg=palette['subtitle_color_2'],
+                                bg=palette['background'])
+        difficulty_label.place(relx=0.5, rely=0.18, anchor='n')
+        
+        # Description
+        desc_label = tk.Label(self.info_frame,
+                            text=info['description'],
+                            font=('Arial', max(11, int(self.window_width / 110))),
+                            fg=palette['description_text_color'],
+                            bg=palette['background'],
+                            wraplength=int(self.window_width * 0.2),
+                            justify=tk.CENTER)
+        desc_label.place(relx=0.3, rely=0.4, anchor='w')
+        
+        # Features
+        features_text = '\n'.join(info['features'])
+        features_label = tk.Label(self.info_frame,
+                                text=features_text,
+                                font=('Arial', max(9, int(self.window_width / 130))),
+                                fg=palette['features_text_color'],
+                                bg=palette['background'],
+                                justify=tk.CENTER)
+        features_label.place(relx=0.5, rely=0.55, anchor='n')
+        
+        # Start button
+        start_btn = tk.Button(self.info_frame,
+                            text=f"Start {info['title'].split(' ', 1)[1]}",
+                            command=lambda: self.execute_command(self.selected_command),
+                            font=('Arial', max(12, int(self.window_width / 100)), 'bold'),
+                            bg=palette.get('start_button_color', '#4ecdc4'),
+                            fg=palette['black'],
+                            padx=max(20, int(self.window_width / 60)),
+                            pady=max(10, int(self.window_height / 80)),
+                            cursor='hand2',
+                            relief=tk.RAISED,
+                            bd=2)
+        start_btn.place(relx=0.5, rely=0.9, anchor='s')
+        
+        # Hover effects for start button
+        def on_start_enter(event):
+            start_btn.configure(bg=palette.get('start_button_hover_color', '#45b7b8'))
+        def on_start_leave(event):
+            start_btn.configure(bg=palette.get('start_button_color', '#4ecdc4'))
+        
+        start_btn.bind("<Enter>", on_start_enter)
+        start_btn.bind("<Leave>", on_start_leave)
+
     def animate_particles(self, canvas):
         """Animate background particles"""
         def update_particles():
@@ -200,8 +297,8 @@ class GameModeSelection:
         """Create the game mode selection interface with glassmorphism effect using relative positioning"""
         # Main container with semi-transparent background using relative positioning
         main_frame = tk.Frame(self.root, bg=palette['background'])
-        main_frame.place(relx=0.5, rely=0.5, anchor='center',
-                        relwidth=0.9, relheight=0.85)
+        main_frame.place(relx=0.05, rely=0.05, anchor='nw',
+                        relwidth=0.9, relheight=0.9)
 
         # Create glassmorphism background
         glass_canvas = tk.Canvas(main_frame, highlightthickness=0, bg=palette['background'])
@@ -212,48 +309,58 @@ class GameModeSelection:
 
         # Content frame with relative positioning
         content_frame = tk.Frame(main_frame, bg=palette['background'])
-        content_frame.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.95, relheight=0.95)
+        content_frame.place(relx=0.05, rely=0.05, anchor='nw', relwidth=0.9, relheight=0.9)
 
-        # Enhanced title with glow effect - relative positioning
+        # Enhanced title with glow effect - positioned at top
         title_frame = tk.Frame(content_frame, bg=palette['background'])
-        title_frame.place(relx=0.5, rely=0.1, anchor='center')
+        title_frame.place(relx=0.5, rely=0.05, anchor='n')
 
         # Calculate font sizes based on screen resolution
         title_font_size = max(24, int(self.window_width / 40))
         subtitle_font_size = max(14, int(self.window_width / 80))
-        button_font_size = max(10, int(self.window_width / 100))
 
         # Shadow title for glow effect
         shadow_title = tk.Label(title_frame, text="🔬 Infinity Qubit",
-                               font=('Arial', title_font_size, 'bold'),
-                               fg=palette['shadow_title_color'], bg=palette['background'])
+                            font=('Arial', title_font_size, 'bold'),
+                            fg=palette['shadow_title_color'], bg=palette['background'])
         shadow_title.place(x=3, y=3)
 
         # Main title
         title_label = tk.Label(title_frame, text="🔬 Infinity Qubit",
-                              font=('Arial', title_font_size, 'bold'),
-                              fg=palette['title_color'], bg=palette['background'])
+                            font=('Arial', title_font_size, 'bold'),
+                            fg=palette['title_color'], bg=palette['background'])
         title_label.pack()
 
-        # Enhanced subtitle with animation - relative positioning
+        # Enhanced subtitle with animation - positioned below title
         self.subtitle_label = tk.Label(content_frame, text="Choose Your Quantum Adventure",
-                                      font=('Arial', subtitle_font_size, 'italic'),
-                                      fg=palette['subtitle_color_1'], bg=palette['background'])
-        self.subtitle_label.place(relx=0.5, rely=0.22, anchor='center')
+                                    font=('Arial', subtitle_font_size, 'italic'),
+                                    fg=palette['subtitle_color_1'], bg=palette['background'])
+        self.subtitle_label.place(relx=0.5, rely=0.15, anchor='n')
 
         # Animate subtitle
         self.animate_subtitle()
 
-        # Game mode buttons container - relative positioning
-        buttons_frame = tk.Frame(content_frame, bg=palette['background'])
-        buttons_frame.place(relx=0.5, rely=0.55, anchor='center', relwidth=0.8, relheight=0.5)
+        # NEW: Central split frame container
+        central_frame = tk.Frame(content_frame, bg=palette['background'], relief=tk.RAISED, bd=2)
+        central_frame.place(relx=0.5, rely=0.55, anchor='center', relwidth=0.85, relheight=0.6)
+
+        # LEFT HALF: Game mode buttons
+        buttons_frame = tk.Frame(central_frame, bg=palette['background'], relief=tk.SUNKEN, bd=1)
+        buttons_frame.place(relx=0, rely=0, relwidth=0.3, relheight=1)
+
+        # RIGHT HALF: Game mode information display
+        self.info_frame = tk.Frame(central_frame, bg=palette['background'], relief=tk.SUNKEN, bd=1)
+        self.info_frame.place(relx=0.3, rely=0, relwidth=0.7, relheight=1)
 
         # Create enhanced game mode buttons
-        self.create_enhanced_game_mode_buttons(buttons_frame, button_font_size)
+        self.create_enhanced_game_mode_buttons(buttons_frame)
 
-        # Footer with enhanced styling - relative positioning
+        # Create initial info display
+        self.create_info_display()
+
+        # Footer with enhanced styling - positioned at bottom
         footer_frame = tk.Frame(content_frame, bg=palette['background'])
-        footer_frame.place(relx=0.5, rely=0.9, anchor='center', relwidth=0.9)
+        footer_frame.place(relx=0.5, rely=0.95, anchor='s', relwidth=0.9)
 
         # Enhanced exit button - relative positioning
         exit_btn = tk.Button(footer_frame, text="❌ Exit Game",
@@ -307,90 +414,121 @@ class GameModeSelection:
 
         cycle_color()
 
-    def create_enhanced_game_mode_buttons(self, parent, font_size):
-        """Create enhanced game mode selection buttons with better effects using relative positioning"""
+    def create_enhanced_game_mode_buttons(self, parent):
+        """Create enhanced game mode selection buttons in a vertical list layout"""
+        # Store selected mode for info display
+        self.selected_mode = None
+        
         button_configs = [
             {
                 'title': '📚 Tutorial Mode',
-                'color': palette['tutorial_mode_button_color'],
-                'hover_color': palette['tutorial_mode_button_hover_color'],
-                'command': self.start_tutorial_mode
+                'command': self.start_tutorial_mode,
+                'mode_key': 'tutorial'
             },
             {
                 'title': '🎮 Puzzle Mode',
-                'color': palette['puzzle_mode_button_color'],
-                'hover_color': palette['puzzle_mode_button_hover_color'],
-                'command': self.start_puzzle_mode
+                'command': self.start_puzzle_mode,
+                'mode_key': 'puzzle'
             },
             {
                 'title': '🛠️ Sandbox Mode',
-                'color': palette['sandbox_mode_button_color'],
-                'hover_color': palette['sandbox_mode_button_hover_color'],
-                'command': self.start_sandbox_mode
+                'command': self.start_sandbox_mode,
+                'mode_key': 'sandbox'
             },
             {
                 'title': '🚀 Learn Hub',
-                'color': palette['learn_hub_button_color'],
-                'hover_color': palette['learn_hub_button_hover_color'],
-                'command': self.start_learn_hub_mode
+                'command': self.start_learn_hub_mode,
+                'mode_key': 'learn_hub'
             }
         ]
 
-        # Button positions using relative positioning (2x2 grid)
-        positions = [
-            (0.25, 0.35),  # Top left
-            (0.75, 0.35),  # Top right
-            (0.25, 0.75),  # Bottom left
-            (0.75, 0.75)   # Bottom right
-        ]
+        # Calculate font sizes
+        normal_font_size = max(10, int(self.window_width / 100))
+        selected_font_size = max(12, int(self.window_width / 85))
 
-        # Create buttons with relative positioning
+        # Vertical list positions
+        start_y = 0.025
+        button_height = 0.2
+        spacing = 0.05
+        
+        # Store button references for selection highlighting
+        self.mode_buttons = {}
+        
+        # Create buttons directly in the buttons_frame
         for i, config in enumerate(button_configs):
-            relx, rely = positions[i]
+            rely = start_y + i * (button_height + spacing)
 
-            # Enhanced button frame with relative sizing
-            btn_frame = tk.Frame(parent, bg=palette['button_outline_color'], relief=tk.RAISED, bd=2)
-            btn_frame.place(relx=relx, rely=rely, anchor='center', 
-                          relwidth=0.4, relheight=0.35)
-
-            # Button with enhanced styling and scaled dimensions - only title text
-            action_btn = tk.Button(btn_frame,
+            # Button placed directly in buttons_frame with background matching the frame
+            action_btn = tk.Button(parent,
                                 text=config['title'],
-                                command=lambda cmd=config['command']: self.execute_command(cmd),
-                                font=('Arial', font_size, 'bold'),
-                                bg=config['color'],
-                                fg=palette['black'],
+                                command=lambda mode_key=config['mode_key'], cmd=config['command']: self.select_mode(mode_key, cmd),
+                                font=('Arial', normal_font_size, 'bold'),
+                                bg=palette['background'],  # Match the buttons_frame background
+                                fg=palette['unselected_button_text_color'],
                                 relief=tk.FLAT,
                                 bd=0,
+                                borderwidth=0,
+                                highlightthickness=0,
                                 cursor='hand2',
                                 padx=max(15, int(self.window_width / 80)),
                                 pady=max(10, int(self.window_height / 80)),
                                 justify=tk.CENTER)
 
-            action_btn.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.95, relheight=0.9)
+            action_btn.place(relx=0.05, rely=rely, anchor='nw', 
+                        relwidth=0.9, relheight=button_height)
 
-            # Enhanced hover effects
-            def create_hover_effect(btn, original, hover):
-                def on_enter(event):
-                    btn.configure(bg=hover, relief=tk.RAISED, bd=3)
-                def on_leave(event):
-                    btn.configure(bg=original, relief=tk.FLAT, bd=0)
-                return on_enter, on_leave
+            # Explicitly disable hover effects
+            action_btn.bind("<Enter>", lambda e: None)
+            action_btn.bind("<Leave>", lambda e: None)
 
-            enter_func, leave_func = create_hover_effect(action_btn, config['color'], config['hover_color'])
-            action_btn.bind("<Enter>", enter_func)
-            action_btn.bind("<Leave>", leave_func)
+            # Store button reference with font sizes
+            self.mode_buttons[config['mode_key']] = {
+                'button': action_btn,
+                'command': config['command'],
+                'normal_font_size': normal_font_size,
+                'selected_font_size': selected_font_size
+            }
 
-        # Configure grid weights
-        parent.grid_rowconfigure(0, weight=1)
-        parent.grid_rowconfigure(1, weight=1)
-        parent.grid_columnconfigure(0, weight=1)
-        parent.grid_columnconfigure(1, weight=1)
+    def select_mode(self, mode_key, command):
+        """Select a game mode and update the info display"""
+        self.play_sound()
+        
+        # Reset all buttons to normal state with white text
+        for key, btn_info in self.mode_buttons.items():
+            btn_info['button'].configure(
+                font=('Arial', btn_info['normal_font_size'], 'bold'),
+                fg=palette['unselected_button_text_color']  # White text for unselected buttons
+            )
+        
+        # Increase font size and use palette color for selected button
+        self.mode_buttons[mode_key]['button'].configure(
+            font=('Arial', self.mode_buttons[mode_key]['selected_font_size'], 'bold'),
+            fg=palette['button_text_color']  # Use palette color for selected button
+        )
+        
+        self.selected_mode = mode_key
+        self.selected_command = command
+        self.update_info_display(mode_key)
 
     def execute_command(self, command):
         """Execute button command with sound effect"""
         self.play_sound()
         command()
+
+    def create_info_display(self):
+        """Create the initial info display area"""
+        # Clear existing content
+        for widget in self.info_frame.winfo_children():
+            widget.destroy()
+        
+        # Default welcome message
+        welcome_label = tk.Label(self.info_frame,
+                            text="Select a game mode\nto see details",
+                            font=('Arial', max(14, int(self.window_width / 80)), 'italic'),
+                            fg=palette['subtitle_color_1'],
+                            bg=palette['background'],
+                            justify=tk.CENTER)
+        welcome_label.place(relx=0.5, rely=0.5, anchor='center')
 
     def start_tutorial_mode(self):
         """Start the tutorial mode"""
