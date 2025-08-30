@@ -9,6 +9,12 @@ import matplotlib.pyplot as plt # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # type: ignore
 import sys
 
+# For the save system
+import os
+import json
+from tkinter import simpledialog, filedialog
+
+
 from q_utils import get_colors_from_file, extract_color_palette
 
 sys.path.append('..')
@@ -19,6 +25,102 @@ color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'sandbox_mode')
 
 class SandboxMode:
+    SAVE_DIR = os.path.expanduser("~/.infinity_qubit_sandbox_saves")
+
+    def save_circuit(self):
+        """Prompt for a name and save the current circuit configuration."""
+        if not os.path.exists(self.SAVE_DIR):
+            os.makedirs(self.SAVE_DIR)
+        name = simpledialog.askstring("Save Circuit", "Enter a name for this circuit:")
+        if not name:
+            return
+        filename = os.path.join(self.SAVE_DIR, f"{name}.json")
+        data = {
+            "num_qubits": self.num_qubits,
+            "placed_gates": self.placed_gates,
+            "initial_state": self.initial_state
+        }
+        try:
+            with open(filename, "w") as f:
+                json.dump(data, f)
+            self.show_custom_dialog("Success", f"Circuit saved as '{name}'", "success")
+        except Exception as e:
+            self.show_custom_dialog("Error", f"Could not save circuit: {e}", "error")
+
+    def load_circuit(self):
+        """Show a scrollable list of saved circuits and load the selected one."""
+        if not os.path.exists(self.SAVE_DIR):
+            self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
+            return
+        files = [f for f in os.listdir(self.SAVE_DIR) if f.endswith(".json")]
+        if not files:
+            self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
+            return
+
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Load Circuit")
+        dialog.configure(bg=palette['background'])
+        dialog.geometry("400x350")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.focus_set()
+
+        # Title
+        tk.Label(dialog, text="Select a saved circuit to load:",
+                 font=('Arial', 13, 'bold'), bg=palette['background'], fg=palette['title_color']).pack(pady=(15, 5))
+
+        # Listbox with scrollbar
+        frame = tk.Frame(dialog, bg=palette['background'])
+        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+
+        scrollbar = tk.Scrollbar(frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        listbox = tk.Listbox(frame, font=('Arial', 11), yscrollcommand=scrollbar.set, selectmode=tk.SINGLE,
+                             bg=palette['background_2'], fg=palette['results_text_color'], activestyle='dotbox')
+        for f in sorted(files):
+            listbox.insert(tk.END, f[:-5])  # Remove .json extension
+        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=listbox.yview)
+
+        # Load button
+        def do_load():
+            selection = listbox.curselection()
+            if not selection:
+                messagebox.showwarning("No Selection", "Please select a circuit to load.", parent=dialog)
+                return
+            name = listbox.get(selection[0])
+            filename = os.path.join(self.SAVE_DIR, f"{name}.json")
+            try:
+                with open(filename, "r") as f:
+                    data = json.load(f)
+                self.num_qubits = data.get("num_qubits", 1)
+                self.placed_gates = data.get("placed_gates", [])
+                self.initial_state = data.get("initial_state", "|0⟩")
+                self.qubit_var.set(self.num_qubits)
+                self.state_var.set(self.initial_state)
+                self.update_qubit_selections()
+                self.update_circuit_display()
+                dialog.destroy()
+            except Exception as e:
+                self.show_custom_dialog("Error", f"Could not load circuit: {e}", "error")
+                dialog.destroy()
+
+        load_btn = tk.Button(dialog, text="Load", command=do_load,
+                             font=('Arial', 11, 'bold'),
+                             bg=palette['save_image_background'], fg=palette['background_black'],
+                             padx=20, pady=8, relief=tk.RAISED, cursor='hand2')
+        load_btn.pack(pady=(0, 15))
+
+        # Double-click to load
+        def on_double_click(event):
+            do_load()
+        listbox.bind('<Double-1>', on_double_click)
+
+        # ESC to close
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
+
     def __init__(self, root):
         self.root = root
         self.root.title("Quantum Sandbox Mode")
@@ -28,7 +130,7 @@ class SandboxMode:
         screen_height = self.root.winfo_screenheight()
 
         # Make window fullscreen without title bar
-        self.root.overrideredirect(True)
+        self.root.overrideredirect(False)
         self.root.geometry(f"{screen_width}x{screen_height}+0+0")
         self.root.configure(bg=palette['background'])
 
@@ -478,6 +580,8 @@ class SandboxMode:
         buttons_data = [
             ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
             ("🔄 Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
+            ("💾 Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
+            ("📂 Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black']),
             ("↶ Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
             ("🌐 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color'])  # New button
         ]
