@@ -24,6 +24,11 @@
         "subtitle_color_4": "#e74c3c",
         "subtitle_color_5": "#9b59b6",
 
+        "button_text_color": "#00ff88",
+        "description_text_color": "#4ecdc4",
+        "features_text_color": "#ffffff",
+        "unselected_button_text_color": "#888",
+
         "tutorial_mode_button_color": "#9b59b6",
         "tutorial_mode_button_hover_color": "#b370d1",
 
