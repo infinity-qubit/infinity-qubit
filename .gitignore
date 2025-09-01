@@ -2,4 +2,4 @@
 venv/
 __pycache__/
 infinity_qubit.sh
-resources/saves/
+resources/saves/*
