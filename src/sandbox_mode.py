@@ -10,8 +10,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # type: ignore
 import sys
 
 # For the save system
+import re
 import os
 import json
+import datetime
 from tkinter import simpledialog, filedialog
 
 
@@ -25,33 +27,36 @@ color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'sandbox_mode')
 
 class SandboxMode:
-    SAVE_DIR = os.path.expanduser("~/.infinity_qubit_sandbox_saves")
+    SAVE_DIR = os.path.expanduser("resources/saves/infinity_qubit_sandbox_saves")
 
     def save_circuit(self):
-        """Prompt for a name and save the current circuit configuration."""
+        """Save the current circuit configuration with timestamp."""
         if not os.path.exists(self.SAVE_DIR):
             os.makedirs(self.SAVE_DIR)
-        name = simpledialog.askstring("Save Circuit", "Enter a name for this circuit:")
-        if not name:
-            return
-        filename = os.path.join(self.SAVE_DIR, f"{name}.json")
+
+        # Create timestamp-based filename
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = os.path.join(self.SAVE_DIR, f"circuit_{self.num_qubits}qubits_{timestamp}.json")
+        
         data = {
             "num_qubits": self.num_qubits,
             "placed_gates": self.placed_gates,
             "initial_state": self.initial_state
         }
+        
         try:
             with open(filename, "w") as f:
                 json.dump(data, f)
-            self.show_custom_dialog("Success", f"Circuit saved as '{name}'", "success")
+            self.show_custom_dialog("Success", f"Circuit saved!", "success")
         except Exception as e:
             self.show_custom_dialog("Error", f"Could not save circuit: {e}", "error")
 
     def load_circuit(self):
-        """Show a scrollable list of saved circuits and load the selected one."""
+        """Show a touch-friendly list of saved circuits."""
         if not os.path.exists(self.SAVE_DIR):
             self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
             return
+        
         files = [f for f in os.listdir(self.SAVE_DIR) if f.endswith(".json")]
         if not files:
             self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
@@ -61,39 +66,71 @@ class SandboxMode:
         dialog = tk.Toplevel(self.root)
         dialog.title("Load Circuit")
         dialog.configure(bg=palette['background'])
-        dialog.geometry("400x350")
+        
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+
+        # Calculate size (70% of screen)
+        dialog_width = int(self.screen_width * 0.7)
+        dialog_height = int(self.screen_height * 0.8)
+        x = (self.screen_width - dialog_width) // 2
+        y = (self.screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
         dialog.transient(self.root)
         dialog.grab_set()
-        dialog.focus_set()
+        dialog.focus_force()
+
+        # Border frame
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Main frame
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+
+        # Title bar
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'], height=40)
+        title_bar.pack(fill=tk.X)
+        title_bar.pack_propagate(False)
 
         # Title
-        tk.Label(dialog, text="Select a saved circuit to load:",
-                 font=('Arial', 13, 'bold'), bg=palette['background'], fg=palette['title_color']).pack(pady=(15, 5))
+        title_label = tk.Label(title_bar, text="📂 Load Saved Circuit",
+                            font=('Arial', 14, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_4'])
+        title_label.pack(side=tk.LEFT, padx=15, pady=5)
 
-        # Listbox with scrollbar
-        frame = tk.Frame(dialog, bg=palette['background'])
-        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        # Close button
+        close_btn = tk.Button(title_bar, text="✕",
+                            command=dialog.destroy,
+                            font=('Arial', 16, 'bold'),
+                            bg=palette['background_4'],
+                            fg=palette['title_color'],
+                            bd=0, padx=15, pady=5)
+        close_btn.pack(side=tk.RIGHT)
 
-        scrollbar = tk.Scrollbar(frame)
+        # Scrollable frame for circuit buttons
+        canvas = tk.Canvas(main_frame, bg=palette['background_3'], highlightthickness=0)
+        scrollbar = tk.Scrollbar(main_frame, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=palette['background_3'])
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Pack scrollbar and canvas
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        listbox = tk.Listbox(frame, font=('Arial', 11), yscrollcommand=scrollbar.set, selectmode=tk.SINGLE,
-                             bg=palette['background_2'], fg=palette['results_text_color'], activestyle='dotbox')
-        for f in sorted(files):
-            listbox.insert(tk.END, f[:-5])  # Remove .json extension
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.config(command=listbox.yview)
+        # Create window in canvas for scrollable frame
+        canvas.create_window((0, 0), window=scrollable_frame, anchor=tk.NW, 
+                            width=dialog_width - 50)  # Adjust width to fit dialog
 
-        # Load button
-        def do_load():
-            selection = listbox.curselection()
-            if not selection:
-                messagebox.showwarning("No Selection", "Please select a circuit to load.", parent=dialog)
-                return
-            name = listbox.get(selection[0])
-            filename = os.path.join(self.SAVE_DIR, f"{name}.json")
+        # Sort files by timestamp (newest first)
+        files.sort(reverse=True)
+
+        def do_load(filename):
             try:
-                with open(filename, "r") as f:
+                with open(os.path.join(self.SAVE_DIR, filename), "r") as f:
                     data = json.load(f)
                 self.num_qubits = data.get("num_qubits", 1)
                 self.placed_gates = data.get("placed_gates", [])
@@ -107,18 +144,70 @@ class SandboxMode:
                 self.show_custom_dialog("Error", f"Could not load circuit: {e}", "error")
                 dialog.destroy()
 
-        load_btn = tk.Button(dialog, text="Load", command=do_load,
-                             font=('Arial', 11, 'bold'),
-                             bg=palette['save_image_background'], fg=palette['background_black'],
-                             padx=20, pady=8, relief=tk.RAISED, cursor='hand2')
-        load_btn.pack(pady=(0, 15))
+        # Create touch-friendly buttons for each save file
+        for filename in files:
+            # Extract info from filename
+            match = re.match(r"circuit_(\d+)qubits_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.json", filename)
+            if match:
+                qubits, timestamp = match.groups()
+                # Convert timestamp to readable format
+                datetime_obj = datetime.datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S")
+                friendly_date = datetime_obj.strftime("%b %d, %Y %I:%M %p")
+                
+                # Create button frame with border
+                btn_frame = tk.Frame(scrollable_frame, bg=palette['background_4'], 
+                                relief=tk.RAISED, bd=2)
+                btn_frame.pack(fill=tk.X, padx=10, pady=5)
 
-        # Double-click to load
-        def on_double_click(event):
-            do_load()
-        listbox.bind('<Double-1>', on_double_click)
+                # Button with file info
+                load_btn = tk.Button(btn_frame,
+                                text=f"📊 {qubits} Qubits Circuit\n📅 {friendly_date}",
+                                command=lambda f=filename: do_load(f),
+                                font=('Arial', 12),
+                                bg=palette['background_4'],
+                                fg=palette['title_color'],
+                                justify=tk.LEFT,
+                                padx=20, pady=15,
+                                cursor='hand2')
+                load_btn.pack(fill=tk.X)
 
-        # ESC to close
+                # Add hover effect
+                def on_enter(e):
+                    e.widget.configure(bg=palette['button_hover_background'])
+                def on_leave(e):
+                    e.widget.configure(bg=palette['background_4'])
+                
+                load_btn.bind("<Enter>", on_enter)
+                load_btn.bind("<Leave>", on_leave)
+
+        # Update scroll region
+        scrollable_frame.update_idletasks()
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+        # Make title bar draggable
+        def start_move(event):
+            dialog.x = event.x
+            dialog.y = event.y
+
+        def on_move(event):
+            deltax = event.x - dialog.x
+            deltay = event.y - dialog.y
+            x = dialog.winfo_x() + deltax
+            y = dialog.winfo_y() + deltay
+            dialog.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_bar_label.bind("<Button-1>", start_move)
+        title_bar_label.bind("<B1-Motion>", on_move)
+
+        # Mouse wheel scrolling
+        def on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+
+        # Bind Escape to close
         dialog.bind('<Escape>', lambda e: dialog.destroy())
 
     def __init__(self, root):
