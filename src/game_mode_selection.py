@@ -69,77 +69,87 @@ class GameModeSelection:
         self.root.bind('<F11>', self.on_f11_key)  # F11 to exit fullscreen
 
     def setup_video_background(self):
-        """Setup video background"""
+        """Setup GIF background"""
         try:
-            # Loading video file
-            video_path = get_resource_path('resources/images/quantum_background.mp4')
-            self.video_cap = cv2.VideoCapture(video_path)
-
-            if not self.video_cap.isOpened():
-                print("Warning: Could not open video file. Using fallback background.")
-                self.video_cap = None
+            # Loading GIF file
+            gif_path = get_resource_path('resources/images/Art Render GIF by time.gif')
+            self.gif_image = Image.open(gif_path)
+            
+            # Get GIF frame count and duration
+            self.gif_frames = []
+            self.gif_durations = []
+            
+            try:
+                while True:
+                    frame = self.gif_image.copy()
+                    # Resize frame to window size
+                    frame = frame.resize((self.window_width, self.window_height), Image.Resampling.LANCZOS)
+                    
+                    # Apply dark overlay for better text readability
+                    overlay = Image.new('RGBA', frame.size, (0, 0, 0, 100))
+                    if frame.mode != 'RGBA':
+                        frame = frame.convert('RGBA')
+                    frame = Image.alpha_composite(frame, overlay)
+                    frame = frame.convert('RGB')
+                    
+                    self.gif_frames.append(ImageTk.PhotoImage(frame))
+                    
+                    # Get frame duration (in milliseconds)
+                    duration = self.gif_image.info.get('duration', 100)
+                    self.gif_durations.append(duration)
+                    
+                    self.gif_image.seek(len(self.gif_frames))
+            except EOFError:
+                pass  # End of sequence
+            
+            if not self.gif_frames:
+                print("Warning: Could not load GIF frames. Using fallback background.")
                 self.create_fallback_background()
                 return
 
-            # Create video label
+            # Create background label
             self.video_label = tk.Label(self.root, bg=palette['black'])
             self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-            # Start video playbook
+            # Start GIF animation
             self.video_running = True
-            self.video_thread = threading.Thread(target=self.play_video, daemon=True)
-            self.video_thread.start()
+            self.current_frame = 0
+            self.animate_gif()
 
         except Exception as e:
-            print(f"Error setting up video background: {e}")
-            self.video_cap = None
+            print(f"Error setting up GIF background: {e}")
             self.create_fallback_background()
 
-    def play_video(self):
-        """Play video in background thread"""
-        if not self.video_cap:
+    def animate_gif(self):
+        """Animate GIF frames"""
+        if not self.video_running or not self.gif_frames or not hasattr(self, 'root'):
             return
+            
+        try:
+            # Check if the root window still exists
+            if not self.root.winfo_exists():
+                return
+                
+            # Update background with current frame
+            if self.video_label and self.video_label.winfo_exists():
+                self.video_label.configure(image=self.gif_frames[self.current_frame])
+                self.video_label.image = self.gif_frames[self.current_frame]  # Keep a reference
+            
+            # Move to next frame
+            self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
+            
+            # Schedule next frame only if still running
+            if self.video_running and hasattr(self, 'root'):
+                duration = self.gif_durations[self.current_frame] if self.current_frame < len(self.gif_durations) else 100
+                self.root.after(duration, self.animate_gif)
+            
+        except Exception as e:
+            print(f"Error in GIF animation: {e}")
+            self.video_running = False
 
-        fps = self.video_cap.get(cv2.CAP_PROP_FPS)
-        frame_delay = 1.0 / fps if fps > 0 else 1.0 / 30  # Default to 30fps
-
-        while self.video_running:
-            try:
-                ret, frame = self.video_cap.read()
-
-                if not ret:
-                    # Loop video
-                    self.video_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    continue
-
-                # Resize frame to window size
-                frame = cv2.resize(frame, (self.window_width, self.window_height))
-
-                # Convert BGR to RGB
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-                # Convert to PIL Image
-                pil_image = Image.fromarray(frame_rgb)
-
-                # Apply dark overlay for better text readability
-                overlay = Image.new('RGBA', pil_image.size, (0, 0, 0, 100))
-                pil_image = pil_image.convert('RGBA')
-                pil_image = Image.alpha_composite(pil_image, overlay)
-                pil_image = pil_image.convert('RGB')
-
-                # Convert to PhotoImage
-                photo = ImageTk.PhotoImage(pil_image)
-
-                # Update video label
-                if self.video_label and self.video_running:
-                    self.video_label.configure(image=photo)
-                    self.video_label.image = photo  # Keep a reference
-
-                time.sleep(frame_delay)
-
-            except Exception as e:
-                print(f"Error in video playback: {e}")
-                break
+    def play_video(self):
+        """Legacy method - now handled by animate_gif"""
+        pass
 
     def create_fallback_background(self):
         """Create animated fallback background if video fails"""
@@ -775,11 +785,14 @@ class GameModeSelection:
             messagebox.showerror("Error", f"Error starting Learn Hub: {str(e)}")
 
     def stop_video(self):
-        """Stop video playback"""
+        """Stop GIF animation"""
         self.animations_running = False
         self.video_running = False
-        if self.video_cap:
-            self.video_cap.release()
+        # Clean up GIF resources
+        if hasattr(self, 'gif_frames'):
+            self.gif_frames.clear()
+        if hasattr(self, 'gif_image'):
+            self.gif_image.close()
 
     def on_closing(self):
         """Handle window closing"""
