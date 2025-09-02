@@ -4,3 +4,4 @@ __pycache__/
 infinity_qubit.sh
 **/.DS_Store
 *.pkg
+.vscode/
