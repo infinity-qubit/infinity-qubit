@@ -264,8 +264,11 @@ class SplashScreen:
             try:
                 if hasattr(self, 'loading_label') and self.loading_label.winfo_exists():
                     self.loading_label.config(text=texts[index % len(texts)])
-                    if index < 20 and self.text_animation_active:  # Animate for ~4 seconds
-                        self.splash.after(800, lambda: update_text(index + 1))
+                    # Disabled animation to prevent lambda issues
+                    # if index < 20 and self.text_animation_active:  # Animate for ~4 seconds
+                    #     def continue_animation():
+                    #         update_text(index + 1)
+                    #     self.splash.after(800, continue_animation)
             except tk.TclError:
                 # Widget has been destroyed, stop animation
                 self.text_animation_active = False

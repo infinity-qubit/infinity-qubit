@@ -7,6 +7,7 @@ Allows users to choose between different game modes with video background.
 import sys
 import tkinter as tk
 import tkinter.messagebox as messagebox
+import tkinter.ttk as ttk
 import cv2
 from PIL import Image, ImageTk
 import threading
@@ -44,6 +45,9 @@ class GameModeSelection:
         self.video_label = None
         self.video_running = False
         self.video_thread = None
+        
+        # Animation control flag
+        self.animations_running = True
 
         # Initialize sound system
         try:
@@ -61,8 +65,8 @@ class GameModeSelection:
         self.root.focus_force()
 
         # Handle window close event (ESC key to exit)
-        self.root.bind('<Escape>', lambda e: self.on_closing())
-        self.root.bind('<F11>', lambda e: self.on_closing())  # F11 to exit fullscreen
+        self.root.bind('<Escape>', self.on_escape_key)
+        self.root.bind('<F11>', self.on_f11_key)  # F11 to exit fullscreen
 
     def setup_video_background(self):
         """Setup video background"""
@@ -229,47 +233,70 @@ class GameModeSelection:
                                 justify=tk.CENTER)
         features_label.place(relx=0.5, rely=0.55, anchor='n')
         
-        # Start button
-        start_btn = tk.Button(self.info_frame,
-                            text=f"Start {info['title'].split(' ', 1)[1]}",
-                            command=lambda: self.execute_command(self.selected_command),
-                            font=('Arial', max(12, int(self.window_width / 100)), 'bold'),
-                            bg=palette.get('start_button_color', '#4ecdc4'),
-                            fg=palette['black'],
-                            padx=max(20, int(self.window_width / 60)),
-                            pady=max(10, int(self.window_height / 80)),
-                            cursor='hand2',
-                            relief=tk.RAISED,
-                            bd=2)
-        start_btn.place(relx=0.5, rely=0.9, anchor='s')
+        # Start button - canvas-based for color control
+        start_canvas_width = max(200, int(self.window_width * 0.15))
+        start_canvas_height = max(50, int(self.window_height / 15))
         
-        # Hover effects for start button
+        start_canvas = tk.Canvas(self.info_frame,
+                               width=start_canvas_width,
+                               height=start_canvas_height,
+                               bg=palette['background'],
+                               highlightthickness=0,
+                               bd=0)
+        start_canvas.place(relx=0.5, rely=0.9, anchor='s')
+        
+        # Draw start button background
+        start_canvas.create_rectangle(2, 2, start_canvas_width-2, start_canvas_height-2,
+                                    fill=palette.get('start_button_color', '#4ecdc4'),
+                                    outline="#2b3340", width=1,
+                                    tags="start_bg")
+        
+        # Add text to start button
+        start_canvas.create_text(start_canvas_width//2, start_canvas_height//2,
+                               text=f"Start {info['title'].split(' ', 1)[1]}",
+                               font=('Arial', max(12, int(self.window_width / 100)), 'bold'),
+                               fill=palette['black'],
+                               tags="start_text")
+        
+        # Bind click events for start button
+        def on_start_click(event):
+            self.execute_command(self.selected_command)
+        
         def on_start_enter(event):
-            start_btn.configure(bg=palette.get('start_button_hover_color', '#45b7b8'))
+            start_canvas.itemconfig("start_bg", fill="#5fd9d1")  # Lighter shade
+            start_canvas.configure(cursor="hand2")
+            
         def on_start_leave(event):
-            start_btn.configure(bg=palette.get('start_button_color', '#4ecdc4'))
+            start_canvas.itemconfig("start_bg", fill=palette.get('start_button_color', '#4ecdc4'))
+            start_canvas.configure(cursor="")
         
-        start_btn.bind("<Enter>", on_start_enter)
-        start_btn.bind("<Leave>", on_start_leave)
+        start_canvas.bind("<Button-1>", on_start_click)
+        start_canvas.bind("<Enter>", on_start_enter)
+        start_canvas.bind("<Leave>", on_start_leave)
 
     def animate_particles(self, canvas):
         """Animate background particles"""
         def update_particles():
-            if hasattr(self, 'root') and self.root.winfo_exists():
-                canvas.delete("particle")
+            try:
+                if (self.animations_running and hasattr(self, 'root') and 
+                    self.root.winfo_exists()):
+                    canvas.delete("particle")
 
-                for particle in self.particles:
-                    particle[0] = (particle[0] + particle[2]) % self.window_width
-                    particle[1] = (particle[1] + particle[2] * 0.5) % self.window_height
+                    for particle in self.particles:
+                        particle[0] = (particle[0] + particle[2]) % self.window_width
+                        particle[1] = (particle[1] + particle[2] * 0.5) % self.window_height
 
-                    # Draw glowing dot (scale size with resolution)
-                    dot_size = max(2, int(self.window_width / 500))
-                    x, y = particle[0], particle[1]
-                    canvas.create_oval(x-dot_size, y-dot_size, x+dot_size, y+dot_size,
-                                     fill='#00ff88', outline='#4ecdc4',
-                                     tags="particle", width=2)
+                        # Draw glowing dot (scale size with resolution)
+                        dot_size = max(2, int(self.window_width / 500))
+                        x, y = particle[0], particle[1]
+                        canvas.create_oval(x-dot_size, y-dot_size, x+dot_size, y+dot_size,
+                                         fill='#00ff88', outline='#4ecdc4',
+                                         tags="particle", width=2)
 
-                self.root.after(50, update_particles)
+                    self.root.after(50, update_particles)
+            except (tk.TclError, AttributeError):
+                # Widget has been destroyed or app is closing, stop the animation
+                self.animations_running = False
 
         update_particles()
 
@@ -305,7 +332,8 @@ class GameModeSelection:
         glass_canvas.place(relx=0, rely=0, relwidth=1, relheight=1)
 
         # Draw glassmorphism background
-        glass_canvas.bind('<Configure>', lambda e: self.update_glass_background(glass_canvas))
+        # Update glass background with configure event binding
+        glass_canvas.bind('<Configure>', self.on_glass_configure)
 
         # Content frame with relative positioning
         content_frame = tk.Frame(main_frame, bg=palette['background'])
@@ -363,31 +391,52 @@ class GameModeSelection:
         footer_frame.place(relx=0.5, rely=0.95, anchor='s', relwidth=0.9)
 
         # Enhanced exit button - relative positioning
-        exit_btn = tk.Button(footer_frame, text="❌ Exit Game",
-                            command=self.exit_game,
-                            font=('Arial', max(10, int(self.window_width / 120)), 'bold'),
-                            bg=palette['exit_button_color'], fg=palette['exit_text_color'],
-                            padx=max(20, int(self.window_width / 80)), 
-                            pady=max(8, int(self.window_height / 120)),
-                            cursor='hand2',
-                            relief=tk.FLAT,
-                            bd=0)
-        exit_btn.pack(side=tk.RIGHT)
+        # Create canvas-based exit button for better color control
+        exit_canvas = tk.Canvas(footer_frame,
+                               width=max(150, int(self.window_width / 8)),
+                               height=max(40, int(self.window_height / 20)),
+                               bg=palette['exit_button_color'],
+                               highlightthickness=0,
+                               bd=0)
+        exit_canvas.pack(side=tk.RIGHT, padx=10, pady=5)
+        
+        # Draw exit button background
+        canvas_width = max(150, int(self.window_width / 8))
+        canvas_height = max(40, int(self.window_height / 20))
+        
+        exit_canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                   fill=palette['exit_button_color'], 
+                                   outline="#2b3340", width=1,
+                                   tags="exit_bg")
+        
+        # Add text to exit button
+        exit_canvas.create_text(canvas_width//2, canvas_height//2,
+                              text="❌ Exit Game",
+                              font=('Arial', max(10, int(self.window_width / 120)), 'bold'),
+                              fill=palette['exit_text_color'],
+                              tags="exit_text")
+        
+        # Bind click events for exit button
+        def on_exit_click(event):
+            self.exit_game()
+        
+        def on_exit_enter(event):
+            exit_canvas.itemconfig("exit_bg", fill=palette['exit_button_hover_color'])
+            exit_canvas.configure(cursor="hand2")
+            
+        def on_exit_leave(event):
+            exit_canvas.itemconfig("exit_bg", fill=palette['exit_button_color'])
+            exit_canvas.configure(cursor="")
+        
+        exit_canvas.bind("<Button-1>", on_exit_click)
+        exit_canvas.bind("<Enter>", on_exit_enter)
+        exit_canvas.bind("<Leave>", on_exit_leave)
 
         # Version info with enhanced styling - relative positioning
         version_label = tk.Label(footer_frame, text="Version 1.0 | Built with Qiskit & OpenCV",
                                 font=('Arial', max(8, int(self.window_width / 150))),
                                 fg=palette['version_text_color'], bg=palette['background'])
         version_label.pack(side=tk.LEFT)
-
-        # Add hover effects to exit button
-        def on_exit_enter(event):
-            exit_btn.configure(bg=palette['exit_button_hover_color'])
-        def on_exit_leave(event):
-            exit_btn.configure(bg=palette['exit_button_color'])
-
-        exit_btn.bind("<Enter>", on_exit_enter)
-        exit_btn.bind("<Leave>", on_exit_leave)
 
     def update_glass_background(self, canvas):
         """Update glassmorphism background when canvas is resized"""
@@ -407,10 +456,16 @@ class GameModeSelection:
         color_index = [0]  # Use a list to make it mutable
 
         def cycle_color():
-            if hasattr(self, 'subtitle_label') and self.subtitle_label.winfo_exists():
-                self.subtitle_label.configure(fg=colors[color_index[0] % len(colors)])
-                color_index[0] += 1
-                self.root.after(1500, cycle_color)
+            try:
+                if (self.animations_running and hasattr(self, 'subtitle_label') and 
+                    self.subtitle_label.winfo_exists() and hasattr(self, 'root') and 
+                    self.root.winfo_exists()):
+                    self.subtitle_label.configure(fg=colors[color_index[0] % len(colors)])
+                    color_index[0] += 1
+                    self.root.after(1500, cycle_color)
+            except tk.TclError:
+                # Widget has been destroyed, stop the animation
+                pass
 
         cycle_color()
 
@@ -454,39 +509,113 @@ class GameModeSelection:
         # Store button references for selection highlighting
         self.mode_buttons = {}
         
-        # Create buttons directly in the buttons_frame
+        # Create buttons directly in the buttons_frame using canvas approach like exit button
         for i, config in enumerate(button_configs):
             rely = start_y + i * (button_height + spacing)
 
             # Choose palette keys for bg and fg
             mode_key = config['mode_key']
-            bg_key = f"{mode_key}_mode_button_color"
-            fg_key = f"{mode_key}_mode_button_text_color"
-            action_btn = tk.Button(parent,
+            
+            # Colors for canvas-based buttons
+            bg_color = "#ffb86b"  # Orange background
+            fg_color = "#000000"  # Black text for better readability
+            
+            # Create canvas-based button (same approach as exit button)
+            canvas_width = int(self.window_width * 0.9)
+            canvas_height = int(self.window_height * button_height)
+            
+            button_canvas = tk.Canvas(parent,
+                                    width=canvas_width,
+                                    height=canvas_height,
+                                    bg=palette['background'],
+                                    highlightthickness=0,
+                                    bd=0)
+            
+            button_canvas.place(relx=0.05, rely=rely, anchor='nw', 
+                              relwidth=0.9, relheight=button_height)
+            
+            # Draw button background
+            button_canvas.create_rectangle(5, 5, canvas_width-5, canvas_height-5,
+                                         fill=bg_color, outline="#2b3340", width=2,
+                                         tags=f"button_bg_{mode_key}")
+            
+            # Create a Label widget for text (positioned over canvas)
+            text_size = max(16, int(self.window_width / 70))
+            text_label = tk.Label(parent,
                                 text=config['title'],
-                                command=lambda mode_key=mode_key, cmd=config['command']: self.select_mode(mode_key, cmd),
-                                font=('Arial', normal_font_size, 'bold'),
-                                bg=palette.get(bg_key, palette['background']),
-                                fg=palette.get(fg_key, palette['unselected_button_text_color']),
+                                font=('Arial', text_size, 'bold'),
+                                fg=fg_color,
+                                bg=bg_color,
                                 relief=tk.FLAT,
-                                bd=0,
-                                borderwidth=0,
-                                highlightthickness=0,
-                                cursor='hand2',
-                                padx=max(15, int(self.window_width / 80)),
-                                pady=max(10, int(self.window_height / 80)),
-                                justify=tk.CENTER)
+                                bd=0)
+            
+            # Position the label over the canvas
+            text_label.place(relx=0.05, rely=rely, anchor='nw', 
+                           relwidth=0.9, relheight=button_height)
+            
+            # Make the label clickable and bind the same events
+            def make_click_handler(mk, cmd):
+                def on_button_click(event):
+                    self.select_mode(mk, cmd)
+                return on_button_click
+                
+            def make_label_click_handler(mk, cmd):
+                def on_label_click(event):
+                    self.select_mode(mk, cmd)
+                return on_label_click
+            
+            def make_label_hover_handlers(canvas, label, mk):
+                def on_enter(event):
+                    canvas.itemconfig(f"button_bg_{mk}", fill="#ffd08f")  # Lighter orange
+                    canvas.configure(cursor="hand2")
+                    label.configure(cursor="hand2")
+                def on_leave(event):
+                    canvas.itemconfig(f"button_bg_{mk}", fill=bg_color)  # Back to normal
+                    canvas.configure(cursor="")
+                    label.configure(cursor="")
+                return on_enter, on_leave
+            
+            # Bind events to both canvas and label
+            click_handler = make_click_handler(mode_key, config['command'])
+            label_click_handler = make_label_click_handler(mode_key, config['command'])
+            enter_handler, leave_handler = make_label_hover_handlers(button_canvas, text_label, mode_key)
+            
+            button_canvas.bind("<Button-1>", click_handler)
+            button_canvas.bind("<Enter>", enter_handler)
+            button_canvas.bind("<Leave>", leave_handler)
+            
+            text_label.bind("<Button-1>", label_click_handler)
+            text_label.bind("<Enter>", enter_handler)
+            text_label.bind("<Leave>", leave_handler)
+            
+            # Create command function for this button
+            def make_click_handler(mk, cmd):
+                def on_button_click(event):
+                    self.select_mode(mk, cmd)
+                return on_button_click
+            
+            def make_hover_handlers(canvas, mk):
+                def on_enter(event):
+                    canvas.itemconfig(f"button_bg_{mk}", fill="#ffd08f")  # Lighter orange
+                    canvas.configure(cursor="hand2")
+                def on_leave(event):
+                    canvas.itemconfig(f"button_bg_{mk}", fill=bg_color)  # Back to normal
+                    canvas.configure(cursor="")
+                return on_enter, on_leave
+            
+            # Bind events
+            click_handler = make_click_handler(mode_key, config['command'])
+            enter_handler, leave_handler = make_hover_handlers(button_canvas, mode_key)
+            
+            button_canvas.bind("<Button-1>", click_handler)
+            button_canvas.bind("<Enter>", enter_handler)
+            button_canvas.bind("<Leave>", leave_handler)
 
-            action_btn.place(relx=0.05, rely=rely, anchor='nw', 
-                        relwidth=0.9, relheight=button_height)
-
-            # Explicitly disable hover effects
-            action_btn.bind("<Enter>", lambda e: None)
-            action_btn.bind("<Leave>", lambda e: None)
-
-            # Store button reference with font sizes
+            # Store canvas and label references
             self.mode_buttons[mode_key] = {
-                'button': action_btn,
+                'button': button_canvas,
+                'canvas': button_canvas,
+                'label': text_label,
                 'command': config['command'],
                 'normal_font_size': normal_font_size,
                 'selected_font_size': selected_font_size
@@ -496,17 +625,33 @@ class GameModeSelection:
         """Select a game mode and update the info display"""
         self.play_sound()
         
-        # Reset all buttons to normal state with white text
+        # Reset all buttons to normal state
         for key, btn_info in self.mode_buttons.items():
-            btn_info['button'].configure(
+            canvas = btn_info['canvas']
+            label = btn_info['label']
+            
+            # Update canvas appearance to normal state
+            canvas.itemconfig(f"button_bg_{key}", fill='#ffb86b', outline='#2b3340', width=2)
+            
+            # Update label appearance
+            label.configure(
                 font=('Arial', btn_info['normal_font_size'], 'bold'),
-                fg=palette['unselected_button_text_color']  # White text for unselected buttons
+                fg='#000000',  # Black text
+                bg='#ffb86b'   # Orange background
             )
         
-        # Increase font size and use palette color for selected button
-        self.mode_buttons[mode_key]['button'].configure(
+        # Highlight selected button
+        selected_canvas = self.mode_buttons[mode_key]['canvas']
+        selected_label = self.mode_buttons[mode_key]['label']
+        
+        # Update canvas for selected state
+        selected_canvas.itemconfig(f"button_bg_{mode_key}", fill='#ff8c42', outline='#ffffff', width=3)
+        
+        # Update label for selected state
+        selected_label.configure(
             font=('Arial', self.mode_buttons[mode_key]['selected_font_size'], 'bold'),
-            fg=palette['button_text_color']  # Use palette color for selected button
+            fg='#000000',  # Black text (consistent with unselected)
+            bg='#ff8c42'   # Darker orange background
         )
         
         self.selected_mode = mode_key
@@ -516,7 +661,24 @@ class GameModeSelection:
     def execute_command(self, command):
         """Execute button command with sound effect"""
         self.play_sound()
-        command()
+        # Stop animations before executing command
+        self.animations_running = False
+        # Small delay to allow current animation cycles to finish
+        def execute_delayed():
+            command()
+        self.root.after(100, execute_delayed)
+
+    def on_glass_configure(self, event):
+        """Handle glass canvas configure event"""
+        self.update_glass_background(event.widget)
+
+    def on_escape_key(self, event):
+        """Handle escape key press"""
+        self.on_closing()
+
+    def on_f11_key(self, event):
+        """Handle F11 key press"""
+        self.on_closing()
 
     def create_info_display(self):
         """Create the initial info display area"""
@@ -614,6 +776,7 @@ class GameModeSelection:
 
     def stop_video(self):
         """Stop video playback"""
+        self.animations_running = False
         self.video_running = False
         if self.video_cap:
             self.video_cap.release()

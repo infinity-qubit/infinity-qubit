@@ -57,11 +57,14 @@
 
   "learn_hub_button_color": "#ffb86b",
   "learn_hub_button_hover_color": "#ffd08f",
+  "learn_hub_mode_button_color": "#ffb86b",
+  "learn_hub_mode_button_hover_color": "#ffd08f",
 
   "tutorial_mode_button_text_color": "#2c1f12",
   "puzzle_mode_button_text_color": "#2c1f12", 
   "sandbox_mode_button_text_color": "#2c1f12",
   "learn_hub_button_text_color": "#2c1f12",
+  "learn_hub_mode_button_text_color": "#2c1f12",
 
   "button_outline_color": "#2b3340",
 
