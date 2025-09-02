@@ -153,26 +153,49 @@ class LearnHub:
 
         # Back to Main Screen button - top right with relative sizing
         button_font_size = max(10, int(self.screen_width * 0.008))
-        back_main_btn = tk.Button(nav_frame, text="🏠 Main Screen",
-                                command=self.back_to_menu,
-                                font=('Arial', button_font_size, 'bold'),
-                                bg=palette['background_4'], fg=palette['main_menu_button_background'],
-                                padx=int(self.screen_width * 0.012), 
-                                pady=int(self.screen_height * 0.008),
-                                cursor='hand2',
-                                relief=tk.FLAT,
-                                borderwidth=1,
-                                bd=1)
-        back_main_btn.pack(side=tk.RIGHT)
-
-        # Add hover effect to top button
-        def on_nav_enter(event):
-            back_main_btn.configure(bg=palette['main_menu_button_background'], fg=palette['background_black'])
-        def on_nav_leave(event):
-            back_main_btn.configure(bg=palette['background_4'], fg=palette['main_menu_button_background'])
-
-        back_main_btn.bind("<Enter>", on_nav_enter)
-        back_main_btn.bind("<Leave>", on_nav_leave)
+        # Canvas-based main menu button for better color control on macOS
+        button_font_size = max(10, int(self.screen_width * 0.008))
+        button_width = max(140, int(self.screen_width * 0.09))
+        button_height = max(35, int(self.screen_height * 0.03))
+        
+        back_main_canvas = tk.Canvas(nav_frame,
+                                   width=button_width,
+                                   height=button_height,
+                                   bg=palette['background_2'],
+                                   highlightthickness=0,
+                                   bd=0)
+        back_main_canvas.pack(side=tk.RIGHT)
+        
+        # Draw button background
+        back_main_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
+                                        fill=palette['background_4'],
+                                        outline="#2b3340", width=1,
+                                        tags="menu_bg")
+        
+        # Add text to button
+        back_main_canvas.create_text(button_width//2, button_height//2,
+                                   text="🏠 Main Screen",
+                                   font=('Arial', button_font_size, 'bold'),
+                                   fill=palette['main_menu_button_background'],
+                                   tags="menu_text")
+        
+        # Bind click events
+        def on_menu_click(event):
+            self.back_to_menu()
+            
+        def on_menu_enter(event):
+            back_main_canvas.itemconfig("menu_bg", fill=palette['main_menu_button_background'])
+            back_main_canvas.itemconfig("menu_text", fill=palette['background_black'])
+            back_main_canvas.configure(cursor="hand2")
+            
+        def on_menu_leave(event):
+            back_main_canvas.itemconfig("menu_bg", fill=palette['background_4'])
+            back_main_canvas.itemconfig("menu_text", fill=palette['main_menu_button_background'])
+            back_main_canvas.configure(cursor="")
+        
+        back_main_canvas.bind("<Button-1>", on_menu_click)
+        back_main_canvas.bind("<Enter>", on_menu_enter)
+        back_main_canvas.bind("<Leave>", on_menu_leave)
 
         # Quantum circuit animation canvas with relative height
         canvas_height = int(self.screen_height * 0.12)
@@ -862,13 +885,29 @@ The quantum future awaits! 🌟🚀
         desc_label.pack(pady=(10, 15))
 
         # Try it button - centered
-        try_btn = tk.Button(content_frame, text="Try It →",
-                        bg=palette['try_it_button_background'], fg=palette['background_black'],
-                        font=('Arial', 10, 'bold'),
-                        padx=20, pady=8,
-                        cursor='hand2',
-                        command=lambda: self.open_url(url))
-        try_btn.pack()
+        try_canvas = tk.Canvas(content_frame, highlightthickness=0, bd=0, width=100, height=35)
+        try_canvas.pack()
+        
+        # Draw try button
+        try_canvas.create_rectangle(0, 0, 100, 35, fill=palette['try_it_button_background'], outline=palette['try_it_button_background'], tags="bg")
+        try_canvas.create_text(50, 17, text="Try It →", 
+                             font=('Arial', 10, 'bold'),
+                             fill=palette['background_black'], tags="text")
+        
+        def on_try_click(event):
+            self.open_url(url)
+        
+        def on_try_enter(event):
+            try_canvas.itemconfig("bg", fill=palette['close_button_hover_background'])
+            try_canvas.configure(cursor='hand2')
+        
+        def on_try_leave(event):
+            try_canvas.itemconfig("bg", fill=palette['try_it_button_background'])
+            try_canvas.configure(cursor='')
+        
+        try_canvas.bind("<Button-1>", on_try_click)
+        try_canvas.bind("<Enter>", on_try_enter)
+        try_canvas.bind("<Leave>", on_try_leave)
 
         # Hover effects
         def on_enter(event):
@@ -978,13 +1017,29 @@ The quantum future awaits! 🌟🚀
         rating_label.pack(anchor=tk.W)
 
         # Try it button
-        try_btn = tk.Button(header_frame, text="Try It →",
-                           bg=palette['try_it_button_background'], fg=palette['background_black'],
-                           font=('Arial', 10, 'bold'),
-                           padx=15, pady=5,
-                           cursor='hand2',
-                           command=lambda: self.open_url(url))
-        try_btn.pack(side=tk.RIGHT)
+        try_canvas2 = tk.Canvas(header_frame, highlightthickness=0, bd=0, width=80, height=30)
+        try_canvas2.pack(side=tk.RIGHT)
+        
+        # Draw try button
+        try_canvas2.create_rectangle(0, 0, 80, 30, fill=palette['try_it_button_background'], outline=palette['try_it_button_background'], tags="bg")
+        try_canvas2.create_text(40, 15, text="Try It →", 
+                              font=('Arial', 10, 'bold'),
+                              fill=palette['background_black'], tags="text")
+        
+        def on_try2_click(event):
+            self.open_url(url)
+        
+        def on_try2_enter(event):
+            try_canvas2.itemconfig("bg", fill=palette['close_button_hover_background'])
+            try_canvas2.configure(cursor='hand2')
+        
+        def on_try2_leave(event):
+            try_canvas2.itemconfig("bg", fill=palette['try_it_button_background'])
+            try_canvas2.configure(cursor='')
+        
+        try_canvas2.bind("<Button-1>", on_try2_click)
+        try_canvas2.bind("<Enter>", on_try2_enter)
+        try_canvas2.bind("<Leave>", on_try2_leave)
 
         # Description
         desc_label = tk.Label(content_frame, text=description,

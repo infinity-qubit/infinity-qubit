@@ -209,6 +209,7 @@ then the coin represents a bit — but it can only show one face at a time."""
                            command=self.next_intro_step,
                            font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
                            bg=palette['H_color'], fg=palette['background_3'],
+                           activebackground=palette['gate_button_active_background'], activeforeground=palette['background_3'],
                            padx=20, pady=10, cursor='hand2')
         next_btn.place(relx=0.5, rely=0.95, anchor='center')
 
@@ -548,39 +549,65 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
                             command=self.show_help,
                             font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                             bg=palette['background_3'], fg=palette['main_title_color'],  # Dark bg, green text
+                            activebackground=palette['main_title_color'], activeforeground=palette['background_3'],
                             padx=12, pady=6,
                             cursor='hand2',
                             relief=tk.RAISED,
                             bd=2)
             help_btn.place(relx=0.88, rely=0.5, anchor='e')  # Positioned closer to main menu
 
-            main_menu_btn = tk.Button(header_frame, text="🏠 Main Menu",
-                                    command=self.return_to_main_menu,
-                                    font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
-                                    bg=palette['background_2'], fg=palette['main_menu_button_text_color'],
-                                    padx=15, pady=8,
-                                    cursor='hand2',
-                                    relief=tk.FLAT,
-                                    borderwidth=1)
-            main_menu_btn.place(relx=1, rely=0.5, anchor='e')
+            # Canvas-based main menu button for better color control on macOS
+            button_width = max(120, int(self.window_width / 12))
+            button_height = max(35, int(self.window_height / 25))
+            
+            main_menu_canvas = tk.Canvas(header_frame,
+                                       width=button_width,
+                                       height=button_height,
+                                       bg=palette['background_2'],
+                                       highlightthickness=0,
+                                       bd=0)
+            main_menu_canvas.place(relx=1, rely=0.5, anchor='e')
+            
+            # Draw button background
+            main_menu_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
+                                            fill=palette['background_2'],
+                                            outline="#2b3340", width=1,
+                                            tags="menu_bg")
+            
+            # Add text to button
+            main_menu_canvas.create_text(button_width//2, button_height//2,
+                                       text="🏠 Main Menu",
+                                       font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
+                                       fill=palette['main_menu_button_text_color'],
+                                       tags="menu_text")
+            
+            # Bind click events
+            def on_menu_click(event):
+                self.return_to_main_menu()
+                
+            def on_menu_enter(event):
+                main_menu_canvas.itemconfig("menu_bg", fill=palette['main_title_color'])
+                main_menu_canvas.itemconfig("menu_text", fill=palette['background_3'])
+                main_menu_canvas.configure(cursor="hand2")
+                
+            def on_menu_leave(event):
+                main_menu_canvas.itemconfig("menu_bg", fill=palette['background_2'])
+                main_menu_canvas.itemconfig("menu_text", fill=palette['main_menu_button_text_color'])
+                main_menu_canvas.configure(cursor="")
+            
+            main_menu_canvas.bind("<Button-1>", on_menu_click)
+            main_menu_canvas.bind("<Enter>", on_menu_enter)
+            main_menu_canvas.bind("<Leave>", on_menu_leave)
 
-            # Add hover effects for both buttons
+            # Add hover effects for help button only
             def on_help_enter(event):
                 help_btn.configure(bg=palette['main_title_color'], fg=palette['background_3'])
                 self.play_sound('gate_hover')
             def on_help_leave(event):
                 help_btn.configure(bg=palette['background_3'], fg=palette['main_title_color'])
 
-            def on_nav_enter(event):
-                main_menu_btn.configure(bg=palette['main_menu_button_text_color'], fg=palette['background_3'])
-                self.play_sound('gate_hover')
-            def on_nav_leave(event):
-                main_menu_btn.configure(bg=palette['background_2'], fg=palette['main_menu_button_text_color'])
-
             help_btn.bind("<Enter>", on_help_enter)
             help_btn.bind("<Leave>", on_help_leave)
-            main_menu_btn.bind("<Enter>", on_nav_enter)
-            main_menu_btn.bind("<Leave>", on_nav_leave)
         else:
             close_btn = tk.Button(header_frame, text="❌ Close Tutorial",
                                 command=self.window.destroy,
@@ -1141,47 +1168,122 @@ class GateTutorial:
         button_container.place(relx=0.15, rely=0.25, relwidth=0.7, relheight=0.65)
 
         # Gate placement button
-        self.gate_btn = tk.Button(button_container, text=f"Add {self.gate} Gate",
-                                 command=self.add_gate,
-                                 font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
-                                 bg=self.gate_info['color'], fg=palette['background_3'],
-                                 cursor='hand2',
-                                 relief=tk.RAISED, bd=2)
-        self.gate_btn.place(relx=0.5, rely=0.15, anchor='center', relwidth=0.3, relheight=0.3)
+        self.gate_canvas = tk.Canvas(button_container, highlightthickness=0, bd=0)
+        self.gate_canvas.place(relx=0.5, rely=0.15, anchor='center', relwidth=0.3, relheight=0.3)
+        
+        # Draw gate button
+        def draw_gate_button(event=None):
+            self.gate_canvas.delete("all")
+            width = self.gate_canvas.winfo_width()
+            height = self.gate_canvas.winfo_height()
+            if width > 1 and height > 1:  # Only draw if we have valid dimensions
+                bg_color = self.gate_info['color']
+                text_color = palette['background_3']
+                self.gate_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline='#2b3340', width=2, tags="bg")
+                self.gate_canvas.create_text(width//2, height//2, text=f"Add {self.gate} Gate", 
+                                           font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
+                                           fill=text_color, tags="text")
+        
+        # Bind configure event and initial draw
+        self.gate_canvas.bind('<Configure>', draw_gate_button)
+        self.gate_canvas.after(10, draw_gate_button)
+        
+        def on_gate_click(event):
+            self.add_gate()
+        
+        def on_gate_enter(event):
+            self.gate_canvas.delete("bg")
+            width = self.gate_canvas.winfo_width()
+            height = self.gate_canvas.winfo_height()
+            if width > 1 and height > 1:
+                self.gate_canvas.create_rectangle(0, 0, width, height, fill=palette['gate_button_active_background'], outline='#2b3340', width=2, tags="bg")
+            self.gate_canvas.configure(cursor='hand2')
+            self.gate_canvas.tag_lower("bg")
+        
+        def on_gate_leave(event):
+            self.gate_canvas.delete("bg")
+            width = self.gate_canvas.winfo_width()
+            height = self.gate_canvas.winfo_height()
+            if width > 1 and height > 1:
+                self.gate_canvas.create_rectangle(0, 0, width, height, fill=self.gate_info['color'], outline='#2b3340', width=2, tags="bg")
+            self.gate_canvas.configure(cursor='')
+            self.gate_canvas.tag_lower("bg")
+        
+        self.gate_canvas.bind("<Button-1>", on_gate_click)
+        self.gate_canvas.bind("<Enter>", on_gate_enter)
+        self.gate_canvas.bind("<Leave>", on_gate_leave)
 
         # Run button
-        run_btn = tk.Button(button_container, text="🚀 Run Circuit",
-                           command=self.run_circuit,
-                           font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
-                           bg=palette['run_button_background'], fg=palette['background_3'],
-                           cursor='hand2',
-                           relief=tk.RAISED, bd=2)
-        run_btn.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.3, relheight=0.3)
+        run_canvas = tk.Canvas(button_container, highlightthickness=0, bd=0)
+        run_canvas.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.3, relheight=0.3)
+        
+        # Draw run button
+        def draw_run_button(event=None):
+            run_canvas.delete("all")
+            width = run_canvas.winfo_width()
+            height = run_canvas.winfo_height()
+            if width > 1 and height > 1:  # Only draw if we have valid dimensions
+                bg_color = palette['run_button_background']
+                text_color = palette['background_3']
+                run_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline='#2b3340', width=2, tags="bg")
+                run_canvas.create_text(width//2, height//2, text="🚀 Run Circuit", 
+                                     font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
+                                     fill=text_color, tags="text")
+        
+        # Bind configure event and initial draw
+        run_canvas.bind('<Configure>', draw_run_button)
+        run_canvas.after(10, draw_run_button)
+        
+        def on_run_click(event):
+            self.run_circuit()
+        
+        def on_run_enter(event):
+            run_canvas.itemconfig("bg", fill=palette['gate_button_active_background'])
+            run_canvas.configure(cursor='hand2')
+        
+        def on_run_leave(event):
+            run_canvas.itemconfig("bg", fill=palette['run_button_background'])
+            run_canvas.configure(cursor='')
+        
+        run_canvas.bind("<Button-1>", on_run_click)
+        run_canvas.bind("<Enter>", on_run_enter)
+        run_canvas.bind("<Leave>", on_run_leave)
 
         # Clear button
-        clear_btn = tk.Button(button_container, text="🔄 Clear Circuit",
-                             command=self.clear_circuit,
-                             font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
-                             bg=palette['clear_button_background'], fg=palette['clear_button_text_color'],
-                             cursor='hand2',
-                             relief=tk.RAISED, bd=2)
-        clear_btn.place(relx=0.5, rely=0.85, anchor='center', relwidth=0.3, relheight=0.3)
-
-        # Add hover effects
-        def create_hover_effect(button, original_bg, original_fg):
-            def on_enter(event):
-                button.configure(bg=palette['clear_button_text_color'], fg=palette['background_3'])
-            def on_leave(event):
-                button.configure(bg=original_bg, fg=original_fg)
-            return on_enter, on_leave
-
-        # Apply hover effects
-        for btn, orig_bg, orig_fg in [(self.gate_btn, self.gate_info['color'], palette['background_3']),
-                                      (run_btn, palette['run_button_background'], palette['background_3']),
-                                      (clear_btn, palette['clear_button_background'], palette['clear_button_text_color'])]:
-            on_enter, on_leave = create_hover_effect(btn, orig_bg, orig_fg)
-            btn.bind("<Enter>", on_enter)
-            btn.bind("<Leave>", on_leave)
+        clear_canvas = tk.Canvas(button_container, highlightthickness=0, bd=0)
+        clear_canvas.place(relx=0.5, rely=0.85, anchor='center', relwidth=0.3, relheight=0.3)
+        
+        # Draw clear button
+        def draw_clear_button(event=None):
+            clear_canvas.delete("all")
+            width = clear_canvas.winfo_width()
+            height = clear_canvas.winfo_height()
+            if width > 1 and height > 1:  # Only draw if we have valid dimensions
+                bg_color = palette['clear_button_background']
+                text_color = palette['clear_button_text_color']
+                clear_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline='#2b3340', width=2, tags="bg")
+                clear_canvas.create_text(width//2, height//2, text="🔄 Clear Circuit", 
+                                       font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
+                                       fill=text_color, tags="text")
+        
+        # Bind configure event and initial draw
+        clear_canvas.bind('<Configure>', draw_clear_button)
+        clear_canvas.after(10, draw_clear_button)
+        
+        def on_clear_click(event):
+            self.clear_circuit()
+        
+        def on_clear_enter(event):
+            clear_canvas.itemconfig("bg", fill=palette['gate_button_active_background'])
+            clear_canvas.configure(cursor='hand2')
+        
+        def on_clear_leave(event):
+            clear_canvas.itemconfig("bg", fill=palette['clear_button_background'])
+            clear_canvas.configure(cursor='')
+        
+        clear_canvas.bind("<Button-1>", on_clear_click)
+        clear_canvas.bind("<Enter>", on_clear_enter)
+        clear_canvas.bind("<Leave>", on_clear_leave)
 
     def setup_results_area(self, parent):
         """Setup results display area using relative positioning"""

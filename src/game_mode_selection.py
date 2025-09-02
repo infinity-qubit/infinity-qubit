@@ -69,60 +69,96 @@ class GameModeSelection:
         self.root.bind('<F11>', self.on_f11_key)  # F11 to exit fullscreen
 
     def setup_video_background(self):
-        """Setup GIF background"""
+        """Setup optimized GIF background with lazy loading"""
         try:
             # Loading GIF file
             gif_path = get_resource_path('resources/images/Art Render GIF by time.gif')
             self.gif_image = Image.open(gif_path)
             
-            # Get GIF frame count and duration
-            self.gif_frames = []
+            # Initialize frame caching system
+            self.gif_frames = {}  # Changed to dict for lazy loading
             self.gif_durations = []
+            self.total_frames = 0
+            self.frame_skip = 2  # Skip every other frame for better performance
             
+            # Count total frames and get durations (fast pass)
             try:
                 while True:
-                    frame = self.gif_image.copy()
-                    # Resize frame to window size
-                    frame = frame.resize((self.window_width, self.window_height), Image.Resampling.LANCZOS)
-                    
-                    # Apply dark overlay for better text readability
-                    overlay = Image.new('RGBA', frame.size, (0, 0, 0, 100))
-                    if frame.mode != 'RGBA':
-                        frame = frame.convert('RGBA')
-                    frame = Image.alpha_composite(frame, overlay)
-                    frame = frame.convert('RGB')
-                    
-                    self.gif_frames.append(ImageTk.PhotoImage(frame))
-                    
-                    # Get frame duration (in milliseconds)
                     duration = self.gif_image.info.get('duration', 100)
-                    self.gif_durations.append(duration)
-                    
-                    self.gif_image.seek(len(self.gif_frames))
+                    self.gif_durations.append(duration * self.frame_skip)  # Adjust duration for skipped frames
+                    self.total_frames += 1
+                    self.gif_image.seek(self.total_frames)
             except EOFError:
                 pass  # End of sequence
             
-            if not self.gif_frames:
+            if self.total_frames == 0:
                 print("Warning: Could not load GIF frames. Using fallback background.")
                 self.create_fallback_background()
                 return
+
+            # Reset to first frame
+            self.gif_image.seek(0)
 
             # Create background label
             self.video_label = tk.Label(self.root, bg=palette['black'])
             self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-            # Start GIF animation
+            # Start GIF animation with lazy loading
             self.video_running = True
             self.current_frame = 0
+            
+            # Load first frame immediately
+            self.load_frame(0)
             self.animate_gif()
 
         except Exception as e:
             print(f"Error setting up GIF background: {e}")
             self.create_fallback_background()
 
+    def load_frame(self, frame_index):
+        """Lazy load a specific frame"""
+        try:
+            # Skip frames for performance
+            actual_frame = frame_index * self.frame_skip
+            if actual_frame >= self.total_frames:
+                actual_frame = actual_frame % self.total_frames
+                
+            # Check if frame is already cached
+            if frame_index in self.gif_frames:
+                return self.gif_frames[frame_index]
+            
+            # Load and process the frame
+            self.gif_image.seek(actual_frame)
+            frame = self.gif_image.copy()
+            
+            # Resize frame to window size
+            frame = frame.resize((self.window_width, self.window_height), Image.Resampling.LANCZOS)
+            
+            # Apply dark overlay for better text readability
+            overlay = Image.new('RGBA', frame.size, (0, 0, 0, 100))
+            if frame.mode != 'RGBA':
+                frame = frame.convert('RGBA')
+            frame = Image.alpha_composite(frame, overlay)
+            frame = frame.convert('RGB')
+            
+            # Cache the processed frame
+            processed_frame = ImageTk.PhotoImage(frame)
+            self.gif_frames[frame_index] = processed_frame
+            
+            # Limit cache size to prevent memory issues
+            if len(self.gif_frames) > 10:  # Keep only last 10 frames
+                oldest_key = min(self.gif_frames.keys())
+                del self.gif_frames[oldest_key]
+            
+            return processed_frame
+            
+        except Exception as e:
+            print(f"Error loading frame {frame_index}: {e}")
+            return None
+
     def animate_gif(self):
-        """Animate GIF frames"""
-        if not self.video_running or not self.gif_frames or not hasattr(self, 'root'):
+        """Animate GIF with lazy loading"""
+        if not self.video_running or not hasattr(self, 'root'):
             return
             
         try:
@@ -130,17 +166,20 @@ class GameModeSelection:
             if not self.root.winfo_exists():
                 return
                 
-            # Update background with current frame
-            if self.video_label and self.video_label.winfo_exists():
-                self.video_label.configure(image=self.gif_frames[self.current_frame])
-                self.video_label.image = self.gif_frames[self.current_frame]  # Keep a reference
+            # Load current frame lazily
+            frame = self.load_frame(self.current_frame)
+            if frame and self.video_label and self.video_label.winfo_exists():
+                self.video_label.configure(image=frame)
+                self.video_label.image = frame  # Keep a reference
             
             # Move to next frame
-            self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
+            effective_total = max(1, self.total_frames // self.frame_skip)
+            self.current_frame = (self.current_frame + 1) % effective_total
             
             # Schedule next frame only if still running
             if self.video_running and hasattr(self, 'root'):
-                duration = self.gif_durations[self.current_frame] if self.current_frame < len(self.gif_durations) else 100
+                duration_index = min(self.current_frame, len(self.gif_durations) - 1)
+                duration = max(80, self.gif_durations[duration_index])  # Minimum 80ms for smoother playback
                 self.root.after(duration, self.animate_gif)
             
         except Exception as e:
@@ -257,7 +296,7 @@ class GameModeSelection:
         
         # Draw start button background
         start_canvas.create_rectangle(2, 2, start_canvas_width-2, start_canvas_height-2,
-                                    fill=palette.get('start_button_color', '#4ecdc4'),
+                                    fill=palette.get('start_button_color', '#ffb86b'),  # Use orange as fallback
                                     outline="#2b3340", width=1,
                                     tags="start_bg")
         
@@ -273,11 +312,11 @@ class GameModeSelection:
             self.execute_command(self.selected_command)
         
         def on_start_enter(event):
-            start_canvas.itemconfig("start_bg", fill="#5fd9d1")  # Lighter shade
+            start_canvas.itemconfig("start_bg", fill=palette.get('start_button_hover_color', '#ffd08f'))  # Use palette hover color
             start_canvas.configure(cursor="hand2")
             
         def on_start_leave(event):
-            start_canvas.itemconfig("start_bg", fill=palette.get('start_button_color', '#4ecdc4'))
+            start_canvas.itemconfig("start_bg", fill=palette.get('start_button_color', '#ffb86b'))  # Use palette color, fallback to orange
             start_canvas.configure(cursor="")
         
         start_canvas.bind("<Button-1>", on_start_click)
@@ -526,9 +565,16 @@ class GameModeSelection:
             # Choose palette keys for bg and fg
             mode_key = config['mode_key']
             
-            # Colors for canvas-based buttons
-            bg_color = "#ffb86b"  # Orange background
-            fg_color = "#000000"  # Black text for better readability
+            # Map mode keys to palette keys
+            def get_palette_key(mode, suffix):
+                if mode == 'learn_hub':
+                    return f'learn_hub_{suffix}'
+                else:
+                    return f'{mode}_mode_{suffix}'
+            
+            # Colors for canvas-based buttons (use palette colors)
+            bg_color = palette[get_palette_key(mode_key, 'button_color')]  # Orange background from palette
+            fg_color = palette[get_palette_key(mode_key, 'button_text_color')]  # Text color from palette
             
             # Create canvas-based button (same approach as exit button)
             canvas_width = int(self.window_width * 0.9)
@@ -576,11 +622,13 @@ class GameModeSelection:
             
             def make_label_hover_handlers(canvas, label, mk):
                 def on_enter(event):
-                    canvas.itemconfig(f"button_bg_{mk}", fill="#ffd08f")  # Lighter orange
+                    hover_key = get_palette_key(mk, 'button_hover_color')
+                    canvas.itemconfig(f"button_bg_{mk}", fill=palette[hover_key])  # Use palette hover color
                     canvas.configure(cursor="hand2")
                     label.configure(cursor="hand2")
                 def on_leave(event):
-                    canvas.itemconfig(f"button_bg_{mk}", fill=bg_color)  # Back to normal
+                    normal_key = get_palette_key(mk, 'button_color')
+                    canvas.itemconfig(f"button_bg_{mk}", fill=palette[normal_key])  # Use palette normal color
                     canvas.configure(cursor="")
                     label.configure(cursor="")
                 return on_enter, on_leave
@@ -606,10 +654,12 @@ class GameModeSelection:
             
             def make_hover_handlers(canvas, mk):
                 def on_enter(event):
-                    canvas.itemconfig(f"button_bg_{mk}", fill="#ffd08f")  # Lighter orange
+                    hover_key = get_palette_key(mk, 'button_hover_color')
+                    canvas.itemconfig(f"button_bg_{mk}", fill=palette[hover_key])  # Use palette hover color
                     canvas.configure(cursor="hand2")
                 def on_leave(event):
-                    canvas.itemconfig(f"button_bg_{mk}", fill=bg_color)  # Back to normal
+                    normal_key = get_palette_key(mk, 'button_color')
+                    canvas.itemconfig(f"button_bg_{mk}", fill=palette[normal_key])  # Use palette normal color
                     canvas.configure(cursor="")
                 return on_enter, on_leave
             
@@ -635,19 +685,28 @@ class GameModeSelection:
         """Select a game mode and update the info display"""
         self.play_sound()
         
+        # Map mode keys to palette keys
+        def get_palette_key(mode, suffix):
+            if mode == 'learn_hub':
+                return f'learn_hub_{suffix}'
+            else:
+                return f'{mode}_mode_{suffix}'
+        
         # Reset all buttons to normal state
         for key, btn_info in self.mode_buttons.items():
             canvas = btn_info['canvas']
             label = btn_info['label']
             
             # Update canvas appearance to normal state
-            canvas.itemconfig(f"button_bg_{key}", fill='#ffb86b', outline='#2b3340', width=2)
+            normal_color_key = get_palette_key(key, 'button_color')
+            text_color_key = get_palette_key(key, 'button_text_color')
+            canvas.itemconfig(f"button_bg_{key}", fill=palette[normal_color_key], outline='#2b3340', width=2)
             
             # Update label appearance
             label.configure(
                 font=('Arial', btn_info['normal_font_size'], 'bold'),
-                fg='#000000',  # Black text
-                bg='#ffb86b'   # Orange background
+                fg=palette[text_color_key],  # Use palette text color
+                bg=palette[normal_color_key]   # Use palette background color
             )
         
         # Highlight selected button
@@ -655,13 +714,15 @@ class GameModeSelection:
         selected_label = self.mode_buttons[mode_key]['label']
         
         # Update canvas for selected state
-        selected_canvas.itemconfig(f"button_bg_{mode_key}", fill='#ff8c42', outline='#ffffff', width=3)
+        hover_color_key = get_palette_key(mode_key, 'button_hover_color')
+        text_color_key = get_palette_key(mode_key, 'button_text_color')
+        selected_canvas.itemconfig(f"button_bg_{mode_key}", fill=palette[hover_color_key], outline='#ffd08f', width=3)
         
         # Update label for selected state
         selected_label.configure(
             font=('Arial', self.mode_buttons[mode_key]['selected_font_size'], 'bold'),
-            fg='#000000',  # Black text (consistent with unselected)
-            bg='#ff8c42'   # Darker orange background
+            fg=palette[text_color_key],  # Use palette text color
+            bg=palette[hover_color_key]   # Use palette hover background
         )
         
         self.selected_mode = mode_key

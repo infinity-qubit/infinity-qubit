@@ -276,25 +276,49 @@ class SandboxMode:
 
         # Back to Main Menu button - top right with relative sizing
         button_font_size = max(9, int(self.screen_width * 0.007))
-        main_menu_btn = tk.Button(nav_frame, text="🏠 Main Menu",
-                                command=self.return_to_main_menu,
-                                font=('Arial', button_font_size, 'bold'),
-                                bg=palette['background_4'], fg=palette['main_menu_button_text_color'],
-                                padx=int(self.screen_width * 0.01), 
-                                pady=int(self.screen_height * 0.008),
-                                cursor='hand2',
-                                relief=tk.FLAT,
-                                borderwidth=1)
-        main_menu_btn.pack(side=tk.RIGHT)
-
-        # Add hover effect
-        def on_nav_enter(event):
-            main_menu_btn.configure(bg=palette['main_menu_button_text_color'], fg=palette['background_black'])
-        def on_nav_leave(event):
-            main_menu_btn.configure(bg=palette['background_4'], fg=palette['main_menu_button_text_color'])
-
-        main_menu_btn.bind("<Enter>", on_nav_enter)
-        main_menu_btn.bind("<Leave>", on_nav_leave)
+        # Canvas-based main menu button for better color control on macOS
+        button_font_size = max(10, int(self.screen_width * 0.008))
+        button_width = max(120, int(self.screen_width * 0.08))
+        button_height = max(35, int(self.screen_height * 0.03))
+        
+        main_menu_canvas = tk.Canvas(nav_frame,
+                                   width=button_width,
+                                   height=button_height,
+                                   bg=palette['background_2'],
+                                   highlightthickness=0,
+                                   bd=0)
+        main_menu_canvas.pack(side=tk.RIGHT)
+        
+        # Draw button background
+        main_menu_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
+                                        fill=palette['background_4'],
+                                        outline="#2b3340", width=1,
+                                        tags="menu_bg")
+        
+        # Add text to button
+        main_menu_canvas.create_text(button_width//2, button_height//2,
+                                   text="🏠 Main Menu",
+                                   font=('Arial', button_font_size, 'bold'),
+                                   fill=palette['main_menu_button_text_color'],
+                                   tags="menu_text")
+        
+        # Bind click events
+        def on_menu_click(event):
+            self.return_to_main_menu()
+            
+        def on_menu_enter(event):
+            main_menu_canvas.itemconfig("menu_bg", fill=palette['main_menu_button_text_color'])
+            main_menu_canvas.itemconfig("menu_text", fill=palette['background_black'])
+            main_menu_canvas.configure(cursor="hand2")
+            
+        def on_menu_leave(event):
+            main_menu_canvas.itemconfig("menu_bg", fill=palette['background_4'])
+            main_menu_canvas.itemconfig("menu_text", fill=palette['main_menu_button_text_color'])
+            main_menu_canvas.configure(cursor="")
+        
+        main_menu_canvas.bind("<Button-1>", on_menu_click)
+        main_menu_canvas.bind("<Enter>", on_menu_enter)
+        main_menu_canvas.bind("<Leave>", on_menu_leave)
 
     def return_to_main_menu(self):
         """Return to the main menu"""
@@ -476,10 +500,10 @@ class SandboxMode:
 
         # Create enhanced buttons with hover effects
         buttons_data = [
-            ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
-            ("🔄 Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
-            ("↶ Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
-            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color'])  # New button
+            ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['run_button_text_color']),
+            ("🔄 Clear Circuit", self.clear_circuit, palette['run_button_background'], palette['run_button_text_color']),
+            ("↶ Undo Last", self.undo_gate, palette['run_button_background'], palette['run_button_text_color']),
+            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['run_button_background'], palette['run_button_text_color'])  # New button
         ]
 
         # Create buttons in a vertical layout for the middle section
@@ -492,7 +516,7 @@ class SandboxMode:
             btn = tk.Button(btn_container, text=text, command=command,
                            font=('Arial', 11, 'bold'), bg=bg_color, fg=fg_color,
                            padx=15, pady=10, cursor='hand2', relief=tk.FLAT, bd=0,  # Reduced pady
-                           activebackground='#ffffff', activeforeground=palette['background_black'])
+                           activebackground=palette['button_hover_background'], activeforeground=palette['button_hover_text_color'])
             btn.pack(padx=4, pady=4, fill=tk.X)
 
             # Store button reference for hover effects
@@ -500,17 +524,10 @@ class SandboxMode:
 
             def create_hover_functions(button, orig_color):
                 def on_enter(event):
-                    if orig_color == '#00ff88':
-                        button.configure(bg='#ffffff', fg=palette['background_black'])
-                    elif orig_color == '#ff6b6b':
-                        button.configure(bg='#ffffff', fg=palette['background_black'])
-                    elif orig_color == '#9b59b6':  # New color for 3D visualizer
-                        button.configure(bg='#ffffff', fg=palette['background_black'])
-                    else:
-                        button.configure(bg='#ffffff', fg=palette['background_black'])
+                    button.configure(bg=palette['button_hover_background'], fg=palette['button_hover_text_color'])
 
                 def on_leave(event):
-                    button.configure(bg=orig_color, fg=fg_color)
+                    button.configure(bg=palette['run_button_background'], fg=palette['run_button_text_color'])
 
                 return on_enter, on_leave
 
@@ -1115,31 +1132,59 @@ class SandboxMode:
             btn_container = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
             btn_container.place(relx=relx, rely=rely, relwidth=0.25, relheight=0.3, anchor='center')
 
-            # Create button with relative dimensions
-            btn = tk.Button(btn_container, text=gate,
-                            command=lambda g=gate: self.add_single_gate(g),
-                            font=('Arial', button_font_size, 'bold'),
-                            bg=color, fg=palette['background_black'],
-                            cursor='hand2', relief=tk.FLAT, bd=0)
-            btn.place(relx=0.5, rely=0.4, relwidth=0.8, relheight=0.7, anchor='center')
+            # Canvas button with relative dimensions
+            btn_canvas = tk.Canvas(btn_container, highlightthickness=0, bd=0, bg=color)
+            btn_canvas.place(relx=0.5, rely=0.4, relwidth=0.8, relheight=0.7, anchor='center')
+            
+            # Create button background and text
+            def draw_button(event=None, canvas=btn_canvas, gate_color=color, gate_text=gate):
+                canvas.delete("all")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:  # Only draw if we have valid dimensions
+                    canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
+                    canvas.create_text(width//2, height//2, text=gate_text, 
+                                     font=('Arial', button_font_size, 'bold'),
+                                     fill=palette['background_black'], tags="text")
+            
+            # Bind configure event to redraw when size changes
+            btn_canvas.bind('<Configure>', draw_button)
+            # Initial draw after the widget is mapped
+            btn_canvas.after(10, draw_button)
+            
+            # Click handler
+            def on_button_click(event, g=gate):
+                self.add_single_gate(g)
+            
+            # Hover effects
+            def on_enter(event, canvas=btn_canvas, gate_color=color):
+                canvas.delete("bg")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(0, 0, width, height, fill=palette['button_hover_background'], outline=palette['button_hover_background'], tags="bg")
+                canvas.configure(cursor='hand2')
+                canvas.tag_lower("bg")
+            
+            def on_leave(event, canvas=btn_canvas, gate_color=color):
+                canvas.delete("bg")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
+                canvas.configure(cursor='')
+                canvas.tag_lower("bg")
+            
+            # Bind events
+            btn_canvas.bind("<Button-1>", on_button_click)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
 
             # Description label with relative positioning
             desc_label = tk.Label(btn_container, text=description,
                                 font=('Arial', desc_font_size), 
                                 fg=palette['gate_description_color'], bg=palette['background_4'])
             desc_label.place(relx=0.5, rely=0.87, anchor='center')
-
-            # Add hover effects for better UX
-            def create_hover_effect(button, original_color):
-                def on_enter(event):
-                    button.configure(bg='#ffffff', fg=palette['background_black'])
-                def on_leave(event):
-                    button.configure(bg=original_color, fg=palette['background_black'])
-                return on_enter, on_leave
-
-            on_enter, on_leave = create_hover_effect(btn, color)
-            btn.bind("<Enter>", on_enter)
-            btn.bind("<Leave>", on_leave)
 
     def setup_multi_gate_controls(self, parent):
         """Setup multi-qubit gate controls with enhanced styling"""
@@ -1184,11 +1229,29 @@ class SandboxMode:
         self.cnot_target_combo.pack(side=tk.LEFT, padx=2)
 
         # CNOT button
-        cnot_btn = tk.Button(cnot_controls, text="Add",
-                            command=self.add_cnot_gate,
-                            font=('Arial', 9, 'bold'), bg=palette['CNOT_gate_title_color'], fg=palette['background_black'],
-                            padx=10, pady=3, cursor='hand2', relief=tk.RAISED, bd=1)
-        cnot_btn.pack(side=tk.LEFT, padx=8)
+        cnot_canvas = tk.Canvas(cnot_controls, highlightthickness=0, bd=0, width=60, height=30)
+        cnot_canvas.pack(side=tk.LEFT, padx=8)
+        
+        # Draw CNOT button
+        cnot_canvas.create_rectangle(0, 0, 60, 30, fill=palette['CNOT_gate_title_color'], outline='#2b3340', tags="bg")
+        cnot_canvas.create_text(30, 15, text="Add", 
+                              font=('Arial', 9, 'bold'),
+                              fill=palette['background_black'], tags="text")
+        
+        def on_cnot_click(event):
+            self.add_cnot_gate()
+        
+        def on_cnot_enter(event):
+            cnot_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            cnot_canvas.configure(cursor='hand2')
+        
+        def on_cnot_leave(event):
+            cnot_canvas.itemconfig("bg", fill=palette['CNOT_gate_title_color'])
+            cnot_canvas.configure(cursor='')
+        
+        cnot_canvas.bind("<Button-1>", on_cnot_click)
+        cnot_canvas.bind("<Enter>", on_cnot_enter)
+        cnot_canvas.bind("<Leave>", on_cnot_leave)
 
         # CZ Gate section with compact layout
         cz_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
@@ -1221,11 +1284,29 @@ class SandboxMode:
         self.cz_target_combo.pack(side=tk.LEFT, padx=2)
 
         # CZ button
-        cz_btn = tk.Button(cz_controls, text="Add",
-                          command=self.add_cz_gate,
-                          font=('Arial', 9, 'bold'), bg=palette['CZ_gate_title_color'], fg=palette['background_black'],
-                          padx=10, pady=3, cursor='hand2', relief=tk.RAISED, bd=1)
-        cz_btn.pack(side=tk.LEFT, padx=8)
+        cz_canvas = tk.Canvas(cz_controls, highlightthickness=0, bd=0, width=60, height=30)
+        cz_canvas.pack(side=tk.LEFT, padx=8)
+        
+        # Draw CZ button
+        cz_canvas.create_rectangle(0, 0, 60, 30, fill=palette['CZ_gate_title_color'], outline='#2b3340', tags="bg")
+        cz_canvas.create_text(30, 15, text="Add", 
+                            font=('Arial', 9, 'bold'),
+                            fill=palette['background_black'], tags="text")
+        
+        def on_cz_click(event):
+            self.add_cz_gate()
+        
+        def on_cz_enter(event):
+            cz_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            cz_canvas.configure(cursor='hand2')
+        
+        def on_cz_leave(event):
+            cz_canvas.itemconfig("bg", fill=palette['CZ_gate_title_color'])
+            cz_canvas.configure(cursor='')
+        
+        cz_canvas.bind("<Button-1>", on_cz_click)
+        cz_canvas.bind("<Enter>", on_cz_enter)
+        cz_canvas.bind("<Leave>", on_cz_leave)
 
         # Toffoli Gate section (only show if 3+ qubits) with compact layout
         if self.num_qubits >= 3:
