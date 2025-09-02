@@ -458,13 +458,16 @@ class GameModeSelection:
         for i, config in enumerate(button_configs):
             rely = start_y + i * (button_height + spacing)
 
-            # Button placed directly in buttons_frame with background matching the frame
+            # Choose palette keys for bg and fg
+            mode_key = config['mode_key']
+            bg_key = f"{mode_key}_mode_button_color"
+            fg_key = f"{mode_key}_mode_button_text_color"
             action_btn = tk.Button(parent,
                                 text=config['title'],
-                                command=lambda mode_key=config['mode_key'], cmd=config['command']: self.select_mode(mode_key, cmd),
+                                command=lambda mode_key=mode_key, cmd=config['command']: self.select_mode(mode_key, cmd),
                                 font=('Arial', normal_font_size, 'bold'),
-                                bg=palette['background'],  # Match the buttons_frame background
-                                fg=palette['unselected_button_text_color'],
+                                bg=palette.get(bg_key, palette['background']),
+                                fg=palette.get(fg_key, palette['unselected_button_text_color']),
                                 relief=tk.FLAT,
                                 bd=0,
                                 borderwidth=0,
@@ -482,7 +485,7 @@ class GameModeSelection:
             action_btn.bind("<Leave>", lambda e: None)
 
             # Store button reference with font sizes
-            self.mode_buttons[config['mode_key']] = {
+            self.mode_buttons[mode_key] = {
                 'button': action_btn,
                 'command': config['command'],
                 'normal_font_size': normal_font_size,
