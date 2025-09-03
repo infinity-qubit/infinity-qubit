@@ -211,20 +211,16 @@ class SandboxMode:
 
         # Create touch-friendly buttons for each save file
         for filename in files:
-            # Extract info from filename
             match = re.match(r"circuit_(\d+)qubits_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.json", filename)
             if match:
                 qubits, timestamp = match.groups()
-                # Convert timestamp to readable format
                 datetime_obj = datetime.datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S")
                 friendly_date = datetime_obj.strftime("%b %d, %Y %I:%M %p")
                 
-                # Create button frame with border
                 btn_frame = tk.Frame(scrollable_frame, bg=palette['background_4'], 
                                 relief=tk.RAISED, bd=2)
                 btn_frame.pack(fill=tk.X, padx=10, pady=5)
 
-                # Button with file info
                 load_btn = tk.Button(btn_frame,
                                 text=f"📊 {qubits} Qubits Circuit\n📅 {friendly_date}",
                                 command=lambda f=filename: do_load(f),
@@ -236,7 +232,6 @@ class SandboxMode:
                                 cursor='hand2')
                 load_btn.pack(fill=tk.X)
 
-                # Add hover effect
                 def on_enter(e):
                     e.widget.configure(bg=palette['button_hover_background'])
                 def on_leave(e):
@@ -263,8 +258,6 @@ class SandboxMode:
 
         title_bar.bind("<Button-1>", start_move)
         title_bar.bind("<B1-Motion>", on_move)
-        title_bar_label.bind("<Button-1>", start_move)
-        title_bar_label.bind("<B1-Motion>", on_move)
 
         # Mouse wheel scrolling
         def on_mousewheel(event):
