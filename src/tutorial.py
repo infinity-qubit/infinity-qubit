@@ -10,6 +10,8 @@ from PIL import Image, ImageTk
 import pygame
 import os
 import sys
+import json
+import datetime
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -21,17 +23,32 @@ color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'tutorial_mode')
 
 class TutorialWindow:
+    SAVE_FILE = os.path.expanduser("resources/saves/infinity_qubit_tutorial_save.json")
+
     def __init__(self, parent, return_callback=None):
         self.parent = parent
         self.return_callback = return_callback
 
-        # Add progress tracking
+        # Add progress tracking with default values
         self.user_progress = {
             'current_step': 0,  # 0=bit intro, 1=qubit intro, 2=gates
             'completed_gates': [],
             'unlocked_gates': ['H'],  # Start with only H gate unlocked
             'achievements': []
         }
+
+        # Try to load saved progress
+        try:
+            if os.path.exists(self.SAVE_FILE):
+                with open(self.SAVE_FILE, "r") as f:
+                    saved_data = json.load(f)
+                    self.user_progress['completed_gates'] = saved_data.get('completed_gates', [])
+                    self.user_progress['unlocked_gates'] = saved_data.get('unlocked_gates', ['H'])
+                    self.user_progress['current_step'] = saved_data.get('current_step', 0)
+                print("✅ Tutorial progress loaded.")
+        except Exception as e:
+            print(f"❌ Could not load tutorial progress: {e}")
+
 
         # Gate unlock order
         self.gate_unlock_order = ['H', 'X', 'Y', 'Z', 'S', 'T', 'CNOT', 'CZ']
@@ -150,6 +167,54 @@ class TutorialWindow:
 
         # Play welcome sound
         self.play_sound('clear')
+
+    def save_progress(self):
+        """Save tutorial progress to file."""
+        try:
+            # Ensure save directory exists
+            save_dir = os.path.dirname(self.SAVE_FILE)
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+
+            data = {
+                'completed_gates': self.user_progress['completed_gates'],
+                'unlocked_gates': self.user_progress['unlocked_gates'],
+                'current_step': self.user_progress['current_step'],
+                'last_updated': datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            }
+            with open(self.SAVE_FILE, "w") as f:
+                json.dump(data, f)
+            print("✅ Tutorial progress saved.")
+        except Exception as e:
+            print(f"❌ Could not save tutorial progress: {e}")
+
+    def next_intro_step(self):
+        """Move to next intro step"""
+        self.play_sound('button_click')
+        self.user_progress['current_step'] += 1
+        self.save_progress()  # Save after step change
+        self.show_intro_step()
+
+    def prev_intro_step(self):
+        """Move to previous intro step"""
+        self.play_sound('button_click')
+        self.user_progress['current_step'] -= 1
+        self.save_progress()  # Save after step change
+        self.show_intro_step()
+
+    def start_gates_tutorial(self):
+        """Start the gates tutorial"""
+        self.play_sound('success')
+        self.user_progress['current_step'] = 2
+        self.save_progress()  # Save after starting gates
+        self.setup_ui()
+
+    def on_gate_completed(self, gate):
+        """Handle gate completion"""
+        if gate not in self.user_progress['completed_gates']:
+            self.user_progress['completed_gates'].append(gate)
+            self.unlock_next_gate()
+            self.save_progress()  # Save after completing a gate
 
     def show_intro_step(self):
         """Show the current intro step"""
@@ -864,6 +929,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         if gate not in self.user_progress['completed_gates']:
             self.user_progress['completed_gates'].append(gate)
             self.unlock_next_gate()
+            self.save_progress()
 
     def unlock_next_gate(self):
         """Unlock the next gate in sequence"""
