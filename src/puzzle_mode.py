@@ -19,6 +19,7 @@ palette = extract_color_palette(get_colors_from_file(color_file_path), 'puzzle_m
 
 class PuzzleMode:
     SAVE_FILE = os.path.expanduser("resources/saves/infinity_qubit_puzzle_save.json")
+    
     def __init__(self, root):
         self.root = root
         self.root.title("🧩 Infinity Qubit - Puzzle Mode")

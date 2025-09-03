@@ -29,6 +29,71 @@ palette = extract_color_palette(get_colors_from_file(color_file_path), 'sandbox_
 class SandboxMode:
     SAVE_DIR = os.path.expanduser("resources/saves/infinity_qubit_sandbox_saves")
 
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Quantum Sandbox Mode")
+
+        # Get screen dimensions for fullscreen
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        # Make window fullscreen without title bar
+        self.root.overrideredirect(False)
+        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
+        self.root.configure(bg=palette['background'])
+
+        # Store dimensions
+        self.window_width = screen_width
+        self.window_height = screen_height
+        
+        # Bind Escape key to exit fullscreen
+        self.root.bind('<Escape>', self.exit_fullscreen)
+        self.root.bind('<F11>', self.toggle_fullscreen)
+
+        # Initialize sound system (optional - can reuse from main)
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+            self.sound_enabled = True
+
+            # Load sound files (same as tutorial)
+            self.sounds = {}
+            try:
+                # Gate sounds
+                self.sounds['gate_place'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
+                self.sounds['success'] = pygame.mixer.Sound(get_resource_path("resources/sounds/run_circuit.wav"))
+                self.sounds['error'] = pygame.mixer.Sound(get_resource_path("resources/sounds/error.wav"))
+                self.sounds['click'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
+                self.sounds['circuit_run'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
+                self.sounds['clear'] = pygame.mixer.Sound(get_resource_path("resources/sounds/clear.wav"))
+
+                # Set volumes
+                for sound in self.sounds.values():
+                    sound.set_volume(0.5)
+
+            except (pygame.error, FileNotFoundError) as e:
+                print(f"Could not load sound files: {e}")
+                # Fallback to programmatic sounds
+                self.sounds = {}
+
+        except:
+            self.sound_enabled = False
+            self.sounds = {}
+
+        # Get screen dimensions for relative sizing
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+
+        # Sandbox state
+        self.num_qubits = 1
+        self.placed_gates = []
+        self.initial_state = "|0⟩"
+        self.available_gates = ["H", "X", "Y", "Z", "S", "T", "CNOT", "CZ", "Toffoli"]
+
+        # Setup UI
+        self.setup_ui()
+        self.update_circuit_display()
+
     def save_circuit(self):
         """Save the current circuit configuration with timestamp."""
         if not os.path.exists(self.SAVE_DIR):
@@ -209,71 +274,6 @@ class SandboxMode:
 
         # Bind Escape to close
         dialog.bind('<Escape>', lambda e: dialog.destroy())
-
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Quantum Sandbox Mode")
-
-        # Get screen dimensions for fullscreen
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
-
-        # Make window fullscreen without title bar
-        self.root.overrideredirect(False)
-        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
-        self.root.configure(bg=palette['background'])
-
-        # Store dimensions
-        self.window_width = screen_width
-        self.window_height = screen_height
-        
-        # Bind Escape key to exit fullscreen
-        self.root.bind('<Escape>', self.exit_fullscreen)
-        self.root.bind('<F11>', self.toggle_fullscreen)
-
-        # Initialize sound system (optional - can reuse from main)
-        try:
-            if not pygame.mixer.get_init():
-                pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
-            self.sound_enabled = True
-
-            # Load sound files (same as tutorial)
-            self.sounds = {}
-            try:
-                # Gate sounds
-                self.sounds['gate_place'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
-                self.sounds['success'] = pygame.mixer.Sound(get_resource_path("resources/sounds/run_circuit.wav"))
-                self.sounds['error'] = pygame.mixer.Sound(get_resource_path("resources/sounds/error.wav"))
-                self.sounds['click'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
-                self.sounds['circuit_run'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
-                self.sounds['clear'] = pygame.mixer.Sound(get_resource_path("resources/sounds/clear.wav"))
-
-                # Set volumes
-                for sound in self.sounds.values():
-                    sound.set_volume(0.5)
-
-            except (pygame.error, FileNotFoundError) as e:
-                print(f"Could not load sound files: {e}")
-                # Fallback to programmatic sounds
-                self.sounds = {}
-
-        except:
-            self.sound_enabled = False
-            self.sounds = {}
-
-        # Get screen dimensions for relative sizing
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-
-        # Sandbox state
-        self.num_qubits = 1
-        self.placed_gates = []
-        self.initial_state = "|0⟩"
-        self.available_gates = ["H", "X", "Y", "Z", "S", "T", "CNOT", "CZ", "Toffoli"]
-
-        # Setup UI
-        self.setup_ui()
-        self.update_circuit_display()
 
     def exit_fullscreen(self, event=None):
         """Exit fullscreen mode"""

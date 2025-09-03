@@ -25,54 +25,6 @@ palette = extract_color_palette(get_colors_from_file(color_file_path), 'tutorial
 class TutorialWindow:
     SAVE_FILE = os.path.expanduser("resources/saves/infinity_qubit_tutorial_save.json")
 
-    def save_progress(self):
-        """Save tutorial progress to file."""
-        try:
-            # Ensure save directory exists
-            save_dir = os.path.dirname(self.SAVE_FILE)
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-
-            data = {
-                'completed_gates': self.user_progress['completed_gates'],
-                'unlocked_gates': self.user_progress['unlocked_gates'],
-                'current_step': self.user_progress['current_step'],
-                'last_updated': datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            }
-            with open(self.SAVE_FILE, "w") as f:
-                json.dump(data, f)
-            print("✅ Tutorial progress saved.")
-        except Exception as e:
-            print(f"❌ Could not save tutorial progress: {e}")
-
-    def next_intro_step(self):
-        """Move to next intro step"""
-        self.play_sound('button_click')
-        self.user_progress['current_step'] += 1
-        self.save_progress()  # Save after step change
-        self.show_intro_step()
-
-    def prev_intro_step(self):
-        """Move to previous intro step"""
-        self.play_sound('button_click')
-        self.user_progress['current_step'] -= 1
-        self.save_progress()  # Save after step change
-        self.show_intro_step()
-
-    def start_gates_tutorial(self):
-        """Start the gates tutorial"""
-        self.play_sound('success')
-        self.user_progress['current_step'] = 2
-        self.save_progress()  # Save after starting gates
-        self.setup_ui()
-
-    def on_gate_completed(self, gate):
-        """Handle gate completion"""
-        if gate not in self.user_progress['completed_gates']:
-            self.user_progress['completed_gates'].append(gate)
-            self.unlock_next_gate()
-            self.save_progress()  # Save after completing a gate
-
     def __init__(self, parent, return_callback=None):
         self.parent = parent
         self.return_callback = return_callback
@@ -215,6 +167,54 @@ class TutorialWindow:
 
         # Play welcome sound
         self.play_sound('clear')
+
+    def save_progress(self):
+        """Save tutorial progress to file."""
+        try:
+            # Ensure save directory exists
+            save_dir = os.path.dirname(self.SAVE_FILE)
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+
+            data = {
+                'completed_gates': self.user_progress['completed_gates'],
+                'unlocked_gates': self.user_progress['unlocked_gates'],
+                'current_step': self.user_progress['current_step'],
+                'last_updated': datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            }
+            with open(self.SAVE_FILE, "w") as f:
+                json.dump(data, f)
+            print("✅ Tutorial progress saved.")
+        except Exception as e:
+            print(f"❌ Could not save tutorial progress: {e}")
+
+    def next_intro_step(self):
+        """Move to next intro step"""
+        self.play_sound('button_click')
+        self.user_progress['current_step'] += 1
+        self.save_progress()  # Save after step change
+        self.show_intro_step()
+
+    def prev_intro_step(self):
+        """Move to previous intro step"""
+        self.play_sound('button_click')
+        self.user_progress['current_step'] -= 1
+        self.save_progress()  # Save after step change
+        self.show_intro_step()
+
+    def start_gates_tutorial(self):
+        """Start the gates tutorial"""
+        self.play_sound('success')
+        self.user_progress['current_step'] = 2
+        self.save_progress()  # Save after starting gates
+        self.setup_ui()
+
+    def on_gate_completed(self, gate):
+        """Handle gate completion"""
+        if gate not in self.user_progress['completed_gates']:
+            self.user_progress['completed_gates'].append(gate)
+            self.unlock_next_gate()
+            self.save_progress()  # Save after completing a gate
 
     def show_intro_step(self):
         """Show the current intro step"""
