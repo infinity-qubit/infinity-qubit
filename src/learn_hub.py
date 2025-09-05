@@ -65,7 +65,7 @@ class LearnHub:
         self.root.overrideredirect(False)
         self.root.state('normal')
         self.root.geometry("1200x800")
-        
+
     def toggle_fullscreen(self, event=None):
         """Toggle fullscreen mode"""
         is_fullscreen = self.root.overrideredirect()
@@ -120,8 +120,8 @@ class LearnHub:
 
         # Create a container to center the notebook with relative padding
         notebook_container = tk.Frame(content_frame, bg=palette['background_3'])
-        notebook_container.pack(fill=tk.BOTH, expand=True, 
-                            padx=int(self.screen_width * 0.02), 
+        notebook_container.pack(fill=tk.BOTH, expand=True,
+                            padx=int(self.screen_width * 0.02),
                             pady=(0, int(self.screen_height * 0.02)))
 
         # Create notebook for tabs - centered
@@ -143,8 +143,8 @@ class LearnHub:
     def create_animated_header(self, parent):
         """Create an animated quantum-themed header"""
         header_frame = tk.Frame(parent, bg=palette['background_3'])
-        header_frame.pack(fill=tk.X, 
-                        padx=int(self.screen_width * 0.02), 
+        header_frame.pack(fill=tk.X,
+                        padx=int(self.screen_width * 0.02),
                         pady=(int(self.screen_height * 0.02), int(self.screen_height * 0.015)))
 
         # Add a top navigation bar
@@ -157,7 +157,7 @@ class LearnHub:
                                 command=self.back_to_menu,
                                 font=('Arial', button_font_size, 'bold'),
                                 bg=palette['background_4'], fg=palette['main_menu_button_background'],
-                                padx=int(self.screen_width * 0.012), 
+                                padx=int(self.screen_width * 0.012),
                                 pady=int(self.screen_height * 0.008),
                                 cursor='hand2',
                                 relief=tk.FLAT,
@@ -338,7 +338,7 @@ class LearnHub:
             if completed:
                 canvas.create_oval(2, 2, circle_size-2, circle_size-2, fill=color, outline=color, width=3)
                 canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill=palette['background_3'], outline='white', width=2)
-                canvas.create_text(circle_size//2, circle_size//2, text="✓", fill='white', 
+                canvas.create_text(circle_size//2, circle_size//2, text="✓", fill='white',
                                 font=('Arial', max(10, int(self.screen_width * 0.01)), 'bold'))
             else:
                 canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill='', outline=color, width=2)
@@ -1066,6 +1066,7 @@ The quantum future awaits! 🌟🚀
         except Exception as e:
             print(f"Error opening URL: {e}")
 
+
     def back_to_menu(self):
         """Go back to the main screen/menu"""
         self.animation_running = False
@@ -1077,12 +1078,22 @@ The quantum future awaits! 🌟🚀
             except:
                 pass
 
-        self.root.destroy()
         try:
-            # Try to import and launch the main menu
+            # Create main menu FIRST
             from game_mode_selection import GameModeSelection
             selection_window = GameModeSelection()
+
+            # Make sure new window is visible
+            selection_window.root.update()
+            selection_window.root.lift()
+            selection_window.root.focus_force()
+
+            # THEN destroy current window
+            self.root.destroy()
+
+            # Start the main menu mainloop
             selection_window.run()
+
         except ImportError:
             try:
                 # Alternative: try to import main menu
@@ -1095,12 +1106,11 @@ The quantum future awaits! 🌟🚀
                     main.main()
                 except ImportError:
                     print("Could not find main menu module. Please run the main application.")
-                    # Optionally create a simple menu selection
-                    self.create_simple_menu_selection()
+                    self.root.destroy()
         except Exception as e:
             print(f"Error returning to main screen: {e}")
-            # Fallback to simple menu
-            self.create_simple_menu_selection()
+            self.root.destroy()
+
 
     def create_simple_menu_selection(self):
         """Create a simple menu selection as fallback"""
