@@ -8,6 +8,9 @@ from qiskit.quantum_info import Statevector
 import math
 from PIL import Image, ImageTk
 import pygame
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+
 import os
 import sys
 import json
@@ -49,23 +52,22 @@ class TutorialWindow:
         except Exception as e:
             print(f"❌ Could not load tutorial progress: {e}")
 
-
         # Gate unlock order
         self.gate_unlock_order = ['H', 'X', 'Y', 'Z', 'S', 'T', 'CNOT', 'CZ']
 
         # Initialize sound system
         self.init_sound_system()
 
-        # Create the window as a Toplevel but make it independent
-        self.window = tk.Toplevel(parent)
+        # Create independent window instead of Toplevel
+        self.window = tk.Tk()
         self.window.title("🎓 Quantum Gates Tutorial")
 
         # Get screen dimensions for fullscreen
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
 
-        # Make window fullscreen without title bar
-        self.window.overrideredirect(False)
+        # Make window fullscreen without title bar (same as other game modes)
+        self.window.overrideredirect(True)
         self.window.geometry(f"{screen_width}x{screen_height}+0+0")
         self.window.configure(bg=palette['background'])
 
@@ -73,19 +75,16 @@ class TutorialWindow:
         self.window_width = screen_width
         self.window_height = screen_height
 
-        # Make window independent and visible even if parent is withdrawn
-        self.window.transient()  # Remove parent dependency
-        # self.window.grab_set()
-        self.window.focus_set()
-
-        # Add a small delay before enabling grab_set to fix the issue
-        # self.window.after(100, lambda: self.window.grab_set())
+        # Make window visible and focused immediately
+        self.window.lift()
+        self.window.focus_force()
 
         # Handle window close event
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # Handle ESC key to exit fullscreen
         self.window.bind('<Escape>', lambda e: self.on_closing())
+
 
         # Gate information
         self.gate_info = {
@@ -855,15 +854,58 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         """Return to main menu"""
         self.play_sound('button_click')
         if self.return_callback:
+            try:
+                # Create main menu FIRST
+                from game_mode_selection import GameModeSelection
+                selection_window = GameModeSelection()
+
+                # Make sure new window is visible
+                selection_window.root.update()
+                selection_window.root.lift()
+                selection_window.root.focus_force()
+
+                # THEN destroy current window
+                self.window.destroy()
+
+                # Start the main menu mainloop
+                selection_window.run()
+
+            except ImportError as e:
+                print(f"Error importing game mode selection: {e}")
+                self.window.destroy()
+            except Exception as e:
+                print(f"Error returning to main menu: {e}")
+                self.window.destroy()
+        else:
             self.window.destroy()
-            self.return_callback()
+
 
     def on_closing(self):
         """Handle window close event"""
         self.play_sound('button_click')
         if self.return_callback:
-            self.window.destroy()
-            self.return_callback()
+            try:
+                # Create main menu FIRST
+                from game_mode_selection import GameModeSelection
+                selection_window = GameModeSelection()
+
+                # Make sure new window is visible
+                selection_window.root.update()
+                selection_window.root.lift()
+                selection_window.root.focus_force()
+
+                # THEN destroy current window
+                self.window.destroy()
+
+                # Start the main menu mainloop
+                selection_window.run()
+
+            except ImportError as e:
+                print(f"Error importing game mode selection: {e}")
+                self.window.destroy()
+            except Exception as e:
+                print(f"Error returning to main menu: {e}")
+                self.window.destroy()
         else:
             self.window.destroy()
 

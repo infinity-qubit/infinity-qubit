@@ -4,6 +4,9 @@ Game Mode Selection Window for Infinity Qubit
 Allows users to choose between different game modes with video background.
 """
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+
 import sys
 import tkinter as tk
 import tkinter.messagebox as messagebox
@@ -34,7 +37,7 @@ class GameModeSelection:
         self.root.overrideredirect(True)
         self.root.geometry(f"{screen_width}x{screen_height}+0+0")
         self.root.configure(bg=palette['black'])
-        
+
         # Store dimensions
         self.window_width = screen_width
         self.window_height = screen_height
@@ -160,7 +163,7 @@ class GameModeSelection:
         # Clear existing content
         for widget in self.info_frame.winfo_children():
             widget.destroy()
-        
+
         # Mode information dictionary
         mode_info = {
             'tutorial': {
@@ -188,11 +191,11 @@ class GameModeSelection:
                 'difficulty': 'All Levels'
             }
         }
-        
+
         info = mode_info.get(mode_key, {})
         if not info:
             return
-        
+
         # Title
         title_label = tk.Label(self.info_frame,
                             text=info['title'],
@@ -200,7 +203,7 @@ class GameModeSelection:
                             fg=palette['title_color'],
                             bg=palette['background'])
         title_label.place(relx=0.5, rely=0.08, anchor='n')
-        
+
         # Difficulty badge
         difficulty_label = tk.Label(self.info_frame,
                                 text=f"Difficulty: {info['difficulty']}",
@@ -208,7 +211,7 @@ class GameModeSelection:
                                 fg=palette['subtitle_color_2'],
                                 bg=palette['background'])
         difficulty_label.place(relx=0.5, rely=0.18, anchor='n')
-        
+
         # Description
         desc_label = tk.Label(self.info_frame,
                             text=info['description'],
@@ -218,7 +221,7 @@ class GameModeSelection:
                             wraplength=int(self.window_width * 0.2),
                             justify=tk.CENTER)
         desc_label.place(relx=0.3, rely=0.4, anchor='w')
-        
+
         # Features
         features_text = '\n'.join(info['features'])
         features_label = tk.Label(self.info_frame,
@@ -228,7 +231,7 @@ class GameModeSelection:
                                 bg=palette['background'],
                                 justify=tk.CENTER)
         features_label.place(relx=0.5, rely=0.55, anchor='n')
-        
+
         # Start button
         start_btn = tk.Button(self.info_frame,
                             text=f"Start {info['title'].split(' ', 1)[1]}",
@@ -242,13 +245,13 @@ class GameModeSelection:
                             relief=tk.RAISED,
                             bd=2)
         start_btn.place(relx=0.5, rely=0.9, anchor='s')
-        
+
         # Hover effects for start button
         def on_start_enter(event):
             start_btn.configure(bg=palette.get('start_button_hover_color', '#45b7b8'))
         def on_start_leave(event):
             start_btn.configure(bg=palette.get('start_button_color', '#4ecdc4'))
-        
+
         start_btn.bind("<Enter>", on_start_enter)
         start_btn.bind("<Leave>", on_start_leave)
 
@@ -367,7 +370,7 @@ class GameModeSelection:
                             command=self.exit_game,
                             font=('Arial', max(10, int(self.window_width / 120)), 'bold'),
                             bg=palette['exit_button_color'], fg=palette['exit_text_color'],
-                            padx=max(20, int(self.window_width / 80)), 
+                            padx=max(20, int(self.window_width / 80)),
                             pady=max(8, int(self.window_height / 120)),
                             cursor='hand2',
                             relief=tk.FLAT,
@@ -397,7 +400,7 @@ class GameModeSelection:
         height = canvas.winfo_height()
         if width > 1 and height > 1:
             canvas.create_rectangle(0, 0, width, height,
-                                  fill=palette['background'], stipple='gray50', 
+                                  fill=palette['background'], stipple='gray50',
                                   outline=palette['main_box_outline'], width=2, tags="glass")
 
     def animate_subtitle(self):
@@ -406,19 +409,12 @@ class GameModeSelection:
                  palette['subtitle_color_4'], palette['subtitle_color_5']]
         color_index = [0]  # Use a list to make it mutable
 
-        def cycle_color():
-            if hasattr(self, 'subtitle_label') and self.subtitle_label.winfo_exists():
-                self.subtitle_label.configure(fg=colors[color_index[0] % len(colors)])
-                color_index[0] += 1
-                self.root.after(1500, cycle_color)
-
-        cycle_color()
 
     def create_enhanced_game_mode_buttons(self, parent):
         """Create enhanced game mode selection buttons in a vertical list layout"""
         # Store selected mode for info display
         self.selected_mode = None
-        
+
         button_configs = [
             {
                 'title': '📚 Tutorial Mode',
@@ -450,10 +446,10 @@ class GameModeSelection:
         start_y = 0.025
         button_height = 0.2
         spacing = 0.05
-        
+
         # Store button references for selection highlighting
         self.mode_buttons = {}
-        
+
         # Create buttons directly in the buttons_frame
         for i, config in enumerate(button_configs):
             rely = start_y + i * (button_height + spacing)
@@ -477,7 +473,7 @@ class GameModeSelection:
                                 pady=max(10, int(self.window_height / 80)),
                                 justify=tk.CENTER)
 
-            action_btn.place(relx=0.05, rely=rely, anchor='nw', 
+            action_btn.place(relx=0.05, rely=rely, anchor='nw',
                         relwidth=0.9, relheight=button_height)
 
             # Explicitly disable hover effects
@@ -495,20 +491,20 @@ class GameModeSelection:
     def select_mode(self, mode_key, command):
         """Select a game mode and update the info display"""
         self.play_sound()
-        
+
         # Reset all buttons to normal state with white text
         for key, btn_info in self.mode_buttons.items():
             btn_info['button'].configure(
                 font=('Arial', btn_info['normal_font_size'], 'bold'),
                 fg=palette['unselected_button_text_color']  # White text for unselected buttons
             )
-        
+
         # Increase font size and use palette color for selected button
         self.mode_buttons[mode_key]['button'].configure(
             font=('Arial', self.mode_buttons[mode_key]['selected_font_size'], 'bold'),
             fg=palette['button_text_color']  # Use palette color for selected button
         )
-        
+
         self.selected_mode = mode_key
         self.selected_command = command
         self.update_info_display(mode_key)
@@ -523,7 +519,7 @@ class GameModeSelection:
         # Clear existing content
         for widget in self.info_frame.winfo_children():
             widget.destroy()
-        
+
         # Default welcome message
         welcome_label = tk.Label(self.info_frame,
                             text="Select a game mode\nto see details",
@@ -532,23 +528,6 @@ class GameModeSelection:
                             bg=palette['background'],
                             justify=tk.CENTER)
         welcome_label.place(relx=0.5, rely=0.5, anchor='center')
-
-    def start_tutorial_mode(self):
-        """Start the tutorial mode"""
-        print("📚 Starting Tutorial Mode...")
-        try:
-            from tutorial import TutorialWindow
-            self.stop_video()
-            self.root.withdraw()
-            TutorialWindow(self.root, self.return_to_main_menu)
-        except ImportError as e:
-            print(f"❌ Error importing tutorial: {e}")
-            messagebox.showerror("Import Error", f"Could not import tutorial module: {e}")
-            self.root.deiconify()
-        except Exception as e:
-            print(f"❌ Error starting tutorial: {e}")
-            messagebox.showerror("Error", f"Failed to start tutorial: {e}")
-            self.root.deiconify()
 
     def return_to_main_menu(self):
         """Return to the main menu from tutorial"""
@@ -561,16 +540,48 @@ class GameModeSelection:
             self.video_thread = threading.Thread(target=self.play_video, daemon=True)
             self.video_thread.start()
 
+    def start_tutorial_mode(self):
+        """Start the tutorial mode"""
+        print("📚 Starting Tutorial Mode...")
+        try:
+            # Create tutorial window first
+            from tutorial import TutorialWindow
+            tutorial_window = TutorialWindow(self.root, self.return_to_main_menu)
+
+            # Only hide main window after tutorial is ready
+            self.stop_video()
+            self.root.withdraw()
+
+        except ImportError as e:
+            print(f"❌ Error importing tutorial: {e}")
+            messagebox.showerror("Import Error", f"Could not import tutorial module: {e}")
+        except Exception as e:
+            print(f"❌ Error starting tutorial: {e}")
+            messagebox.showerror("Error", f"Failed to start tutorial: {e}")
+
+
     def start_puzzle_mode(self):
         """Start the puzzle mode"""
         print("📚 Starting Puzzle Mode...")
-        self.stop_video()
-        self.root.destroy()
         try:
             from puzzle_mode import PuzzleMode
+
+            # Create new window first
             puzzle_root = tk.Tk()
             puzzle_app = PuzzleMode(puzzle_root)
+
+            # Make sure new window is visible before closing this one
+            puzzle_root.update()
+            puzzle_root.lift()
+            puzzle_root.focus_force()
+
+            # Now safely close main window
+            self.stop_video()
+            self.root.destroy()
+
+            # Start the puzzle mode mainloop
             puzzle_root.mainloop()
+
         except ImportError:
             print("❌ Puzzle mode module not found")
             messagebox.showerror("Error", "Puzzle mode module not available")
@@ -578,16 +589,29 @@ class GameModeSelection:
             print(f"❌ Error starting puzzle mode: {e}")
             messagebox.showerror("Error", f"Error starting puzzle mode: {str(e)}")
 
+
     def start_sandbox_mode(self):
         """Start the sandbox mode"""
         print("🛠️ Starting Sandbox Mode...")
-        self.stop_video()
-        self.root.destroy()
         try:
             from sandbox_mode import SandboxMode
+
+            # Create new window first
             sandbox_root = tk.Tk()
             sandbox_app = SandboxMode(sandbox_root)
+
+            # Make sure new window is visible before closing this one
+            sandbox_root.update()
+            sandbox_root.lift()
+            sandbox_root.focus_force()
+
+            # Now safely close main window
+            self.stop_video()
+            self.root.destroy()
+
+            # Start the sandbox mainloop
             sandbox_root.mainloop()
+
         except ImportError:
             print("❌ Sandbox module not found")
             messagebox.showerror("Error", "Sandbox module not available")
@@ -595,22 +619,36 @@ class GameModeSelection:
             print(f"❌ Error starting sandbox: {e}")
             messagebox.showerror("Error", f"Error starting sandbox: {str(e)}")
 
+
     def start_learn_hub_mode(self):
         """Start the learn hub mode"""
         print("🚀 Starting Learn Hub...")
-        self.stop_video()
-        self.root.destroy()
         try:
             from learn_hub import LearnHub
+
+            # Create new window first
             learn_hub_root = tk.Tk()
             learn_hub_app = LearnHub(learn_hub_root)
+
+            # Make sure new window is visible before closing this one
+            learn_hub_root.update()
+            learn_hub_root.lift()
+            learn_hub_root.focus_force()
+
+            # Now safely close main window
+            self.stop_video()
+            self.root.destroy()
+
+            # Start the learn hub mainloop
             learn_hub_root.mainloop()
+
         except ImportError:
             print("❌ Learn Hub module not found")
             messagebox.showerror("Error", "Learn Hub module not available")
         except Exception as e:
             print(f"❌ Error starting Learn Hub: {e}")
             messagebox.showerror("Error", f"Error starting Learn Hub: {str(e)}")
+
 
     def stop_video(self):
         """Stop video playback"""
