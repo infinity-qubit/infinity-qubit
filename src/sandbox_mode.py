@@ -1,3 +1,8 @@
+import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import numpy as np
@@ -5,8 +10,6 @@ from qiskit import QuantumCircuit # type: ignore
 from qiskit.quantum_info import Statevector # type: ignore
 from qiskit.visualization import plot_bloch_multivector, plot_state_qsphere # type: ignore
 import pygame # type: ignore
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
 
 import matplotlib.pyplot as plt # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # type: ignore
@@ -14,7 +17,6 @@ import sys
 
 # For the save system
 import re
-import os
 import json
 import datetime
 from tkinter import simpledialog, filedialog

@@ -1,3 +1,8 @@
+import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
@@ -8,10 +13,6 @@ from qiskit.quantum_info import Statevector
 import math
 from PIL import Image, ImageTk
 import pygame
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
-
-import os
 import sys
 import json
 import datetime

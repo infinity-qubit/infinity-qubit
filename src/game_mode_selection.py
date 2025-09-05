@@ -4,9 +4,12 @@ Game Mode Selection Window for Infinity Qubit
 Allows users to choose between different game modes with video background.
 """
 
+import os
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
+import pygame
 import sys
 import tkinter as tk
 import tkinter.messagebox as messagebox
@@ -50,7 +53,6 @@ class GameModeSelection:
 
         # Initialize sound system
         try:
-            import pygame
             pygame.mixer.init()
             self.sound_enabled = True
         except:
@@ -280,7 +282,6 @@ class GameModeSelection:
         """Play a simple click sound"""
         if self.sound_enabled:
             try:
-                import pygame
                 import numpy as np
 
                 # Create a simple click sound
