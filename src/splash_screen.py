@@ -31,6 +31,9 @@ class SplashScreen:
         # Pre-initialize game mode selection
         self.game_mode_selection = None
 
+        # Track scheduled callbacks
+        self.scheduled_callbacks = []
+
         # Remove window decorations
         self.splash.overrideredirect(True)
 
@@ -84,7 +87,7 @@ class SplashScreen:
             self.game_mode_selection = GameModeSelection()
             # Hide the window immediately after creation
             self.game_mode_selection.root.withdraw()
-            print("Game mode selection pre-loaded successfully")
+            print("✅ Game mode selection pre-loaded successfully")
         except Exception as e:
             print(f"Error pre-loading game mode selection: {e}")
             self.game_mode_selection = None
@@ -227,6 +230,24 @@ class SplashScreen:
         except tk.TclError:
             self.animation_active = False
 
+
+    def schedule_callback(self, delay, callback):
+        """Helper method to track scheduled callbacks"""
+        callback_id = self.splash.after(delay, callback)
+        self.scheduled_callbacks.append(callback_id)
+        return callback_id
+
+
+    def cancel_all_callbacks(self):
+        """Cancel all scheduled callbacks"""
+        for callback_id in self.scheduled_callbacks:
+            try:
+                self.splash.after_cancel(callback_id)
+            except:
+                pass
+        self.scheduled_callbacks.clear()
+
+
     def animate_gates(self):
         """Animate the quantum gates movement"""
         def move_gates():
@@ -248,7 +269,7 @@ class SplashScreen:
                     self.draw_animated_gates()
 
                     if self.animation_active:
-                        self.splash.after(100, move_gates)
+                        self.schedule_callback(100, move_gates)
             except tk.TclError:
                 self.animation_active = False
 
@@ -284,18 +305,22 @@ class SplashScreen:
                 if hasattr(self, 'loading_label') and self.loading_label.winfo_exists():
                     self.loading_label.config(text=texts[index % len(texts)])
                     if index < 20 and self.text_animation_active:  # Animate for ~4 seconds
-                        self.splash.after(800, lambda: update_text(index + 1))
+                        self.schedule_callback(800, lambda: update_text(index + 1))
             except tk.TclError:
                 # Widget has been destroyed, stop animation
                 self.text_animation_active = False
 
         update_text()
 
+
     def close_splash(self):
         """Close the splash screen and show game mode selection"""
         # Stop all animations before destroying the window
         self.animation_active = False
         self.text_animation_active = False
+
+        # Cancel all scheduled callbacks
+        self.cancel_all_callbacks()
 
         # Stop progress bar
         try:
@@ -304,7 +329,8 @@ class SplashScreen:
             pass
 
         # Small delay to ensure all animations stop
-        self.splash.after(100, self._destroy_and_continue)
+        self.schedule_callback(100, self._destroy_and_continue)
+
 
     def _destroy_and_continue(self):
         """Destroy splash screen and continue to game mode selection"""
