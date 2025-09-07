@@ -146,11 +146,11 @@ class PuzzleMode:
             # Define sound file paths
             sound_files = {
                 'button_click': get_resource_path('resources/sounds/click.wav'),
-                'gate_place': get_resource_path('resources/sounds/click.wav'),
-                'success': get_resource_path('resources/sounds/success.wav'),
-                'error': get_resource_path('resources/sounds/error.wav'),
+                'gate_place': get_resource_path('resources/sounds/add_gate.wav'),
+                'success': get_resource_path('resources/sounds/correct.wav'),
+                'error': get_resource_path('resources/sounds/wrong.wav'),
                 'clear': get_resource_path('resources/sounds/clear.wav'),
-                'level_complete': get_resource_path('resources/sounds/success.wav')
+                'level_complete': get_resource_path('resources/sounds/correct.wav')
             }
             
             # Load sounds into pygame
@@ -1410,6 +1410,7 @@ Remember: Efficient solutions earn bonus points!"""
         
         self.state_display.insert(tk.END, f"\n🎯 Target: {level['target_state']}\n")
         self.state_display.insert(tk.END, "❌ Puzzle not solved yet. Try adjusting your circuit!\n")
+        self.play_sound('error')
         
         self.state_display.config(state=tk.DISABLED)
 
@@ -1837,11 +1838,10 @@ Thank you for playing Infinity Qubit! 💫"""
 
         # Clear previous state
         self.placed_gates = []
-        self.clear_circuit()
 
         # Setup available gates for this level
         self.setup_gates(level['available_gates'])
-        
+
         # Draw circuit
         self.draw_circuit()
         

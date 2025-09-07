@@ -165,9 +165,6 @@ class TutorialWindow:
         self.window.lift()
         self.window.focus_force()
 
-        # Play welcome sound
-        self.play_sound('clear')
-
     def save_progress(self):
         """Save tutorial progress to file."""
         try:
@@ -204,7 +201,6 @@ class TutorialWindow:
 
     def start_gates_tutorial(self):
         """Start the gates tutorial"""
-        self.play_sound('success')
         self.user_progress['current_step'] = 2
         self.save_progress()  # Save after starting gates
         self.setup_ui()
@@ -480,7 +476,6 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
     def start_gates_tutorial(self):
         """Start the gates tutorial"""
-        self.play_sound('success')
         self.user_progress['current_step'] = 2
         self.setup_ui()
 
@@ -501,12 +496,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             # Define sound file paths
             sound_files = {
                 'button_click': get_resource_path('resources/sounds/click.wav'),
-                'gate_place': get_resource_path('resources/sounds/click.wav'),
-                'success': get_resource_path('resources/sounds/success.wav'),
-                'error': get_resource_path('resources/sounds/error.wav'),
-                'clear': get_resource_path('resources/sounds/clear.wav'),
-                'tutorial_open': get_resource_path('resources/sounds/clear.wav'),
-                'gate_hover': None
+                'success': get_resource_path('resources/sounds/correct.wav'),
             }
 
             # Load sounds into pygame
@@ -632,13 +622,11 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             # Add hover effects for both buttons
             def on_help_enter(event):
                 help_btn.configure(bg=palette['main_title_color'], fg=palette['background_3'])
-                self.play_sound('gate_hover')
             def on_help_leave(event):
                 help_btn.configure(bg=palette['background_3'], fg=palette['main_title_color'])
 
             def on_nav_enter(event):
                 main_menu_btn.configure(bg=palette['main_menu_button_text_color'], fg=palette['background_3'])
-                self.play_sound('gate_hover')
             def on_nav_leave(event):
                 main_menu_btn.configure(bg=palette['background_2'], fg=palette['main_menu_button_text_color'])
 
@@ -660,7 +648,6 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             # Add hover effect
             def on_close_enter(event):
                 close_btn.configure(bg=palette['close_button_text_color'], fg=palette['close_button_hover_text_color'])
-                self.play_sound('gate_hover')
             def on_close_leave(event):
                 close_btn.configure(bg=palette['background_2'], fg=palette['close_button_text_color'])
 
@@ -910,7 +897,6 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
         def on_enter(event):
             btn.configure(bg=palette['gate_button_active_background'], fg=palette['background_3'])
-            self.play_sound('gate_hover')
 
         def on_leave(event):
             btn.configure(bg=original_bg, fg=palette['background_3'])
@@ -979,9 +965,6 @@ class GateTutorial:
 
         self.setup_ui()
 
-        # Play welcome sound
-        self.play_sound('clear')
-
 
     def init_sound_system(self):
         """Initialize the sound system (same as TutorialWindow)"""
@@ -1006,12 +989,10 @@ class GateTutorial:
             # Define sound file paths
             sound_files = {
                 'button_click': get_resource_path('resources/sounds/click.wav'),
-                'gate_place': get_resource_path('resources/sounds/click.wav'),
-                'success': get_resource_path('resources/sounds/success.wav'),
-                'error': get_resource_path('resources/sounds/error.wav'),
+                'gate_place': get_resource_path('resources/sounds/add_gate.wav'),
+                'success': get_resource_path('resources/sounds/correct.wav'),
+                'error': get_resource_path('resources/sounds/wrong.wav'),
                 'clear': get_resource_path('resources/sounds/clear.wav'),
-                'tutorial_open': get_resource_path('resources/sounds/success.wav'),
-                'circuit_run': get_resource_path('resources/sounds/success.wav')
             }
 
             # Load sounds into pygame
@@ -1478,7 +1459,6 @@ class GateTutorial:
 
             # Display results
             self.display_results(final_state.data, num_qubits)
-            self.play_sound('circuit_run')
 
             self.mark_completed()
 
@@ -1539,6 +1519,7 @@ class GateTutorial:
         self.results_text.insert(tk.END, f"Gates Applied: {' → '.join(self.placed_gates)}\n")
         self.results_text.insert(tk.END, f"Total Gates: {len(self.placed_gates)}\n")
         self.results_text.insert(tk.END, "=" * 50 + "\n\n")
+        self.play_sound('success')
 
         self.results_text.insert(tk.END, f"📊 Final State Vector:\n")
         for i, amplitude in enumerate(state_vector):

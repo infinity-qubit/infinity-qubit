@@ -60,11 +60,10 @@ class SandboxMode:
             self.sounds = {}
             try:
                 # Gate sounds
-                self.sounds['gate_place'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
-                self.sounds['success'] = pygame.mixer.Sound(get_resource_path("resources/sounds/run_circuit.wav"))
-                self.sounds['error'] = pygame.mixer.Sound(get_resource_path("resources/sounds/error.wav"))
+                self.sounds['gate_place'] = pygame.mixer.Sound(get_resource_path("resources/sounds/add_gate.wav"))
+                self.sounds['success'] = pygame.mixer.Sound(get_resource_path("resources/sounds/correct.wav"))
+                self.sounds['error'] = pygame.mixer.Sound(get_resource_path("resources/sounds/wrong.wav"))
                 self.sounds['click'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
-                self.sounds['circuit_run'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
                 self.sounds['clear'] = pygame.mixer.Sound(get_resource_path("resources/sounds/clear.wav"))
 
                 # Set volumes
@@ -112,20 +111,27 @@ class SandboxMode:
         try:
             with open(filename, "w") as f:
                 json.dump(data, f)
+            self.play_sound('click')
             self.show_custom_dialog("Success", f"Circuit saved!", "success")
         except Exception as e:
+            self.play_sound('error', self.play_error_sound_fallback)
             self.show_custom_dialog("Error", f"Could not save circuit: {e}", "error")
 
     def load_circuit(self):
         """Show a touch-friendly list of saved circuits."""
         if not os.path.exists(self.SAVE_DIR):
+            self.play_sound('error', self.play_error_sound_fallback)
             self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
             return
         
         files = [f for f in os.listdir(self.SAVE_DIR) if f.endswith(".json")]
         if not files:
+            self.play_sound('error', self.play_error_sound_fallback)
             self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
             return
+        
+        # Play click sound
+        self.play_sound('click')
 
         # Create dialog
         dialog = tk.Toplevel(self.root)
@@ -664,8 +670,8 @@ class SandboxMode:
             ("🔄 Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
             ("💾 Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
             ("📂 Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black']),
-            ("↶ Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
-            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color'])  # New button
+            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color']),
+            ("↶ Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black'])
         ]
 
         # Create buttons in a vertical layout for the middle section
@@ -2016,9 +2022,6 @@ class SandboxMode:
             # Clear previous results first
             self.results_text.configure(state=tk.NORMAL)
             self.results_text.delete(1.0, tk.END)
-
-            # Play sound first for immediate feedback
-            self.play_sound('circuit_run', self.play_success_sound_fallback)
 
             # Check if there are any gates to run
             if not self.placed_gates:
