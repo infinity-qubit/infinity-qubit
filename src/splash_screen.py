@@ -198,7 +198,7 @@ class SplashScreen:
         # Scale gate positions based on canvas width
         gate_spacing = (end_x - start_x - 80) // 3
         self.gate_positions = [start_x + 40 + i * gate_spacing for i in range(3)]
-        self.gate_colors = ['#ff6b6b', '#4ecdc4', '#96ceb4']
+        self.gate_colors = ["#002b7f", '#fcd116', '#ce1126']
         self.gate_labels = ['H', 'X', 'Z']
 
         self.draw_animated_gates()
