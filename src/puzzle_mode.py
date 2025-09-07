@@ -762,20 +762,19 @@ class PuzzleMode:
         dialog = tk.Toplevel(self.root)
         dialog.title("⚠️ Gate Limit Reached")
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog_dimensions = (600, 500)
-        dialog.geometry(f"{dialog_dimensions[0]}x{dialog_dimensions[1]}")
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.focus_set()
 
-        # Center the dialog on screen and ensure it's on top
-        dialog.update_idletasks()
+        # Calculate center position immediately
+        dialog_width = 600
+        dialog_height = 500
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
-        x = (screen_width - dialog_dimensions[0]) // 2
-        y = (screen_height - dialog_dimensions[1]) // 2
-        dialog.geometry(f"{dialog_dimensions[0]}x{dialog_dimensions[1]}+{x}+{y}")
+        x = (screen_width - dialog_width) // 2
+        y = (screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         # Ensure dialog is on top
         dialog.lift()
@@ -1892,19 +1891,21 @@ Thank you for playing Infinity Qubit! 💫"""
         dialog = tk.Toplevel(self.root)
         dialog.title("Return to Main Menu")
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog.geometry("400x280")  # Increased height for reset button
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.focus_set()
 
-        # Center the dialog on screen and ensure it's on top
-        dialog.update_idletasks()
+        # Calculate center position BEFORE creating the geometry
+        dialog_width = 400
+        dialog_height = 280
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
-        x = (screen_width - 400) // 2
-        y = (screen_height - 280) // 2
-        dialog.geometry(f"400x280+{x}+{y}")
+        x = (screen_width - dialog_width) // 2
+        y = (screen_height - dialog_height) // 2
+
+        # Set geometry with calculated position immediately
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         # Ensure dialog is on top
         dialog.lift()
@@ -2044,6 +2045,13 @@ Thank you for playing Infinity Qubit! 💫"""
             selection_window.root.update()
             selection_window.root.lift()
             selection_window.root.focus_force()
+
+            # Stop any pygame/sound processes before destroying
+            if hasattr(self, 'sound_enabled') and self.sound_enabled:
+                try:
+                    pygame.mixer.quit()
+                except:
+                    pass
 
             # THEN destroy current window
             self.root.destroy()
