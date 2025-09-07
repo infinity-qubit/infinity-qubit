@@ -13,10 +13,6 @@ import pygame
 import sys
 import tkinter as tk
 import tkinter.messagebox as messagebox
-import cv2
-from PIL import Image, ImageTk
-import threading
-import time
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -26,6 +22,7 @@ from run import PROJECT_ROOT, get_resource_path
 # Get color palette
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'game_mode_selection')
+
 
 class GameModeSelection:
     def __init__(self):
@@ -45,12 +42,6 @@ class GameModeSelection:
         self.window_width = screen_width
         self.window_height = screen_height
 
-        # Video background variables
-        self.video_cap = None
-        self.video_label = None
-        self.video_running = False
-        self.video_thread = None
-
         # Initialize sound system
         try:
             pygame.mixer.init()
@@ -58,6 +49,7 @@ class GameModeSelection:
         except:
             self.sound_enabled = False
 
+        # Setup background and UI
         self.setup_video_background()
         self.create_selection_ui()
 
@@ -65,82 +57,23 @@ class GameModeSelection:
         self.root.lift()
         self.root.focus_force()
 
-        # Handle window close event (ESC key to exit)
-        self.root.bind('<Escape>', lambda e: self.on_closing())
-        self.root.bind('<F11>', lambda e: self.on_closing())  # F11 to exit fullscreen
 
     def setup_video_background(self):
-        """Setup video background"""
+        self.create_fallback_background()
+
+
+    def return_to_main_menu(self):
+        """Return to the main menu from tutorial"""
         try:
-            # Loading video file
-            video_path = get_resource_path('resources/images/quantum_background.mp4')
-            self.video_cap = cv2.VideoCapture(video_path)
-
-            if not self.video_cap.isOpened():
-                print("Warning: Could not open video file. Using fallback background.")
-                self.video_cap = None
-                self.create_fallback_background()
-                return
-
-            # Create video label
-            self.video_label = tk.Label(self.root, bg=palette['black'])
-            self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
-
-            # Start video playbook
-            self.video_running = True
-            self.video_thread = threading.Thread(target=self.play_video, daemon=True)
-            self.video_thread.start()
-
+            # Make sure window is ready
+            if hasattr(self, 'root') and self.root:
+                self.root.deiconify()
+                self.root.lift()
+                self.root.focus_set()
+                self.root.update()  # Force update
         except Exception as e:
-            print(f"Error setting up video background: {e}")
-            self.video_cap = None
-            self.create_fallback_background()
+            print(f"Error returning to main menu: {e}")
 
-    def play_video(self):
-        """Play video in background thread"""
-        if not self.video_cap:
-            return
-
-        fps = self.video_cap.get(cv2.CAP_PROP_FPS)
-        frame_delay = 1.0 / fps if fps > 0 else 1.0 / 30  # Default to 30fps
-
-        while self.video_running:
-            try:
-                ret, frame = self.video_cap.read()
-
-                if not ret:
-                    # Loop video
-                    self.video_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    continue
-
-                # Resize frame to window size
-                frame = cv2.resize(frame, (self.window_width, self.window_height))
-
-                # Convert BGR to RGB
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-                # Convert to PIL Image
-                pil_image = Image.fromarray(frame_rgb)
-
-                # Apply dark overlay for better text readability
-                overlay = Image.new('RGBA', pil_image.size, (0, 0, 0, 100))
-                pil_image = pil_image.convert('RGBA')
-                pil_image = Image.alpha_composite(pil_image, overlay)
-                pil_image = pil_image.convert('RGB')
-
-                # Convert to PhotoImage
-                photo = ImageTk.PhotoImage(pil_image)
-
-                # Update video label
-                if self.video_label and self.video_running:
-                    self.video_label.configure(image=photo)
-                    self.video_label.image = photo  # Keep a reference
-
-                time.sleep(frame_delay)
-
-            except Exception as e:
-                print(f"Error in video playback: {e}")
-                break
 
     def create_fallback_background(self):
         """Create animated fallback background if video fails"""
@@ -159,6 +92,7 @@ class GameModeSelection:
 
         self.animate_particles(canvas)
         return canvas
+
 
     def update_info_display(self, mode_key):
         """Update the info display with selected mode information"""
@@ -530,17 +464,6 @@ class GameModeSelection:
                             justify=tk.CENTER)
         welcome_label.place(relx=0.5, rely=0.5, anchor='center')
 
-    def return_to_main_menu(self):
-        """Return to the main menu from tutorial"""
-        self.root.deiconify()
-        self.root.lift()
-        self.root.focus_set()
-        # Restart video if available
-        if self.video_cap and not self.video_running:
-            self.video_running = True
-            self.video_thread = threading.Thread(target=self.play_video, daemon=True)
-            self.video_thread.start()
-
     def start_tutorial_mode(self):
         """Start the tutorial mode"""
         print("📚 Starting Tutorial Mode...")
@@ -550,7 +473,6 @@ class GameModeSelection:
             tutorial_window = TutorialWindow(self.root, self.return_to_main_menu)
 
             # Only hide main window after tutorial is ready
-            self.stop_video()
             self.root.withdraw()
 
         except ImportError as e:
@@ -577,7 +499,6 @@ class GameModeSelection:
             puzzle_root.focus_force()
 
             # Now safely close main window
-            self.stop_video()
             self.root.destroy()
 
             # Start the puzzle mode mainloop
@@ -607,7 +528,6 @@ class GameModeSelection:
             sandbox_root.focus_force()
 
             # Now safely close main window
-            self.stop_video()
             self.root.destroy()
 
             # Start the sandbox mainloop
@@ -637,7 +557,6 @@ class GameModeSelection:
             learn_hub_root.focus_force()
 
             # Now safely close main window
-            self.stop_video()
             self.root.destroy()
 
             # Start the learn hub mainloop
@@ -651,26 +570,13 @@ class GameModeSelection:
             messagebox.showerror("Error", f"Error starting Learn Hub: {str(e)}")
 
 
-    def stop_video(self):
-        """Stop video playback"""
-        self.video_running = False
-        if self.video_cap:
-            self.video_cap.release()
-
-    def on_closing(self):
-        """Handle window closing"""
-        self.stop_video()
-        self.root.destroy()
-        sys.exit(0)
-
     def exit_game(self):
         """Exit the game"""
         print("👋 Exiting game...")
-        self.play_sound()
-        self.stop_video()
         self.root.quit()
         self.root.destroy()
         sys.exit(0)
+
 
     def run(self):
         """Run the game mode selection window"""
