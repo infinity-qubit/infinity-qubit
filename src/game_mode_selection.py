@@ -68,84 +68,66 @@ class GameModeSelection:
         self.root.bind('<Escape>', self.on_escape_key)
         self.root.bind('<F11>', self.on_f11_key)  # F11 to exit fullscreen
 
+
     def setup_video_background(self):
-        """Setup GIF background"""
+        """Setup MP4 video background with resolution-based file selection"""
         try:
-            # Loading GIF file
-            gif_path = get_resource_path('resources/images/Art Render GIF by time.gif')
-            self.gif_image = Image.open(gif_path)
+            # Determine which pre-resized MP4 to use based on screen dimensions
+            if self.window_width == 1920 and self.window_height == 1200:
+                video_filename = 'background_1920x1200.mp4'
+                print(f"Using 1920x1200 MP4 for screen: {self.window_width}x{self.window_height}")
+            elif self.window_width == 1920 and self.window_height == 1080:
+                video_filename = 'background_1920x1080.mp4'
+                print(f"Using 1920x1080 MP4 for screen: {self.window_width}x{self.window_height}")
+            else:
+                # For other resolutions, choose the closest match based on height
+                if abs(self.window_height - 1200) < abs(self.window_height - 1080):
+                    video_filename = 'background_1920x1200.mp4'
+                    print(f"Using 1920x1200 MP4 (closest match) for screen: {self.window_width}x{self.window_height}")
+                else:
+                    video_filename = 'background_1920x1080.mp4'
+                    print(f"Using 1920x1080 MP4 (closest match) for screen: {self.window_width}x{self.window_height}")
             
-            # Get GIF frame count and duration
-            self.gif_frames = []
-            self.gif_durations = []
+            # Load the selected video file
+            video_path = get_resource_path(f'resources/images/{video_filename}')
             
-            try:
-                while True:
-                    frame = self.gif_image.copy()
-                    # Resize frame to window size
-                    frame = frame.resize((self.window_width, self.window_height), Image.Resampling.LANCZOS)
-                    
-                    # Apply dark overlay for better text readability
-                    overlay = Image.new('RGBA', frame.size, (0, 0, 0, 100))
-                    if frame.mode != 'RGBA':
-                        frame = frame.convert('RGBA')
-                    frame = Image.alpha_composite(frame, overlay)
-                    frame = frame.convert('RGB')
-                    
-                    self.gif_frames.append(ImageTk.PhotoImage(frame))
-                    
-                    # Get frame duration (in milliseconds)
-                    duration = self.gif_image.info.get('duration', 100)
-                    self.gif_durations.append(duration)
-                    
-                    self.gif_image.seek(len(self.gif_frames))
-            except EOFError:
-                pass  # End of sequence
+            self.cap = cv2.VideoCapture(video_path)
             
-            if not self.gif_frames:
-                print("Warning: Could not load GIF frames. Using fallback background.")
+            if not self.cap.isOpened():
+                print(f"Warning: Could not open video file {video_filename}. Using fallback background.")
                 self.create_fallback_background()
                 return
-
-            # Create background label
-            self.video_label = tk.Label(self.root, bg=palette['black'])
+            
+            print(f"✅ Successfully loaded MP4 video: {video_filename}")
+            
+            self.video_label = tk.Label(self.root)
             self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-            # Start GIF animation
-            self.video_running = True
-            self.current_frame = 0
-            self.animate_gif()
-
-        except Exception as e:
-            print(f"Error setting up GIF background: {e}")
-            self.create_fallback_background()
-
-    def animate_gif(self):
-        """Animate GIF frames"""
-        if not self.video_running or not self.gif_frames or not hasattr(self, 'root'):
-            return
-            
-        try:
-            # Check if the root window still exists
-            if not self.root.winfo_exists():
-                return
+            def play_frame():
+                ret, frame = self.cap.read()
+                if not ret:
+                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # loop
+                    ret, frame = self.cap.read()
                 
-            # Update background with current frame
-            if self.video_label and self.video_label.winfo_exists():
-                self.video_label.configure(image=self.gif_frames[self.current_frame])
-                self.video_label.image = self.gif_frames[self.current_frame]  # Keep a reference
-            
-            # Move to next frame
-            self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
-            
-            # Schedule next frame only if still running
-            if self.video_running and hasattr(self, 'root'):
-                duration = self.gif_durations[self.current_frame] if self.current_frame < len(self.gif_durations) else 100
-                self.root.after(duration, self.animate_gif)
+                if ret:
+                    # Check if frame needs resizing (should be minimal with pre-sized videos)
+                    frame_height, frame_width = frame.shape[:2]
+                    if frame_width != self.window_width or frame_height != self.window_height:
+                        frame = cv2.resize(frame, (self.window_width, self.window_height))
+                        print(f"Minor resize from {frame_width}x{frame_height} to {self.window_width}x{self.window_height}")
+                    
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    img = ImageTk.PhotoImage(Image.fromarray(frame))
+                    self.video_label.config(image=img)
+                    self.video_label.image = img
+                
+                self.root.after(33, play_frame)  # ~30 FPS
+
+            play_frame()
             
         except Exception as e:
-            print(f"Error in GIF animation: {e}")
-            self.video_running = False
+            print(f"Error setting up MP4 background: {e}")
+            self.create_fallback_background()
 
     def play_video(self):
         """Legacy method - now handled by animate_gif"""
