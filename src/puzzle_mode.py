@@ -1967,6 +1967,7 @@ Thank you for playing Infinity Qubit! 💫"""
         self.gates_count_label.config(text=f"Gates: {len(self.placed_gates)}")
         self.gates_used_label.config(text=f"Used: {len(self.placed_gates)}/{max_gates}")
 
+
     def return_to_main_menu(self):
         """Return to main menu from button click"""
         self.play_sound('button_click')
@@ -1977,8 +1978,6 @@ Thank you for playing Infinity Qubit! 💫"""
         dialog.overrideredirect(True)  # Remove window decorations
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
-        dialog.grab_set()
-        dialog.focus_set()
 
         # Calculate center position BEFORE creating the geometry
         dialog_width = 400
@@ -1991,10 +1990,17 @@ Thank you for playing Infinity Qubit! 💫"""
         # Set geometry with calculated position immediately
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
-        # Ensure dialog is on top
+        # Ensure dialog is on top and visible BEFORE grab_set
         dialog.lift()
         dialog.attributes("-topmost", True)
+        dialog.update_idletasks()  # Make sure dialog is rendered
+        dialog.deiconify()  # Ensure it's visible
 
+        # NOW set grab and focus after dialog is fully visible
+        dialog.grab_set()
+        dialog.focus_set()
+
+        # Initialize result variable
         result = [None]
 
         # Main container with border
@@ -2003,16 +2009,16 @@ Thank you for playing Infinity Qubit! 💫"""
 
         # Title
         title_label = tk.Label(main_frame, text="Return to Main Menu",
-                             font=('Arial', 16, 'bold'),
-                             fg=palette['title_color'], bg=palette['background_2'])
+                            font=('Arial', 16, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_2'])
         title_label.pack(pady=(15, 10))
 
         # Message
         message_label = tk.Label(main_frame,
-                               text="Are you sure you want to return to the main menu?\nYour progress will be saved.",
-                               font=('Arial', 12),
-                               fg=palette['subtitle_color'], bg=palette['background_2'],
-                               justify=tk.CENTER)
+                            text="Are you sure you want to return to the main menu?\nYour progress will be saved.",
+                            font=('Arial', 12),
+                            fg=palette['subtitle_color'], bg=palette['background_2'],
+                            justify=tk.CENTER)
         message_label.pack(pady=10)
 
         # Button frame
@@ -2037,23 +2043,23 @@ Thank you for playing Infinity Qubit! 💫"""
         )
         yes_canvas.pack(side=tk.LEFT, padx=10)
 
-        # No button
-        no_btn = tk.Button(button_frame, text="✗ No, Stay",
-                          command=cancel_return,
-                          font=('Arial', 12, 'bold'),
-                          bg=palette['close_button_background'],
-                          fg=palette['close_button_hover_text_color'],
-                          padx=20, pady=8,
-                          cursor='hand2', relief=tk.FLAT)
-        no_btn.pack(side=tk.LEFT, padx=10)
+        # No button - canvas-based
+        no_canvas = self.create_canvas_dialog_button(
+            button_frame, "✗ No, Stay",
+            cancel_return,
+            palette['close_button_background'],
+            palette['close_button_hover_text_color'],
+            width=120, height=40, font_size=12
+        )
+        no_canvas.pack(side=tk.LEFT, padx=10)
 
         # --- Reset Progress Button in its own frame ---
         reset_frame = tk.Frame(main_frame, bg=palette['background_2'])
         reset_frame.pack(pady=(15, 5))
 
         reset_label = tk.Label(reset_frame, text="Or reset your progress:",
-                               font=('Arial', 10, 'italic'),
-                               fg=palette['subtitle_color'], bg=palette['background_2'])
+                            font=('Arial', 10, 'italic'),
+                            fg=palette['subtitle_color'], bg=palette['background_2'])
         reset_label.pack(pady=(0, 5))
 
         def reset_progress():
@@ -2066,47 +2072,15 @@ Thank you for playing Infinity Qubit! 💫"""
             dialog.destroy()
             self.root.after(100, lambda: self.load_level(0))
 
-        reset_btn = tk.Button(reset_frame, text="🔄 Reset Progress",
-                            command=reset_progress,
-                            font=('Arial', 12, 'bold'),
-                            bg=palette['clear_button_background'],
-                            fg=palette['clear_button_text_color'],
-                            padx=20, pady=8,
-                            cursor='hand2', relief=tk.FLAT)
-        reset_btn.pack()
-
-        # Add hover effect for reset button
-        def on_reset_enter(event):
-            reset_btn.configure(bg=palette['button_hover_background'], fg=palette['button_hover_text_color'])
-        def on_reset_leave(event):
-            reset_btn.configure(bg=palette['clear_button_background'], fg=palette['clear_button_text_color'])
-        reset_btn.bind("<Enter>", on_reset_enter)
-        reset_btn.bind("<Leave>", on_reset_leave)
-
-        # Add hover effects for yes/no buttons
-        def on_yes_enter(event):
-            yes_btn.configure(bg=palette['next_level_button_hover_background'])
-        def on_yes_leave(event):
-            yes_btn.configure(bg=palette['next_level_button_background'])
-
-        def on_no_enter(event):
-            no_btn.configure(bg=palette['close_button_hover_text_color'], fg=palette['close_button_text_color'])
-        def on_no_leave(event):
-            no_btn.configure(bg=palette['close_button_background'], fg=palette['close_button_hover_text_color'])
-
-        yes_btn.bind("<Enter>", on_yes_enter)
-        yes_btn.bind("<Leave>", on_yes_leave)
-        no_btn.bind("<Enter>", on_no_enter)
-        no_btn.bind("<Leave>", on_no_leave)
-        # No button - canvas-based
-        no_canvas = self.create_canvas_dialog_button(
-            button_frame, "✗ No, Stay",
-            cancel_return,
-            palette['close_button_background'],
-            palette['close_button_hover_text_color'],
-            width=120, height=40, font_size=12
+        # Reset button - canvas-based
+        reset_canvas = self.create_canvas_dialog_button(
+            reset_frame, "🔄 Reset Progress",
+            reset_progress,
+            palette['clear_button_background'],
+            palette['clear_button_text_color'],
+            width=160, height=40, font_size=12
         )
-        no_canvas.pack(side=tk.LEFT, padx=10)
+        reset_canvas.pack()
 
         # Handle ESC key to cancel
         dialog.bind('<Escape>', lambda e: cancel_return())
@@ -2117,8 +2091,9 @@ Thank you for playing Infinity Qubit! 💫"""
         # Process result
         if result[0]:
             # Save the progress before exiting
-            self.go_back_to_menu()
             self.save_progress()
+            self.go_back_to_menu()
+
 
     def on_window_close(self):
         """Handle window close event (X button)"""

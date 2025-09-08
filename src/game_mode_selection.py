@@ -47,8 +47,9 @@ class GameModeSelection:
         self.window_width = screen_width
         self.window_height = screen_height
 
-        # Animation control flag
-        self.animations_running = True
+        # Animation control flag - start as False for pre-loading
+        self.animations_running = False
+        self.pre_loading = True
 
         # Initialize sound system
         try:
@@ -67,62 +68,7 @@ class GameModeSelection:
 
 
     def setup_video_background(self):
-        """Setup MP4 video background with resolution-based file selection"""
-        try:
-            # Determine which pre-resized MP4 to use based on screen dimensions
-            if self.window_width == 1920 and self.window_height == 1200:
-                video_filename = 'background_1920x1200.mp4'
-                print(f"Using 1920x1200 MP4 for screen: {self.window_width}x{self.window_height}")
-            elif self.window_width == 1920 and self.window_height == 1080:
-                video_filename = 'background_1920x1080.mp4'
-                print(f"Using 1920x1080 MP4 for screen: {self.window_width}x{self.window_height}")
-            else:
-                # For other resolutions, choose the closest match based on height
-                if abs(self.window_height - 1200) < abs(self.window_height - 1080):
-                    video_filename = 'background_1920x1200.mp4'
-                    print(f"Using 1920x1200 MP4 (closest match) for screen: {self.window_width}x{self.window_height}")
-                else:
-                    video_filename = 'background_1920x1080.mp4'
-                    print(f"Using 1920x1080 MP4 (closest match) for screen: {self.window_width}x{self.window_height}")
-
-            # Load the selected video file
-            video_path = get_resource_path(f'resources/images/{video_filename}')
-
-            self.cap = cv2.VideoCapture(video_path)
-
-            if not self.cap.isOpened():
-                print(f"Warning: Could not open video file {video_filename}. Using fallback background.")
-                self.create_fallback_background()
-                return
-
-            print(f"✅ Successfully loaded MP4 video: {video_filename}")
-
-            self.video_label = tk.Label(self.root)
-            self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
-
-            def play_frame():
-                ret, frame = self.cap.read()
-                if not ret:
-                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # loop
-                    ret, frame = self.cap.read()
-
-                if ret:
-                    # Check if frame needs resizing (should be minimal with pre-sized videos)
-                    frame_height, frame_width = frame.shape[:2]
-                    if frame_width != self.window_width or frame_height != self.window_height:
-                        frame = cv2.resize(frame, (self.window_width, self.window_height))
-                        print(f"Minor resize from {frame_width}x{frame_height} to {self.window_width}x{self.window_height}")
-
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    img = ImageTk.PhotoImage(Image.fromarray(frame))
-                    self.video_label.config(image=img)
-                    self.video_label.image = img
-
-                self.root.after(33, play_frame)  # ~30 FPS
-
-            play_frame()
-
-        self.create_fallback_background()
+        self.create_fallback_background()  # Create fallback background first
 
 
     def return_to_main_menu(self):
@@ -140,34 +86,39 @@ class GameModeSelection:
 
     def create_fallback_background(self):
         """Create animated quantum-themed background"""
-        # Create animated quantum-themed background
-        canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
-                          bg=palette['background'], highlightthickness=0)
-        canvas.place(x=0, y=0)
+        try:
+            # Create animated quantum-themed background
+            canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
+                            bg=palette['background'], highlightthickness=0)
+            canvas.place(x=0, y=0)
 
-        # Draw animated particles/quantum effects
-        self.particles = []
-        particle_count = max(20, int(self.window_width * self.window_height / 20000))  # Scale with resolution
-        for i in range(particle_count):
-            x = __import__('random').randint(0, self.window_width)
-            y = __import__('random').randint(0, self.window_height)
-            dx = __import__('random').uniform(-2, 2)
-            dy = __import__('random').uniform(-2, 2)
-            color = __import__('random').choice(['#ffb86b', '#ffd08f', '#ff6b6b'])
-            self.particles.append({'x': x, 'y': y, 'dx': dx, 'dy': dy, 'color': color})
+            # Draw animated particles/quantum effects - fix particle structure
+            self.particles = []
+            particle_count = max(20, int(self.window_width * self.window_height / 20000))  # Scale with resolution
+            for i in range(particle_count):
+                x = __import__('random').randint(0, self.window_width)
+                y = __import__('random').randint(0, self.window_height)
+                dx = __import__('random').uniform(-2, 2)
+                dy = __import__('random').uniform(-2, 2)
+                color = __import__('random').choice(['#ffb86b', '#ffd08f', '#ff6b6b'])
+                # Use consistent dictionary structure
+                self.particles.append({
+                    'x': x,
+                    'y': y,
+                    'dx': dx,
+                    'dy': dy,
+                    'color': color
+                })
 
-        self.animate_particles(canvas)
-        return canvas
-        self.particles = []
-        particle_count = int(self.window_width * self.window_height / 20000)  # Scale with resolution
-        for i in range(particle_count):
-            x = (i * 50) % self.window_width
-            y = (i * 30) % self.window_height
-            self.particles.append([x, y, 1])
-
-        self.animate_particles(canvas)
-        return canvas
-
+            self.animate_particles(canvas)
+            return canvas
+        except Exception as e:
+            print(f"Error creating fallback background: {e}")
+            # Create simple static background as last resort
+            simple_canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
+                                    bg=palette['background'], highlightthickness=0)
+            simple_canvas.place(x=0, y=0)
+            return simple_canvas
 
     def update_info_display(self, mode_key):
         """Update the info display with selected mode information"""
@@ -284,31 +235,51 @@ class GameModeSelection:
         start_canvas.bind("<Enter>", on_start_enter)
         start_canvas.bind("<Leave>", on_start_leave)
 
+
     def animate_particles(self, canvas):
-        """Animate background particles"""
+        """Animate background particles - only if not pre-loading"""
+        if self.pre_loading:
+            return
+
         def update_particles():
             try:
                 if (self.animations_running and hasattr(self, 'root') and
-                    self.root.winfo_exists()):
+                    self.root.winfo_exists() and hasattr(self, 'particles')):
                     canvas.delete("particle")
 
                     for particle in self.particles:
-                        particle[0] = (particle[0] + particle[2]) % self.window_width
-                        particle[1] = (particle[1] + particle[2] * 0.5) % self.window_height
+                        particle['x'] = (particle['x'] + particle['dx']) % self.window_width
+                        particle['y'] = (particle['y'] + particle['dy']) % self.window_height
 
-                        # Draw glowing dot (scale size with resolution)
                         dot_size = max(2, int(self.window_width / 500))
-                        x, y = particle[0], particle[1]
+                        x, y = particle['x'], particle['y']
                         canvas.create_oval(x-dot_size, y-dot_size, x+dot_size, y+dot_size,
-                                         fill='#00ff88', outline='#4ecdc4',
-                                         tags="particle", width=2)
+                                        fill=particle['color'], outline='#4ecdc4',
+                                        tags="particle", width=2)
 
-                    self.root.after(50, update_particles)
-            except (tk.TclError, AttributeError):
-                # Widget has been destroyed or app is closing, stop the animation
+                    if self.animations_running:
+                        self.root.after(50, update_particles)
+            except (tk.TclError, AttributeError, KeyError) as e:
                 self.animations_running = False
 
         update_particles()
+
+
+    def start_animations(self):
+        """Start all animations after pre-loading is complete"""
+        self.pre_loading = False
+        self.animations_running = True
+
+        # Start subtitle animation
+        self.animate_subtitle()
+
+        # Start particle animation
+        if hasattr(self, 'particles'):
+            for widget in self.root.winfo_children():
+                if isinstance(widget, tk.Canvas):
+                    self.animate_particles(widget)
+                    break
+
 
     def play_sound(self, sound_type="click"):
         """Play a simple click sound"""
@@ -458,11 +429,15 @@ class GameModeSelection:
                                   fill=palette['background'], stipple='gray50',
                                   outline=palette['main_box_outline'], width=2, tags="glass")
 
+
     def animate_subtitle(self):
-        """Animate subtitle with color cycling"""
+        """Animate subtitle with color cycling - only if not pre-loading"""
+        if self.pre_loading:
+            return
+
         colors = [palette['subtitle_color_1'], palette['subtitle_color_2'], palette['subtitle_color_3'],
                  palette['subtitle_color_4'], palette['subtitle_color_5']]
-        color_index = [0]  # Use a list to make it mutable
+        color_index = [0]
 
         def cycle_color():
             try:
@@ -473,10 +448,10 @@ class GameModeSelection:
                     color_index[0] += 1
                     self.root.after(1500, cycle_color)
             except tk.TclError:
-                # Widget has been destroyed, stop the animation
                 pass
 
         cycle_color()
+
 
     def create_enhanced_game_mode_buttons(self, parent):
         """Create enhanced game mode selection buttons in a vertical list layout"""

@@ -336,23 +336,23 @@ class SplashScreen:
     def _destroy_and_continue(self):
         """Destroy splash screen and continue to game mode selection"""
         try:
-            # If game mode selection was pre-loaded, show it immediately
             if self.game_mode_selection:
                 self.splash.destroy()
                 self.game_mode_selection.root.deiconify()
                 self.game_mode_selection.root.lift()
                 self.game_mode_selection.root.focus_force()
             else:
-                # Fallback to original method if pre-loading failed
+                # Fallback
                 self.splash.destroy()
                 self.show_game_mode_selection()
         except Exception as e:
-            print(f"Error transitioning to game mode selection: {e}")
+            print(f"Error transitioning: {e}")
             try:
                 self.splash.destroy()
             except:
                 pass
             self.show_game_mode_selection()
+
 
     def show_game_mode_selection(self):
         """Show the game mode selection window (fallback method)"""
