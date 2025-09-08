@@ -7,6 +7,7 @@ from qiskit.quantum_info import Statevector
 import pygame
 from PIL import Image, ImageTk
 import sys
+import os
 
 sys.path.append('..')
 from run import PROJECT_ROOT, get_resource_path
@@ -17,6 +18,8 @@ color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'puzzle_mode')
 
 class PuzzleMode:
+    SAVE_FILE = os.path.expanduser("resources/saves/infinity_qubit_puzzle_save.json")
+    
     def __init__(self, root):
         self.root = root
         self.root.title("🧩 Infinity Qubit - Puzzle Mode")
@@ -56,7 +59,42 @@ class PuzzleMode:
 
         # Initialize UI
         self.setup_ui()
+
+        # Load saved progress if available (after UI and levels are set up)
+        self.load_progress()
+
         self.load_level(self.current_level)
+        if self.placed_gates:
+            # Redraw the circuit with loaded gates
+            self.draw_circuit()
+
+    def save_progress(self):
+        """Save current progress to a file."""
+        data = {
+            "current_level": self.current_level,
+            "score": self.score,
+            "placed_gates": self.placed_gates,
+        }
+        try:
+            with open(self.SAVE_FILE, "w") as f:
+                json.dump(data, f)
+            print("✅ Progress saved.")
+        except Exception as e:
+            print(f"❌ Could not save progress: {e}")
+
+    def load_progress(self):
+        """Load progress from file if it exists."""
+        if os.path.exists(self.SAVE_FILE):
+            try:
+                with open(self.SAVE_FILE, "r") as f:
+                    data = json.load(f)
+                self.current_level = data.get("current_level", 0)
+                self.score = data.get("score", 0)
+                self.placed_gates = data.get("placed_gates", [])
+                print("✅ Progress loaded.")
+            except Exception as e:
+                print(f"❌ Could not load progress: {e}")
+    
 
     def create_canvas_dialog_button(self, parent, text, command, bg_color, text_color, 
                                    width=120, height=40, font_size=12, font_weight='bold'):
@@ -1518,6 +1556,9 @@ Remember: Efficient solutions earn bonus points!"""
         # Note: We no longer automatically proceed to next level here
         # The user must click the "Next Level" button or close the dialog
 
+        # Save progress after level completion
+        self.save_progress()
+
     def show_level_complete_dialog(self, level, level_score, max_gates):
         """Show a custom styled level complete dialog without decorations"""
         dialog = tk.Toplevel(self.root)
@@ -1849,6 +1890,9 @@ Thank you for playing Infinity Qubit! 💫"""
                 self.load_level(self.current_level + 1)
             else:
                 self.game_complete()
+        
+        # Save the progress after skipping
+        self.save_progress()
 
     def load_level(self, level_index):
         """Load a specific puzzle level"""
@@ -1929,7 +1973,7 @@ Thank you for playing Infinity Qubit! 💫"""
         dialog = tk.Toplevel(self.root)
         dialog.title("Return to Main Menu")
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog.geometry("400x200")
+        dialog.geometry("400x280")  # Increased height for reset button
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
         dialog.grab_set()
@@ -1940,8 +1984,8 @@ Thank you for playing Infinity Qubit! 💫"""
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
         x = (screen_width - 400) // 2
-        y = (screen_height - 200) // 2
-        dialog.geometry(f"400x200+{x}+{y}")
+        y = (screen_height - 280) // 2
+        dialog.geometry(f"400x280+{x}+{y}")
         
         # Ensure dialog is on top
         dialog.lift()
@@ -1961,7 +2005,7 @@ Thank you for playing Infinity Qubit! 💫"""
         
         # Message
         message_label = tk.Label(main_frame, 
-                               text="Are you sure you want to return to the main menu?\nYour progress will be lost.",
+                               text="Are you sure you want to return to the main menu?\nYour progress will be saved.",
                                font=('Arial', 12), 
                                fg=palette['subtitle_color'], bg=palette['background_2'],
                                justify=tk.CENTER)
@@ -1969,7 +2013,7 @@ Thank you for playing Infinity Qubit! 💫"""
         
         # Button frame
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
-        button_frame.pack(pady=(20, 15))
+        button_frame.pack(pady=(10, 5))
         
         def confirm_return():
             result[0] = True
@@ -1989,6 +2033,67 @@ Thank you for playing Infinity Qubit! 💫"""
         )
         yes_canvas.pack(side=tk.LEFT, padx=10)
         
+        # No button
+        no_btn = tk.Button(button_frame, text="✗ No, Stay",
+                          command=cancel_return,
+                          font=('Arial', 12, 'bold'),
+                          bg=palette['close_button_background'], 
+                          fg=palette['close_button_hover_text_color'],
+                          padx=20, pady=8,
+                          cursor='hand2', relief=tk.FLAT)
+        no_btn.pack(side=tk.LEFT, padx=10)
+
+        # --- Reset Progress Button in its own frame ---
+        reset_frame = tk.Frame(main_frame, bg=palette['background_2'])
+        reset_frame.pack(pady=(15, 5))
+
+        reset_label = tk.Label(reset_frame, text="Or reset your progress:",
+                               font=('Arial', 10, 'italic'),
+                               fg=palette['subtitle_color'], bg=palette['background_2'])
+        reset_label.pack(pady=(0, 5))
+
+        def reset_progress():
+            if os.path.exists(self.SAVE_FILE):
+                os.remove(self.SAVE_FILE)
+            self.current_level = 0
+            self.placed_gates = []
+            self.score = 0
+            self.save_progress()
+            dialog.destroy()
+            self.root.after(100, lambda: self.load_level(0))
+
+        reset_btn = tk.Button(reset_frame, text="🔄 Reset Progress",
+                            command=reset_progress,
+                            font=('Arial', 12, 'bold'),
+                            bg=palette['clear_button_background'],
+                            fg=palette['clear_button_text_color'],
+                            padx=20, pady=8,
+                            cursor='hand2', relief=tk.FLAT)
+        reset_btn.pack()
+
+        # Add hover effect for reset button
+        def on_reset_enter(event):
+            reset_btn.configure(bg=palette['button_hover_background'], fg=palette['button_hover_text_color'])
+        def on_reset_leave(event):
+            reset_btn.configure(bg=palette['clear_button_background'], fg=palette['clear_button_text_color'])
+        reset_btn.bind("<Enter>", on_reset_enter)
+        reset_btn.bind("<Leave>", on_reset_leave)
+
+        # Add hover effects for yes/no buttons
+        def on_yes_enter(event):
+            yes_btn.configure(bg=palette['next_level_button_hover_background'])
+        def on_yes_leave(event):
+            yes_btn.configure(bg=palette['next_level_button_background'])
+            
+        def on_no_enter(event):
+            no_btn.configure(bg=palette['close_button_hover_text_color'], fg=palette['close_button_text_color'])
+        def on_no_leave(event):
+            no_btn.configure(bg=palette['close_button_background'], fg=palette['close_button_hover_text_color'])
+            
+        yes_btn.bind("<Enter>", on_yes_enter)
+        yes_btn.bind("<Leave>", on_yes_leave)
+        no_btn.bind("<Enter>", on_no_enter)
+        no_btn.bind("<Leave>", on_no_leave)
         # No button - canvas-based
         no_canvas = self.create_canvas_dialog_button(
             button_frame, "✗ No, Stay",
@@ -2007,10 +2112,14 @@ Thank you for playing Infinity Qubit! 💫"""
         
         # Process result
         if result[0]:
+            # Save the progress before exiting
             self.go_back_to_menu()
+            self.save_progress()
 
     def on_window_close(self):
         """Handle window close event (X button)"""
+        # Save the progress before exiting
+        self.save_progress()
         self.go_back_to_menu()
 
     def go_back_to_menu(self):

@@ -9,6 +9,14 @@ import matplotlib.pyplot as plt # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # type: ignore
 import sys
 
+# For the save system
+import re
+import os
+import json
+import datetime
+from tkinter import simpledialog, filedialog
+
+
 from q_utils import get_colors_from_file, extract_color_palette
 
 sys.path.append('..')
@@ -19,6 +27,8 @@ color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'sandbox_mode')
 
 class SandboxMode:
+    SAVE_DIR = os.path.expanduser("resources/saves/infinity_qubit_sandbox_saves")
+
     def __init__(self, root):
         self.root = root
         self.root.title("Quantum Sandbox Mode")
@@ -28,7 +38,7 @@ class SandboxMode:
         screen_height = self.root.winfo_screenheight()
         
         # Enable fullscreen
-        self.root.attributes('-fullscreen', True)
+        self.root.attributes('-fullscreen', False)
         self.root.geometry(f"{screen_width}x{screen_height}")
         self.root.configure(bg=palette['background'])
         self.root.resizable(False, False)  # Fixed size window
@@ -84,6 +94,187 @@ class SandboxMode:
         # Setup UI
         self.setup_ui()
         self.update_circuit_display()
+
+    def save_circuit(self):
+        """Save the current circuit configuration with timestamp."""
+        if not os.path.exists(self.SAVE_DIR):
+            os.makedirs(self.SAVE_DIR)
+
+        # Create timestamp-based filename
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = os.path.join(self.SAVE_DIR, f"circuit_{self.num_qubits}qubits_{timestamp}.json")
+        
+        data = {
+            "num_qubits": self.num_qubits,
+            "placed_gates": self.placed_gates,
+            "initial_state": self.initial_state
+        }
+        
+        try:
+            with open(filename, "w") as f:
+                json.dump(data, f)
+            self.show_custom_dialog("Success", f"Circuit saved!", "success")
+        except Exception as e:
+            self.show_custom_dialog("Error", f"Could not save circuit: {e}", "error")
+
+    def load_circuit(self):
+        """Show a touch-friendly list of saved circuits."""
+        if not os.path.exists(self.SAVE_DIR):
+            self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
+            return
+        
+        files = [f for f in os.listdir(self.SAVE_DIR) if f.endswith(".json")]
+        if not files:
+            self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
+            return
+
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Load Circuit")
+        dialog.configure(bg=palette['background'])
+        
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+
+        # Calculate size (70% of screen)
+        dialog_width = int(self.screen_width * 0.7)
+        dialog_height = int(self.screen_height * 0.8)
+        x = (self.screen_width - dialog_width) // 2
+        y = (self.screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.focus_force()
+
+        # Border frame
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Main frame
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+
+        # Title bar
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'], height=40)
+        title_bar.pack(fill=tk.X)
+        title_bar.pack_propagate(False)
+
+        # Title
+        title_label = tk.Label(title_bar, text="📂 Load Saved Circuit",
+                            font=('Arial', 14, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_4'])
+        title_label.pack(side=tk.LEFT, padx=15, pady=5)
+
+        # Close button
+        close_btn = tk.Button(title_bar, text="✕",
+                            command=dialog.destroy,
+                            font=('Arial', 16, 'bold'),
+                            bg=palette['background_4'],
+                            fg=palette['title_color'],
+                            bd=0, padx=15, pady=5)
+        close_btn.pack(side=tk.RIGHT)
+
+        # Scrollable frame for circuit buttons
+        canvas = tk.Canvas(main_frame, bg=palette['background_3'], highlightthickness=0)
+        scrollbar = tk.Scrollbar(main_frame, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=palette['background_3'])
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Pack scrollbar and canvas
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Create window in canvas for scrollable frame
+        canvas.create_window((0, 0), window=scrollable_frame, anchor=tk.NW, 
+                            width=dialog_width - 50)  # Adjust width to fit dialog
+
+        # Sort files by timestamp (newest first)
+        files.sort(reverse=True)
+
+        def do_load(filename):
+            try:
+                with open(os.path.join(self.SAVE_DIR, filename), "r") as f:
+                    data = json.load(f)
+                self.num_qubits = data.get("num_qubits", 1)
+                self.placed_gates = data.get("placed_gates", [])
+                self.initial_state = data.get("initial_state", "|0⟩")
+                self.qubit_var.set(self.num_qubits)
+                self.state_var.set(self.initial_state)
+                self.update_qubit_selections()
+                self.update_circuit_display()
+                dialog.destroy()
+            except Exception as e:
+                self.show_custom_dialog("Error", f"Could not load circuit: {e}", "error")
+                dialog.destroy()
+
+        # Create touch-friendly buttons for each save file
+        for filename in files:
+            # Extract info from filename
+            match = re.match(r"circuit_(\d+)qubits_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.json", filename)
+            if match:
+                qubits, timestamp = match.groups()
+                # Convert timestamp to readable format
+                datetime_obj = datetime.datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S")
+                friendly_date = datetime_obj.strftime("%b %d, %Y %I:%M %p")
+                
+                # Create button frame with border
+                btn_frame = tk.Frame(scrollable_frame, bg=palette['background_4'], 
+                                relief=tk.RAISED, bd=2)
+                btn_frame.pack(fill=tk.X, padx=10, pady=5)
+
+                # Button with file info
+                load_btn = tk.Button(btn_frame,
+                                text=f"📊 {qubits} Qubits Circuit\n📅 {friendly_date}",
+                                command=lambda f=filename: do_load(f),
+                                font=('Arial', 12),
+                                bg=palette['background_4'],
+                                fg=palette['title_color'],
+                                justify=tk.LEFT,
+                                padx=20, pady=15,
+                                cursor='hand2')
+                load_btn.pack(fill=tk.X)
+
+                # Add hover effect
+                def on_enter(e):
+                    e.widget.configure(bg=palette['button_hover_background'])
+                def on_leave(e):
+                    e.widget.configure(bg=palette['background_4'])
+                
+                load_btn.bind("<Enter>", on_enter)
+                load_btn.bind("<Leave>", on_leave)
+
+        # Update scroll region
+        scrollable_frame.update_idletasks()
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+        # Make title bar draggable
+        def start_move(event):
+            dialog.x = event.x
+            dialog.y = event.y
+
+        def on_move(event):
+            deltax = event.x - dialog.x
+            deltay = event.y - dialog.y
+            x = dialog.winfo_x() + deltax
+            y = dialog.winfo_y() + deltay
+            dialog.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_bar_label.bind("<Button-1>", start_move)
+        title_bar_label.bind("<B1-Motion>", on_move)
+
+        # Mouse wheel scrolling
+        def on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+
+        # Bind Escape to close
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
 
     def exit_fullscreen(self, event=None):
         """Exit the sandbox mode"""
@@ -541,10 +732,12 @@ class SandboxMode:
 
         # Create enhanced buttons with hover effects
         buttons_data = [
-            ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['run_button_text_color']),
-            ("🔄 Clear Circuit", self.clear_circuit, palette['run_button_background'], palette['run_button_text_color']),
-            ("↶ Undo Last", self.undo_gate, palette['run_button_background'], palette['run_button_text_color']),
-            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['run_button_background'], palette['run_button_text_color'])  # New button
+            ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
+            ("🔄 Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
+            ("💾 Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
+            ("📂 Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black']),
+            ("↶ Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
+            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color'])  # New button
         ]
 
         # Create buttons in a vertical layout for the middle section
