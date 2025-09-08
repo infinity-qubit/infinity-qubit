@@ -60,7 +60,71 @@ class GameModeSelection:
 
         # Handle window close event (ESC key to exit)
         self.root.bind('<Escape>', self.on_escape_key)
-        self.root.bind('<F11>', self.on_f11_key)  # F11 to toggle fullscreen
+
+    def setup_video_background(self):
+        """Setup MP4 video background with resolution-based file selection"""
+        try:
+            # Determine which pre-resized MP4 to use based on screen dimensions
+            if self.window_width == 1920 and self.window_height == 1200:
+                video_filename = 'background_1920x1200.mp4'
+                print(f"Using 1920x1200 MP4 for screen: {self.window_width}x{self.window_height}")
+            elif self.window_width == 1920 and self.window_height == 1080:
+                video_filename = 'background_1920x1080.mp4'
+                print(f"Using 1920x1080 MP4 for screen: {self.window_width}x{self.window_height}")
+            else:
+                # For other resolutions, choose the closest match based on height
+                if abs(self.window_height - 1200) < abs(self.window_height - 1080):
+                    video_filename = 'background_1920x1200.mp4'
+                    print(f"Using 1920x1200 MP4 (closest match) for screen: {self.window_width}x{self.window_height}")
+                else:
+                    video_filename = 'background_1920x1080.mp4'
+                    print(f"Using 1920x1080 MP4 (closest match) for screen: {self.window_width}x{self.window_height}")
+            
+            # Load the selected video file
+            video_path = get_resource_path(f'resources/images/{video_filename}')
+            
+            self.cap = cv2.VideoCapture(video_path)
+            
+            if not self.cap.isOpened():
+                print(f"Warning: Could not open video file {video_filename}. Using fallback background.")
+                self.create_fallback_background()
+                return
+            
+            print(f"✅ Successfully loaded MP4 video: {video_filename}")
+            
+            self.video_label = tk.Label(self.root)
+            self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+            def play_frame():
+                ret, frame = self.cap.read()
+                if not ret:
+                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # loop
+                    ret, frame = self.cap.read()
+                
+                if ret:
+                    # Check if frame needs resizing (should be minimal with pre-sized videos)
+                    frame_height, frame_width = frame.shape[:2]
+                    if frame_width != self.window_width or frame_height != self.window_height:
+                        frame = cv2.resize(frame, (self.window_width, self.window_height))
+                        print(f"Minor resize from {frame_width}x{frame_height} to {self.window_width}x{self.window_height}")
+                    
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    img = ImageTk.PhotoImage(Image.fromarray(frame))
+                    self.video_label.config(image=img)
+                    self.video_label.image = img
+                
+                self.root.after(33, play_frame)  # ~30 FPS
+
+            play_frame()
+            
+        except Exception as e:
+            print(f"Error setting up MP4 background: {e}")
+            self.create_fallback_background()
+
+    def play_video(self):
+        """Legacy method - now handled by animate_gif"""
+        pass
+
 
     def create_fallback_background(self):
         """Create animated quantum-themed background"""
