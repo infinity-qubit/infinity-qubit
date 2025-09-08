@@ -4,6 +4,12 @@ Game Mode Selection Window for Infinity Qubit
 Allows users to choose between different game modes.
 """
 
+import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
+import pygame
 import sys
 import tkinter as tk
 import tkinter.messagebox as messagebox
@@ -11,6 +17,7 @@ import tkinter.ttk as ttk
 from PIL import Image, ImageTk
 import threading
 import time
+import cv2
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -21,6 +28,7 @@ from run import PROJECT_ROOT, get_resource_path
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'game_mode_selection')
 
+
 class GameModeSelection:
     def __init__(self):
         self.root = tk.Tk()
@@ -29,139 +37,95 @@ class GameModeSelection:
         # Set fullscreen mode
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        
-        # Enable fullscreen
-        self.root.attributes('-fullscreen', True)
-        self.root.geometry(f"{screen_width}x{screen_height}")
+
+        # Make window fullscreen without title bar
+        self.root.overrideredirect(True)
+        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
         self.root.configure(bg=palette['background'])
-        self.root.resizable(False, False)  # Fixed size window
-        
-        # Store dimensions (use full screen)
+
+        # Store dimensions
         self.window_width = screen_width
         self.window_height = screen_height
-        
-        # Animation control flag
-        self.animations_running = True
+
+        # Animation control flag - start as False for pre-loading
+        self.animations_running = False
+        self.pre_loading = True
 
         # Initialize sound system
         try:
-            import pygame
             pygame.mixer.init()
             self.sound_enabled = True
         except:
             self.sound_enabled = False
 
-        # Create UI directly without video background
+        # Setup background and UI
+        self.setup_video_background()
         self.create_selection_ui()
 
         # Make sure window is focused and on top
         self.root.lift()
         self.root.focus_force()
 
-        # Handle window close event (ESC key to exit)
-        self.root.bind('<Escape>', self.on_escape_key)
 
     def setup_video_background(self):
-        """Setup MP4 video background with resolution-based file selection"""
+        self.create_fallback_background()  # Create fallback background first
+
+
+    def return_to_main_menu(self):
+        """Return to the main menu from tutorial"""
         try:
-            # Determine which pre-resized MP4 to use based on screen dimensions
-            if self.window_width == 1920 and self.window_height == 1200:
-                video_filename = 'background_1920x1200.mp4'
-                print(f"Using 1920x1200 MP4 for screen: {self.window_width}x{self.window_height}")
-            elif self.window_width == 1920 and self.window_height == 1080:
-                video_filename = 'background_1920x1080.mp4'
-                print(f"Using 1920x1080 MP4 for screen: {self.window_width}x{self.window_height}")
-            else:
-                # For other resolutions, choose the closest match based on height
-                if abs(self.window_height - 1200) < abs(self.window_height - 1080):
-                    video_filename = 'background_1920x1200.mp4'
-                    print(f"Using 1920x1200 MP4 (closest match) for screen: {self.window_width}x{self.window_height}")
-                else:
-                    video_filename = 'background_1920x1080.mp4'
-                    print(f"Using 1920x1080 MP4 (closest match) for screen: {self.window_width}x{self.window_height}")
-            
-            # Load the selected video file
-            video_path = get_resource_path(f'resources/images/{video_filename}')
-            
-            self.cap = cv2.VideoCapture(video_path)
-            
-            if not self.cap.isOpened():
-                print(f"Warning: Could not open video file {video_filename}. Using fallback background.")
-                self.create_fallback_background()
-                return
-            
-            print(f"✅ Successfully loaded MP4 video: {video_filename}")
-            
-            self.video_label = tk.Label(self.root)
-            self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
-
-            def play_frame():
-                ret, frame = self.cap.read()
-                if not ret:
-                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # loop
-                    ret, frame = self.cap.read()
-                
-                if ret:
-                    # Check if frame needs resizing (should be minimal with pre-sized videos)
-                    frame_height, frame_width = frame.shape[:2]
-                    if frame_width != self.window_width or frame_height != self.window_height:
-                        frame = cv2.resize(frame, (self.window_width, self.window_height))
-                        print(f"Minor resize from {frame_width}x{frame_height} to {self.window_width}x{self.window_height}")
-                    
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    img = ImageTk.PhotoImage(Image.fromarray(frame))
-                    self.video_label.config(image=img)
-                    self.video_label.image = img
-                
-                self.root.after(33, play_frame)  # ~30 FPS
-
-            play_frame()
-            
+            # Make sure window is ready
+            if hasattr(self, 'root') and self.root:
+                self.root.deiconify()
+                self.root.lift()
+                self.root.focus_set()
+                self.root.update()  # Force update
         except Exception as e:
-            print(f"Error setting up MP4 background: {e}")
-            self.create_fallback_background()
-
-    def play_video(self):
-        """Legacy method - now handled by animate_gif"""
-        pass
+            print(f"Error returning to main menu: {e}")
 
 
     def create_fallback_background(self):
         """Create animated quantum-themed background"""
-        # Create animated quantum-themed background
-        canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
-                          bg=palette['background'], highlightthickness=0)
-        canvas.place(x=0, y=0)
+        try:
+            # Create animated quantum-themed background
+            canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
+                            bg=palette['background'], highlightthickness=0)
+            canvas.place(x=0, y=0)
 
-        # Draw animated particles/quantum effects
-        self.particles = []
-        particle_count = max(20, int(self.window_width * self.window_height / 20000))  # Scale with resolution
-        for i in range(particle_count):
-            x = __import__('random').randint(0, self.window_width)
-            y = __import__('random').randint(0, self.window_height)
-            dx = __import__('random').uniform(-2, 2)
-            dy = __import__('random').uniform(-2, 2)
-            color = __import__('random').choice(['#ffb86b', '#ffd08f', '#ff6b6b'])
-            self.particles.append({'x': x, 'y': y, 'dx': dx, 'dy': dy, 'color': color})
+            # Draw animated particles/quantum effects - fix particle structure
+            self.particles = []
+            particle_count = max(20, int(self.window_width * self.window_height / 20000))  # Scale with resolution
+            for i in range(particle_count):
+                x = __import__('random').randint(0, self.window_width)
+                y = __import__('random').randint(0, self.window_height)
+                dx = __import__('random').uniform(-2, 2)
+                dy = __import__('random').uniform(-2, 2)
+                color = __import__('random').choice(['#ffb86b', '#ffd08f', '#ff6b6b'])
+                # Use consistent dictionary structure
+                self.particles.append({
+                    'x': x,
+                    'y': y,
+                    'dx': dx,
+                    'dy': dy,
+                    'color': color
+                })
 
-        self.animate_particles(canvas)
-        return canvas
-        self.particles = []
-        particle_count = int(self.window_width * self.window_height / 20000)  # Scale with resolution
-        for i in range(particle_count):
-            x = (i * 50) % self.window_width
-            y = (i * 30) % self.window_height
-            self.particles.append([x, y, 1])
-
-        self.animate_particles(canvas)
-        return canvas
+            self.animate_particles(canvas)
+            return canvas
+        except Exception as e:
+            print(f"Error creating fallback background: {e}")
+            # Create simple static background as last resort
+            simple_canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
+                                    bg=palette['background'], highlightthickness=0)
+            simple_canvas.place(x=0, y=0)
+            return simple_canvas
 
     def update_info_display(self, mode_key):
         """Update the info display with selected mode information"""
         # Clear existing content
         for widget in self.info_frame.winfo_children():
             widget.destroy()
-        
+
         # Mode information dictionary
         mode_info = {
             'tutorial': {
@@ -189,11 +153,11 @@ class GameModeSelection:
                 'difficulty': 'All Levels'
             }
         }
-        
+
         info = mode_info.get(mode_key, {})
         if not info:
             return
-        
+
         # Title
         title_label = tk.Label(self.info_frame,
                             text=info['title'],
@@ -201,7 +165,7 @@ class GameModeSelection:
                             fg=palette['title_color'],
                             bg=palette['background'])
         title_label.place(relx=0.5, rely=0.08, anchor='n')
-        
+
         # Difficulty badge
         difficulty_label = tk.Label(self.info_frame,
                                 text=f"Difficulty: {info['difficulty']}",
@@ -209,7 +173,7 @@ class GameModeSelection:
                                 fg=palette['subtitle_color_2'],
                                 bg=palette['background'])
         difficulty_label.place(relx=0.5, rely=0.18, anchor='n')
-        
+
         # Description
         desc_label = tk.Label(self.info_frame,
                             text=info['description'],
@@ -219,7 +183,7 @@ class GameModeSelection:
                             wraplength=int(self.window_width * 0.2),
                             justify=tk.CENTER)
         desc_label.place(relx=0.3, rely=0.4, anchor='w')
-        
+
         # Features
         features_text = '\n'.join(info['features'])
         features_label = tk.Label(self.info_frame,
@@ -229,11 +193,11 @@ class GameModeSelection:
                                 bg=palette['background'],
                                 justify=tk.CENTER)
         features_label.place(relx=0.5, rely=0.55, anchor='n')
-        
+
         # Start button - canvas-based for color control
         start_canvas_width = max(200, int(self.window_width * 0.15))
         start_canvas_height = max(50, int(self.window_height / 15))
-        
+
         start_canvas = tk.Canvas(self.info_frame,
                                width=start_canvas_width,
                                height=start_canvas_height,
@@ -241,67 +205,86 @@ class GameModeSelection:
                                highlightthickness=0,
                                bd=0)
         start_canvas.place(relx=0.5, rely=0.9, anchor='s')
-        
+
         # Draw start button background
         start_canvas.create_rectangle(2, 2, start_canvas_width-2, start_canvas_height-2,
                                     fill=palette.get('start_button_color', '#ffb86b'),  # Use orange as fallback
                                     outline="#2b3340", width=1,
                                     tags="start_bg")
-        
+
         # Add text to start button
         start_canvas.create_text(start_canvas_width//2, start_canvas_height//2,
                                text=f"Start {info['title'].split(' ', 1)[1]}",
                                font=('Arial', max(12, int(self.window_width / 100)), 'bold'),
                                fill=palette['black'],
                                tags="start_text")
-        
+
         # Bind click events for start button
         def on_start_click(event):
             self.execute_command(self.selected_command)
-        
+
         def on_start_enter(event):
             start_canvas.itemconfig("start_bg", fill=palette.get('start_button_hover_color', '#ffd08f'))  # Use palette hover color
             start_canvas.configure(cursor="hand2")
-            
+
         def on_start_leave(event):
             start_canvas.itemconfig("start_bg", fill=palette.get('start_button_color', '#ffb86b'))  # Use palette color, fallback to orange
             start_canvas.configure(cursor="")
-        
+
         start_canvas.bind("<Button-1>", on_start_click)
         start_canvas.bind("<Enter>", on_start_enter)
         start_canvas.bind("<Leave>", on_start_leave)
 
+
     def animate_particles(self, canvas):
-        """Animate background particles"""
+        """Animate background particles - only if not pre-loading"""
+        if self.pre_loading:
+            return
+
         def update_particles():
             try:
-                if (self.animations_running and hasattr(self, 'root') and 
-                    self.root.winfo_exists()):
+                if (self.animations_running and hasattr(self, 'root') and
+                    self.root.winfo_exists() and hasattr(self, 'particles')):
                     canvas.delete("particle")
 
                     for particle in self.particles:
-                        particle[0] = (particle[0] + particle[2]) % self.window_width
-                        particle[1] = (particle[1] + particle[2] * 0.5) % self.window_height
+                        particle['x'] = (particle['x'] + particle['dx']) % self.window_width
+                        particle['y'] = (particle['y'] + particle['dy']) % self.window_height
 
-                        # Draw glowing dot (scale size with resolution)
                         dot_size = max(2, int(self.window_width / 500))
-                        x, y = particle[0], particle[1]
+                        x, y = particle['x'], particle['y']
                         canvas.create_oval(x-dot_size, y-dot_size, x+dot_size, y+dot_size,
-                                         fill='#00ff88', outline='#4ecdc4',
-                                         tags="particle", width=2)
+                                        fill=particle['color'], outline='#4ecdc4',
+                                        tags="particle", width=2)
 
-                    self.root.after(50, update_particles)
-            except (tk.TclError, AttributeError):
-                # Widget has been destroyed or app is closing, stop the animation
+                    if self.animations_running:
+                        self.root.after(50, update_particles)
+            except (tk.TclError, AttributeError, KeyError) as e:
                 self.animations_running = False
 
         update_particles()
+
+
+    def start_animations(self):
+        """Start all animations after pre-loading is complete"""
+        self.pre_loading = False
+        self.animations_running = True
+
+        # Start subtitle animation
+        self.animate_subtitle()
+
+        # Start particle animation
+        if hasattr(self, 'particles'):
+            for widget in self.root.winfo_children():
+                if isinstance(widget, tk.Canvas):
+                    self.animate_particles(widget)
+                    break
+
 
     def play_sound(self, sound_type="click"):
         """Play a simple click sound"""
         if self.sound_enabled:
             try:
-                import pygame
                 import numpy as np
 
                 # Create a simple click sound
@@ -396,35 +379,35 @@ class GameModeSelection:
                                highlightthickness=0,
                                bd=0)
         exit_canvas.pack(side=tk.RIGHT, padx=10, pady=5)
-        
+
         # Draw exit button background
         canvas_width = max(150, int(self.window_width / 8))
         canvas_height = max(40, int(self.window_height / 20))
-        
+
         exit_canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
-                                   fill=palette['exit_button_color'], 
+                                   fill=palette['exit_button_color'],
                                    outline="#2b3340", width=1,
                                    tags="exit_bg")
-        
+
         # Add text to exit button
         exit_canvas.create_text(canvas_width//2, canvas_height//2,
                               text="❌ Exit Game",
                               font=('Arial', max(10, int(self.window_width / 120)), 'bold'),
                               fill=palette['exit_text_color'],
                               tags="exit_text")
-        
+
         # Bind click events for exit button
         def on_exit_click(event):
             self.exit_game()
-        
+
         def on_exit_enter(event):
             exit_canvas.itemconfig("exit_bg", fill=palette['exit_button_hover_color'])
             exit_canvas.configure(cursor="hand2")
-            
+
         def on_exit_leave(event):
             exit_canvas.itemconfig("exit_bg", fill=palette['exit_button_color'])
             exit_canvas.configure(cursor="")
-        
+
         exit_canvas.bind("<Button-1>", on_exit_click)
         exit_canvas.bind("<Enter>", on_exit_enter)
         exit_canvas.bind("<Leave>", on_exit_leave)
@@ -443,34 +426,38 @@ class GameModeSelection:
         height = canvas.winfo_height()
         if width > 1 and height > 1:
             canvas.create_rectangle(0, 0, width, height,
-                                  fill=palette['background'], stipple='gray50', 
+                                  fill=palette['background'], stipple='gray50',
                                   outline=palette['main_box_outline'], width=2, tags="glass")
 
+
     def animate_subtitle(self):
-        """Animate subtitle with color cycling"""
+        """Animate subtitle with color cycling - only if not pre-loading"""
+        if self.pre_loading:
+            return
+
         colors = [palette['subtitle_color_1'], palette['subtitle_color_2'], palette['subtitle_color_3'],
                  palette['subtitle_color_4'], palette['subtitle_color_5']]
-        color_index = [0]  # Use a list to make it mutable
+        color_index = [0]
 
         def cycle_color():
             try:
-                if (self.animations_running and hasattr(self, 'subtitle_label') and 
-                    self.subtitle_label.winfo_exists() and hasattr(self, 'root') and 
+                if (self.animations_running and hasattr(self, 'subtitle_label') and
+                    self.subtitle_label.winfo_exists() and hasattr(self, 'root') and
                     self.root.winfo_exists()):
                     self.subtitle_label.configure(fg=colors[color_index[0] % len(colors)])
                     color_index[0] += 1
                     self.root.after(1500, cycle_color)
             except tk.TclError:
-                # Widget has been destroyed, stop the animation
                 pass
 
         cycle_color()
+
 
     def create_enhanced_game_mode_buttons(self, parent):
         """Create enhanced game mode selection buttons in a vertical list layout"""
         # Store selected mode for info display
         self.selected_mode = None
-        
+
         button_configs = [
             {
                 'title': '📚 Tutorial Mode',
@@ -502,47 +489,47 @@ class GameModeSelection:
         start_y = 0.025
         button_height = 0.2
         spacing = 0.05
-        
+
         # Store button references for selection highlighting
         self.mode_buttons = {}
-        
+
         # Create buttons directly in the buttons_frame using canvas approach like exit button
         for i, config in enumerate(button_configs):
             rely = start_y + i * (button_height + spacing)
 
             # Choose palette keys for bg and fg
             mode_key = config['mode_key']
-            
+
             # Map mode keys to palette keys
             def get_palette_key(mode, suffix):
                 if mode == 'learn_hub':
                     return f'learn_hub_{suffix}'
                 else:
                     return f'{mode}_mode_{suffix}'
-            
+
             # Colors for canvas-based buttons (use palette colors)
             bg_color = palette[get_palette_key(mode_key, 'button_color')]  # Orange background from palette
             fg_color = palette[get_palette_key(mode_key, 'button_text_color')]  # Text color from palette
-            
+
             # Create canvas-based button (same approach as exit button)
             canvas_width = int(self.window_width * 0.9)
             canvas_height = int(self.window_height * button_height)
-            
+
             button_canvas = tk.Canvas(parent,
                                     width=canvas_width,
                                     height=canvas_height,
                                     bg=palette['background'],
                                     highlightthickness=0,
                                     bd=0)
-            
-            button_canvas.place(relx=0.05, rely=rely, anchor='nw', 
+
+            button_canvas.place(relx=0.05, rely=rely, anchor='nw',
                               relwidth=0.9, relheight=button_height)
-            
+
             # Draw button background
             button_canvas.create_rectangle(5, 5, canvas_width-5, canvas_height-5,
                                          fill=bg_color, outline="#2b3340", width=2,
                                          tags=f"button_bg_{mode_key}")
-            
+
             # Create a Label widget for text (positioned over canvas)
             text_size = max(16, int(self.window_width / 70))
             text_label = tk.Label(parent,
@@ -552,22 +539,22 @@ class GameModeSelection:
                                 bg=bg_color,
                                 relief=tk.FLAT,
                                 bd=0)
-            
+
             # Position the label over the canvas
-            text_label.place(relx=0.05, rely=rely, anchor='nw', 
+            text_label.place(relx=0.05, rely=rely, anchor='nw',
                            relwidth=0.9, relheight=button_height)
-            
+
             # Make the label clickable and bind the same events
             def make_click_handler(mk, cmd):
                 def on_button_click(event):
                     self.select_mode(mk, cmd)
                 return on_button_click
-                
+
             def make_label_click_handler(mk, cmd):
                 def on_label_click(event):
                     self.select_mode(mk, cmd)
                 return on_label_click
-            
+
             def make_label_hover_handlers(canvas, label, mk):
                 def on_enter(event):
                     hover_key = get_palette_key(mk, 'button_hover_color')
@@ -580,26 +567,26 @@ class GameModeSelection:
                     canvas.configure(cursor="")
                     label.configure(cursor="")
                 return on_enter, on_leave
-            
+
             # Bind events to both canvas and label
             click_handler = make_click_handler(mode_key, config['command'])
             label_click_handler = make_label_click_handler(mode_key, config['command'])
             enter_handler, leave_handler = make_label_hover_handlers(button_canvas, text_label, mode_key)
-            
+
             button_canvas.bind("<Button-1>", click_handler)
             button_canvas.bind("<Enter>", enter_handler)
             button_canvas.bind("<Leave>", leave_handler)
-            
+
             text_label.bind("<Button-1>", label_click_handler)
             text_label.bind("<Enter>", enter_handler)
             text_label.bind("<Leave>", leave_handler)
-            
+
             # Create command function for this button
             def make_click_handler(mk, cmd):
                 def on_button_click(event):
                     self.select_mode(mk, cmd)
                 return on_button_click
-            
+
             def make_hover_handlers(canvas, mk):
                 def on_enter(event):
                     hover_key = get_palette_key(mk, 'button_hover_color')
@@ -610,11 +597,11 @@ class GameModeSelection:
                     canvas.itemconfig(f"button_bg_{mk}", fill=palette[normal_key])  # Use palette normal color
                     canvas.configure(cursor="")
                 return on_enter, on_leave
-            
+
             # Bind events
             click_handler = make_click_handler(mode_key, config['command'])
             enter_handler, leave_handler = make_hover_handlers(button_canvas, mode_key)
-            
+
             button_canvas.bind("<Button-1>", click_handler)
             button_canvas.bind("<Enter>", enter_handler)
             button_canvas.bind("<Leave>", leave_handler)
@@ -632,47 +619,47 @@ class GameModeSelection:
     def select_mode(self, mode_key, command):
         """Select a game mode and update the info display"""
         self.play_sound()
-        
+
         # Map mode keys to palette keys
         def get_palette_key(mode, suffix):
             if mode == 'learn_hub':
                 return f'learn_hub_{suffix}'
             else:
                 return f'{mode}_mode_{suffix}'
-        
+
         # Reset all buttons to normal state
         for key, btn_info in self.mode_buttons.items():
             canvas = btn_info['canvas']
             label = btn_info['label']
-            
+
             # Update canvas appearance to normal state
             normal_color_key = get_palette_key(key, 'button_color')
             text_color_key = get_palette_key(key, 'button_text_color')
             canvas.itemconfig(f"button_bg_{key}", fill=palette[normal_color_key], outline='#2b3340', width=2)
-            
+
             # Update label appearance
             label.configure(
                 font=('Arial', btn_info['normal_font_size'], 'bold'),
                 fg=palette[text_color_key],  # Use palette text color
                 bg=palette[normal_color_key]   # Use palette background color
             )
-        
+
         # Highlight selected button
         selected_canvas = self.mode_buttons[mode_key]['canvas']
         selected_label = self.mode_buttons[mode_key]['label']
-        
+
         # Update canvas for selected state
         hover_color_key = get_palette_key(mode_key, 'button_hover_color')
         text_color_key = get_palette_key(mode_key, 'button_text_color')
         selected_canvas.itemconfig(f"button_bg_{mode_key}", fill=palette[hover_color_key], outline='#ffd08f', width=3)
-        
+
         # Update label for selected state
         selected_label.configure(
             font=('Arial', self.mode_buttons[mode_key]['selected_font_size'], 'bold'),
             fg=palette[text_color_key],  # Use palette text color
             bg=palette[hover_color_key]   # Use palette hover background
         )
-        
+
         self.selected_mode = mode_key
         self.selected_command = command
         self.update_info_display(mode_key)
@@ -718,7 +705,7 @@ class GameModeSelection:
         # Clear existing content
         for widget in self.info_frame.winfo_children():
             widget.destroy()
-        
+
         # Default welcome message
         welcome_label = tk.Label(self.info_frame,
                             text="Select a game mode\nto see details",
@@ -732,14 +719,16 @@ class GameModeSelection:
         """Start the tutorial mode"""
         print("📚 Starting Tutorial Mode...")
         try:
+            # Create tutorial window first
             from tutorial import TutorialWindow
-            self.stop_video()
+            tutorial_window = TutorialWindow(self.root, self.return_to_main_menu)
+
+            # Only hide main window after tutorial is ready
             self.root.withdraw()
-            TutorialWindow(self.root, self.return_to_main_menu)
+
         except ImportError as e:
             print(f"❌ Error importing tutorial: {e}")
             messagebox.showerror("Import Error", f"Could not import tutorial module: {e}")
-            self.root.deiconify()
         except Exception as e:
             print(f"❌ Error starting tutorial: {e}")
             messagebox.showerror("Error", f"Failed to start tutorial: {e}")
@@ -750,17 +739,33 @@ class GameModeSelection:
         self.root.deiconify()
         self.root.lift()
         self.root.focus_set()
+        # Restart video if available
+        if self.video_cap and not self.video_running:
+            self.video_running = True
+            self.video_thread = threading.Thread(target=self.play_video, daemon=True)
+            self.video_thread.start()
 
     def start_puzzle_mode(self):
         """Start the puzzle mode"""
         print("📚 Starting Puzzle Mode...")
-        self.stop_video()
-        self.root.destroy()
         try:
             from puzzle_mode import PuzzleMode
+
+            # Create new window first
             puzzle_root = tk.Tk()
             puzzle_app = PuzzleMode(puzzle_root)
+
+            # Make sure new window is visible before closing this one
+            puzzle_root.update()
+            puzzle_root.lift()
+            puzzle_root.focus_force()
+
+            # Now safely close main window
+            self.root.destroy()
+
+            # Start the puzzle mode mainloop
             puzzle_root.mainloop()
+
         except ImportError:
             print("❌ Puzzle mode module not found")
             messagebox.showerror("Error", "Puzzle mode module not available")
@@ -768,16 +773,28 @@ class GameModeSelection:
             print(f"❌ Error starting puzzle mode: {e}")
             messagebox.showerror("Error", f"Error starting puzzle mode: {str(e)}")
 
+
     def start_sandbox_mode(self):
         """Start the sandbox mode"""
         print("🛠️ Starting Sandbox Mode...")
-        self.stop_video()
-        self.root.destroy()
         try:
             from sandbox_mode import SandboxMode
+
+            # Create new window first
             sandbox_root = tk.Tk()
             sandbox_app = SandboxMode(sandbox_root)
+
+            # Make sure new window is visible before closing this one
+            sandbox_root.update()
+            sandbox_root.lift()
+            sandbox_root.focus_force()
+
+            # Now safely close main window
+            self.root.destroy()
+
+            # Start the sandbox mainloop
             sandbox_root.mainloop()
+
         except ImportError:
             print("❌ Sandbox module not found")
             messagebox.showerror("Error", "Sandbox module not available")
@@ -785,16 +802,28 @@ class GameModeSelection:
             print(f"❌ Error starting sandbox: {e}")
             messagebox.showerror("Error", f"Error starting sandbox: {str(e)}")
 
+
     def start_learn_hub_mode(self):
         """Start the learn hub mode"""
         print("🚀 Starting Learn Hub...")
-        self.stop_video()
-        self.root.destroy()
         try:
             from learn_hub import LearnHub
+
+            # Create new window first
             learn_hub_root = tk.Tk()
             learn_hub_app = LearnHub(learn_hub_root)
+
+            # Make sure new window is visible before closing this one
+            learn_hub_root.update()
+            learn_hub_root.lift()
+            learn_hub_root.focus_force()
+
+            # Now safely close main window
+            self.root.destroy()
+
+            # Start the learn hub mainloop
             learn_hub_root.mainloop()
+
         except ImportError:
             print("❌ Learn Hub module not found")
             messagebox.showerror("Error", "Learn Hub module not available")
@@ -802,27 +831,14 @@ class GameModeSelection:
             print(f"❌ Error starting Learn Hub: {e}")
             messagebox.showerror("Error", f"Error starting Learn Hub: {str(e)}")
 
-    def stop_video(self):
-        """Stop any animations"""
-        self.animations_running = False
-        # Clean up any background animation resources
-        if hasattr(self, 'particles'):
-            self.particles.clear()
-
-    def on_closing(self):
-        """Handle window closing"""
-        self.stop_video()
-        self.root.destroy()
-        sys.exit(0)
 
     def exit_game(self):
         """Exit the game"""
         print("👋 Exiting game...")
-        self.play_sound()
-        self.stop_video()
         self.root.quit()
         self.root.destroy()
         sys.exit(0)
+
 
     def run(self):
         """Run the game mode selection window"""

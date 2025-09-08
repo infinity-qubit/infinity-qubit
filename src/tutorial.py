@@ -1,3 +1,8 @@
+import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
@@ -8,7 +13,6 @@ from qiskit.quantum_info import Statevector
 import math
 from PIL import Image, ImageTk
 import pygame
-import os
 import sys
 import json
 import datetime
@@ -49,24 +53,23 @@ class TutorialWindow:
         except Exception as e:
             print(f"❌ Could not load tutorial progress: {e}")
 
-
         # Gate unlock order
         self.gate_unlock_order = ['H', 'X', 'Y', 'Z', 'S', 'T', 'CNOT', 'CZ']
 
         # Initialize sound system
         self.init_sound_system()
 
-        # Create the window as a Toplevel but make it independent
-        self.window = tk.Toplevel(parent)
+        # Create independent window instead of Toplevel
+        self.window = tk.Tk()
         self.window.title("🎓 Quantum Gates Tutorial")
 
         # Set fullscreen mode
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
-        
-        # Enable fullscreen
-        self.window.attributes('-fullscreen', True)
-        self.window.geometry(f"{screen_width}x{screen_height}")
+
+        # Make window fullscreen without title bar (same as other game modes)
+        self.window.overrideredirect(True)
+        self.window.geometry(f"{screen_width}x{screen_height}+0+0")
         self.window.configure(bg=palette['background'])
         self.window.resizable(False, False)  # Fixed size window
 
@@ -74,19 +77,16 @@ class TutorialWindow:
         self.window_width = screen_width
         self.window_height = screen_height
 
-        # Make window independent and visible even if parent is withdrawn
-        self.window.transient()  # Remove parent dependency
-        # self.window.grab_set()
-        self.window.focus_set()
-
-        # Add a small delay before enabling grab_set to fix the issue
-        # self.window.after(100, lambda: self.window.grab_set())
+        # Make window visible and focused immediately
+        self.window.lift()
+        self.window.focus_force()
 
         # Handle window close event
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # Handle ESC key to exit fullscreen
         self.window.bind('<Escape>', lambda e: self.on_closing())
+
 
         # Gate information
         self.gate_info = {
@@ -271,16 +271,16 @@ then the coin represents a bit — but it can only show one face at a time."""
         analogy_label.place(relx=0.5, rely=0.85, anchor='center')
 
         # Next button using canvas for macOS compatibility
-        next_canvas = tk.Canvas(main_frame, width=250, height=50, 
+        next_canvas = tk.Canvas(main_frame, width=250, height=50,
                                bg=palette['H_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
         next_canvas.place(relx=0.5, rely=0.95, anchor='center')
-        
-        next_rect_id = next_canvas.create_rectangle(2, 2, 248, 48, 
+
+        next_rect_id = next_canvas.create_rectangle(2, 2, 248, 48,
                                                   fill=palette['H_color'], outline=palette['H_color'], width=0)
         next_text_id = next_canvas.create_text(125, 25, text="Next: What's a Qubit? →",
-                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'), 
+                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
                                               fill=palette['background_3'])
-        
+
         next_canvas.bind("<Button-1>", lambda e: self.next_intro_step())
         next_canvas.bind("<Enter>", lambda e: (next_canvas.itemconfig(next_rect_id, fill=palette['gate_button_active_background']),
                                               next_canvas.itemconfig(next_text_id, fill=palette['background_3'])))
@@ -305,16 +305,16 @@ then the coin represents a bit — but it can only show one face at a time."""
 
         # Flip button
         # Flip bit button using canvas for macOS compatibility
-        flip_canvas = tk.Canvas(parent, width=100, height=40, 
+        flip_canvas = tk.Canvas(parent, width=100, height=40,
                                bg=palette['X_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
         flip_canvas.place(relx=0.7, rely=0.5, anchor='center')
-        
-        flip_rect_id = flip_canvas.create_rectangle(2, 2, 98, 38, 
+
+        flip_rect_id = flip_canvas.create_rectangle(2, 2, 98, 38,
                                                   fill=palette['X_color'], outline=palette['X_color'], width=0)
         flip_text_id = flip_canvas.create_text(50, 20, text="Flip Bit",
-                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'), 
+                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
                                               fill=palette['background_3'])
-        
+
         flip_canvas.bind("<Button-1>", lambda e: self.flip_bit())
         flip_canvas.bind("<Enter>", lambda e: (flip_canvas.itemconfig(flip_rect_id, fill=palette['button_hover_background']),
                                               flip_canvas.itemconfig(flip_text_id, fill=palette['button_hover_text_color'])))
@@ -384,16 +384,16 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
         # Navigation buttons using canvas for macOS compatibility
         # Back button
-        back_canvas = tk.Canvas(main_frame, width=120, height=40, 
+        back_canvas = tk.Canvas(main_frame, width=120, height=40,
                                bg=palette['background_2'], highlightthickness=0, relief=tk.FLAT, bd=0)
         back_canvas.place(relx=0.3, rely=0.95, anchor='center')
-        
-        back_rect_id = back_canvas.create_rectangle(2, 2, 118, 38, 
+
+        back_rect_id = back_canvas.create_rectangle(2, 2, 118, 38,
                                                   fill=palette['background_2'], outline=palette['background_2'], width=0)
         back_text_id = back_canvas.create_text(60, 20, text="← Back",
-                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'), 
+                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
                                               fill=palette['explanation_text_color'])
-        
+
         back_canvas.bind("<Button-1>", lambda e: self.prev_intro_step())
         back_canvas.bind("<Enter>", lambda e: (back_canvas.itemconfig(back_rect_id, fill=palette['button_hover_background']),
                                               back_canvas.itemconfig(back_text_id, fill=palette['button_hover_text_color'])))
@@ -402,16 +402,16 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         back_canvas.configure(cursor='hand2')
 
         # Next button
-        next_canvas = tk.Canvas(main_frame, width=240, height=50, 
+        next_canvas = tk.Canvas(main_frame, width=240, height=50,
                                bg=palette['H_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
         next_canvas.place(relx=0.7, rely=0.95, anchor='center')
-        
-        next_rect_id = next_canvas.create_rectangle(2, 2, 238, 48, 
+
+        next_rect_id = next_canvas.create_rectangle(2, 2, 238, 48,
                                                   fill=palette['H_color'], outline=palette['H_color'], width=0)
         next_text_id = next_canvas.create_text(120, 25, text="Start Learning Gates →",
-                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'), 
+                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
                                               fill=palette['background_3'])
-        
+
         next_canvas.bind("<Button-1>", lambda e: self.start_gates_tutorial())
         next_canvas.bind("<Enter>", lambda e: (next_canvas.itemconfig(next_rect_id, fill=palette['button_hover_background']),
                                               next_canvas.itemconfig(next_text_id, fill=palette['button_hover_text_color'])))
@@ -441,16 +441,16 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
         # Control buttons using canvas for macOS compatibility
         # Spin button
-        spin_canvas = tk.Canvas(parent, width=220, height=40, 
+        spin_canvas = tk.Canvas(parent, width=220, height=40,
                                bg=palette['H_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
         spin_canvas.place(relx=0.7, rely=0.4, anchor='center')
-        
-        spin_rect_id = spin_canvas.create_rectangle(2, 2, 218, 38, 
+
+        spin_rect_id = spin_canvas.create_rectangle(2, 2, 218, 38,
                                                   fill=palette['H_color'], outline=palette['H_color'], width=0)
         spin_text_id = spin_canvas.create_text(110, 20, text="Spin Coin (Superposition)",
-                                              font=('Arial', max(11, int(self.window_width / 130)), 'bold'), 
+                                              font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
                                               fill=palette['background_3'])
-        
+
         spin_canvas.bind("<Button-1>", lambda e: self.spin_coin())
         spin_canvas.bind("<Enter>", lambda e: (spin_canvas.itemconfig(spin_rect_id, fill=palette['button_hover_background']),
                                               spin_canvas.itemconfig(spin_text_id, fill=palette['button_hover_text_color'])))
@@ -459,16 +459,16 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         spin_canvas.configure(cursor='hand2')
 
         # Measure button
-        measure_canvas = tk.Canvas(parent, width=180, height=40, 
+        measure_canvas = tk.Canvas(parent, width=180, height=40,
                                   bg=palette['X_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
         measure_canvas.place(relx=0.7, rely=0.6, anchor='center')
-        
-        measure_rect_id = measure_canvas.create_rectangle(2, 2, 178, 38, 
+
+        measure_rect_id = measure_canvas.create_rectangle(2, 2, 178, 38,
                                                         fill=palette['X_color'], outline=palette['X_color'], width=0)
         measure_text_id = measure_canvas.create_text(90, 20, text="Measure (Collapse)",
-                                                    font=('Arial', max(11, int(self.window_width / 130)), 'bold'), 
+                                                    font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
                                                     fill=palette['background_3'])
-        
+
         measure_canvas.bind("<Button-1>", lambda e: self.measure_coin())
         measure_canvas.bind("<Enter>", lambda e: (measure_canvas.itemconfig(measure_rect_id, fill=palette['button_hover_background']),
                                                  measure_canvas.itemconfig(measure_text_id, fill=palette['button_hover_text_color'])))
@@ -555,36 +555,36 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         # Create frame for proper packing
         btn_frame = tk.Frame(parent, bg=parent.cget('bg'))
         btn_frame.pack(padx=padx, pady=pady)
-        
+
         # Create canvas for the button
-        btn_canvas = tk.Canvas(btn_frame, width=width, height=height, 
+        btn_canvas = tk.Canvas(btn_frame, width=width, height=height,
                               bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
         btn_canvas.pack()
-        
+
         # Create button rectangle and text
-        rect_id = btn_canvas.create_rectangle(2, 2, width-2, height-2, 
+        rect_id = btn_canvas.create_rectangle(2, 2, width-2, height-2,
                                             fill=bg_color, outline=bg_color, width=0)
         text_id = btn_canvas.create_text(width//2, height//2, text=text,
                                        font=('Arial', 12, 'bold'), fill=fg_color)
-        
+
         # Add click handler
         def on_click(event):
             command()
-        
+
         # Add hover effects
         def on_enter(event):
             btn_canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
             btn_canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
-        
+
         def on_leave(event):
             btn_canvas.itemconfig(rect_id, fill=bg_color)
             btn_canvas.itemconfig(text_id, fill=fg_color)
-        
+
         btn_canvas.bind("<Button-1>", on_click)
         btn_canvas.bind("<Enter>", on_enter)
         btn_canvas.bind("<Leave>", on_leave)
         btn_canvas.configure(cursor='hand2')
-        
+
         return btn_canvas
 
     def init_sound_system(self):
@@ -712,16 +712,16 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         # Navigation buttons on the right
         if self.return_callback:
             # Add Help/Info button using canvas for macOS compatibility
-            help_canvas = tk.Canvas(header_frame, width=80, height=35, 
+            help_canvas = tk.Canvas(header_frame, width=80, height=35,
                                    bg=palette['background_3'], highlightthickness=0, relief=tk.FLAT, bd=0)
             help_canvas.place(relx=0.88, rely=0.5, anchor='e')
-            
-            help_rect_id = help_canvas.create_rectangle(2, 2, 78, 33, 
+
+            help_rect_id = help_canvas.create_rectangle(2, 2, 78, 33,
                                                       fill=palette['background_3'], outline=palette['background_3'], width=0)
             help_text_id = help_canvas.create_text(40, 17, text="? Help",
-                                                  font=('Arial', max(10, int(self.window_width / 150)), 'bold'), 
+                                                  font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                                                   fill=palette['main_title_color'])
-            
+
             help_canvas.bind("<Button-1>", lambda e: self.show_help())
             help_canvas.bind("<Enter>", lambda e: (help_canvas.itemconfig(help_rect_id, fill=palette['main_title_color']),
                                                   help_canvas.itemconfig(help_text_id, fill=palette['background_3'])))
@@ -732,7 +732,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             # Canvas-based main menu button for better color control on macOS
             button_width = max(120, int(self.window_width / 12))
             button_height = max(35, int(self.window_height / 25))
-            
+
             main_menu_canvas = tk.Canvas(header_frame,
                                        width=button_width,
                                        height=button_height,
@@ -740,50 +740,50 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
                                        highlightthickness=0,
                                        bd=0)
             main_menu_canvas.place(relx=1, rely=0.5, anchor='e')
-            
+
             # Draw button background
             main_menu_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
                                             fill=palette['background_2'],
                                             outline="#2b3340", width=1,
                                             tags="menu_bg")
-            
+
             # Add text to button
             main_menu_canvas.create_text(button_width//2, button_height//2,
                                        text="🏠 Main Menu",
                                        font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                                        fill=palette['main_menu_button_text_color'],
                                        tags="menu_text")
-            
+
             # Bind click events
             def on_menu_click(event):
                 self.return_to_main_menu()
-                
+
             def on_menu_enter(event):
                 main_menu_canvas.itemconfig("menu_bg", fill=palette['main_title_color'])
                 main_menu_canvas.itemconfig("menu_text", fill=palette['background_3'])
                 main_menu_canvas.configure(cursor="hand2")
-                
+
             def on_menu_leave(event):
                 main_menu_canvas.itemconfig("menu_bg", fill=palette['background_2'])
                 main_menu_canvas.itemconfig("menu_text", fill=palette['main_menu_button_text_color'])
                 main_menu_canvas.configure(cursor="")
-            
+
             main_menu_canvas.bind("<Button-1>", on_menu_click)
             main_menu_canvas.bind("<Enter>", on_menu_enter)
             main_menu_canvas.bind("<Leave>", on_menu_leave)
 
         else:
             # Close Tutorial button using canvas for macOS compatibility
-            close_canvas = tk.Canvas(header_frame, width=160, height=40, 
+            close_canvas = tk.Canvas(header_frame, width=160, height=40,
                                    bg=palette['background_2'], highlightthickness=0, relief=tk.FLAT, bd=0)
             close_canvas.place(relx=1, rely=0.5, anchor='e')
-            
-            close_rect_id = close_canvas.create_rectangle(2, 2, 158, 38, 
+
+            close_rect_id = close_canvas.create_rectangle(2, 2, 158, 38,
                                                         fill=palette['background_2'], outline=palette['background_2'], width=0)
             close_text_id = close_canvas.create_text(80, 20, text="❌ Close Tutorial",
-                                                    font=('Arial', max(10, int(self.window_width / 150)), 'bold'), 
+                                                    font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                                                     fill=palette['close_button_text_color'])
-            
+
             close_canvas.bind("<Button-1>", lambda e: self.window.destroy())
             close_canvas.bind("<Enter>", lambda e: (close_canvas.itemconfig(close_rect_id, fill=palette['close_button_text_color']),
                                                    close_canvas.itemconfig(close_text_id, fill=palette['close_button_hover_text_color']),
@@ -980,15 +980,58 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         """Return to main menu"""
         self.play_sound('button_click')
         if self.return_callback:
+            try:
+                # Create main menu FIRST
+                from game_mode_selection import GameModeSelection
+                selection_window = GameModeSelection()
+
+                # Make sure new window is visible
+                selection_window.root.update()
+                selection_window.root.lift()
+                selection_window.root.focus_force()
+
+                # THEN destroy current window
+                self.window.destroy()
+
+                # Start the main menu mainloop
+                selection_window.run()
+
+            except ImportError as e:
+                print(f"Error importing game mode selection: {e}")
+                self.window.destroy()
+            except Exception as e:
+                print(f"Error returning to main menu: {e}")
+                self.window.destroy()
+        else:
             self.window.destroy()
-            self.return_callback()
+
 
     def on_closing(self):
         """Handle window close event"""
         self.play_sound('button_click')
         if self.return_callback:
-            self.window.destroy()
-            self.return_callback()
+            try:
+                # Create main menu FIRST
+                from game_mode_selection import GameModeSelection
+                selection_window = GameModeSelection()
+
+                # Make sure new window is visible
+                selection_window.root.update()
+                selection_window.root.lift()
+                selection_window.root.focus_force()
+
+                # THEN destroy current window
+                self.window.destroy()
+
+                # Start the main menu mainloop
+                selection_window.run()
+
+            except ImportError as e:
+                print(f"Error importing game mode selection: {e}")
+                self.window.destroy()
+            except Exception as e:
+                print(f"Error returning to main menu: {e}")
+                self.window.destroy()
         else:
             self.window.destroy()
 
@@ -1334,7 +1377,7 @@ class GateTutorial:
         # Gate placement button
         self.gate_canvas = tk.Canvas(button_container, highlightthickness=0, bd=0)
         self.gate_canvas.place(relx=0.5, rely=0.15, anchor='center', relwidth=0.3, relheight=0.3)
-        
+
         # Draw gate button
         def draw_gate_button(event=None):
             self.gate_canvas.delete("all")
@@ -1344,17 +1387,17 @@ class GateTutorial:
                 bg_color = self.gate_info['color']
                 text_color = palette['background_3']
                 self.gate_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline='#2b3340', width=2, tags="bg")
-                self.gate_canvas.create_text(width//2, height//2, text=f"Add {self.gate} Gate", 
+                self.gate_canvas.create_text(width//2, height//2, text=f"Add {self.gate} Gate",
                                            font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
                                            fill=text_color, tags="text")
-        
+
         # Bind configure event and initial draw
         self.gate_canvas.bind('<Configure>', draw_gate_button)
         self.gate_canvas.after(10, draw_gate_button)
-        
+
         def on_gate_click(event):
             self.add_gate()
-        
+
         def on_gate_enter(event):
             self.gate_canvas.delete("bg")
             width = self.gate_canvas.winfo_width()
@@ -1363,7 +1406,7 @@ class GateTutorial:
                 self.gate_canvas.create_rectangle(0, 0, width, height, fill=palette['gate_button_active_background'], outline='#2b3340', width=2, tags="bg")
             self.gate_canvas.configure(cursor='hand2')
             self.gate_canvas.tag_lower("bg")
-        
+
         def on_gate_leave(event):
             self.gate_canvas.delete("bg")
             width = self.gate_canvas.winfo_width()
@@ -1372,7 +1415,7 @@ class GateTutorial:
                 self.gate_canvas.create_rectangle(0, 0, width, height, fill=self.gate_info['color'], outline='#2b3340', width=2, tags="bg")
             self.gate_canvas.configure(cursor='')
             self.gate_canvas.tag_lower("bg")
-        
+
         self.gate_canvas.bind("<Button-1>", on_gate_click)
         self.gate_canvas.bind("<Enter>", on_gate_enter)
         self.gate_canvas.bind("<Leave>", on_gate_leave)
@@ -1380,7 +1423,7 @@ class GateTutorial:
         # Run button
         run_canvas = tk.Canvas(button_container, highlightthickness=0, bd=0)
         run_canvas.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.3, relheight=0.3)
-        
+
         # Draw run button
         def draw_run_button(event=None):
             run_canvas.delete("all")
@@ -1390,25 +1433,25 @@ class GateTutorial:
                 bg_color = palette['run_button_background']
                 text_color = palette['background_3']
                 run_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline='#2b3340', width=2, tags="bg")
-                run_canvas.create_text(width//2, height//2, text="🚀 Run Circuit", 
+                run_canvas.create_text(width//2, height//2, text="🚀 Run Circuit",
                                      font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
                                      fill=text_color, tags="text")
-        
+
         # Bind configure event and initial draw
         run_canvas.bind('<Configure>', draw_run_button)
         run_canvas.after(10, draw_run_button)
-        
+
         def on_run_click(event):
             self.run_circuit()
-        
+
         def on_run_enter(event):
             run_canvas.itemconfig("bg", fill=palette['gate_button_active_background'])
             run_canvas.configure(cursor='hand2')
-        
+
         def on_run_leave(event):
             run_canvas.itemconfig("bg", fill=palette['run_button_background'])
             run_canvas.configure(cursor='')
-        
+
         run_canvas.bind("<Button-1>", on_run_click)
         run_canvas.bind("<Enter>", on_run_enter)
         run_canvas.bind("<Leave>", on_run_leave)
@@ -1416,7 +1459,7 @@ class GateTutorial:
         # Clear button
         clear_canvas = tk.Canvas(button_container, highlightthickness=0, bd=0)
         clear_canvas.place(relx=0.5, rely=0.85, anchor='center', relwidth=0.3, relheight=0.3)
-        
+
         # Draw clear button
         def draw_clear_button(event=None):
             clear_canvas.delete("all")
@@ -1426,25 +1469,25 @@ class GateTutorial:
                 bg_color = palette['clear_button_background']
                 text_color = palette['clear_button_text_color']
                 clear_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline='#2b3340', width=2, tags="bg")
-                clear_canvas.create_text(width//2, height//2, text="🔄 Clear Circuit", 
+                clear_canvas.create_text(width//2, height//2, text="🔄 Clear Circuit",
                                        font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
                                        fill=text_color, tags="text")
-        
+
         # Bind configure event and initial draw
         clear_canvas.bind('<Configure>', draw_clear_button)
         clear_canvas.after(10, draw_clear_button)
-        
+
         def on_clear_click(event):
             self.clear_circuit()
-        
+
         def on_clear_enter(event):
             clear_canvas.itemconfig("bg", fill=palette['gate_button_active_background'])
             clear_canvas.configure(cursor='hand2')
-        
+
         def on_clear_leave(event):
             clear_canvas.itemconfig("bg", fill=palette['clear_button_background'])
             clear_canvas.configure(cursor='')
-        
+
         clear_canvas.bind("<Button-1>", on_clear_click)
         clear_canvas.bind("<Enter>", on_clear_enter)
         clear_canvas.bind("<Leave>", on_clear_leave)

@@ -26,7 +26,7 @@ class LearnHub:
         # Set fullscreen mode
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        
+
         # Enable fullscreen
         self.root.attributes('-fullscreen', True)
         self.root.geometry(f"{screen_width}x{screen_height}")
@@ -64,44 +64,44 @@ class LearnHub:
     def exit_fullscreen(self, event=None):
         """Exit the learn hub"""
         self.back_to_menu()
-        
+
     def create_canvas_dialog_button(self, parent, text, command, width, height, bg_color, fg_color, padx=0, pady=0):
         """Create a canvas-based button for macOS compatibility"""
         # Create frame for proper packing
         btn_frame = tk.Frame(parent, bg=parent.cget('bg'))
         btn_frame.pack(padx=padx, pady=pady)
-        
+
         # Create canvas for the button
-        btn_canvas = tk.Canvas(btn_frame, width=width, height=height, 
+        btn_canvas = tk.Canvas(btn_frame, width=width, height=height,
                               bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
         btn_canvas.pack()
-        
+
         # Create button rectangle and text
-        rect_id = btn_canvas.create_rectangle(2, 2, width-2, height-2, 
+        rect_id = btn_canvas.create_rectangle(2, 2, width-2, height-2,
                                             fill=bg_color, outline=bg_color, width=0)
         text_id = btn_canvas.create_text(width//2, height//2, text=text,
                                        font=('Arial', 12, 'bold'), fill=fg_color)
-        
+
         # Add click handler
         def on_click(event):
             command()
-        
+
         # Add hover effects
         def on_enter(event):
             btn_canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
             btn_canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
-        
+
         def on_leave(event):
             btn_canvas.itemconfig(rect_id, fill=bg_color)
             btn_canvas.itemconfig(text_id, fill=fg_color)
-        
+
         btn_canvas.bind("<Button-1>", on_click)
         btn_canvas.bind("<Enter>", on_enter)
         btn_canvas.bind("<Leave>", on_leave)
         btn_canvas.configure(cursor='hand2')
-        
+
         return btn_canvas
-        
+
     def toggle_fullscreen(self, event=None):
         """Toggle fullscreen mode"""
         # Toggle between windowed and fullscreen mode
@@ -161,8 +161,8 @@ class LearnHub:
 
         # Create a container to center the notebook with relative padding
         notebook_container = tk.Frame(content_frame, bg=palette['background_3'])
-        notebook_container.pack(fill=tk.BOTH, expand=True, 
-                            padx=int(self.screen_width * 0.02), 
+        notebook_container.pack(fill=tk.BOTH, expand=True,
+                            padx=int(self.screen_width * 0.02),
                             pady=(0, int(self.screen_height * 0.02)))
 
         # Create notebook for tabs - centered
@@ -184,8 +184,8 @@ class LearnHub:
     def create_animated_header(self, parent):
         """Create an animated quantum-themed header"""
         header_frame = tk.Frame(parent, bg=palette['background_3'])
-        header_frame.pack(fill=tk.X, 
-                        padx=int(self.screen_width * 0.02), 
+        header_frame.pack(fill=tk.X,
+                        padx=int(self.screen_width * 0.02),
                         pady=(int(self.screen_height * 0.02), int(self.screen_height * 0.015)))
 
         # Add a top navigation bar
@@ -198,7 +198,7 @@ class LearnHub:
         button_font_size = max(10, int(self.screen_width * 0.008))
         button_width = max(140, int(self.screen_width * 0.09))
         button_height = max(35, int(self.screen_height * 0.03))
-        
+
         back_main_canvas = tk.Canvas(nav_frame,
                                    width=button_width,
                                    height=button_height,
@@ -206,34 +206,34 @@ class LearnHub:
                                    highlightthickness=0,
                                    bd=0)
         back_main_canvas.pack(side=tk.RIGHT)
-        
+
         # Draw button background
         back_main_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
                                         fill=palette['background_4'],
                                         outline="#2b3340", width=1,
                                         tags="menu_bg")
-        
+
         # Add text to button
         back_main_canvas.create_text(button_width//2, button_height//2,
                                    text="🏠 Main Screen",
                                    font=('Arial', button_font_size, 'bold'),
                                    fill=palette['main_menu_button_background'],
                                    tags="menu_text")
-        
+
         # Bind click events
         def on_menu_click(event):
             self.back_to_menu()
-            
+
         def on_menu_enter(event):
             back_main_canvas.itemconfig("menu_bg", fill=palette['main_menu_button_background'])
             back_main_canvas.itemconfig("menu_text", fill=palette['background_black'])
             back_main_canvas.configure(cursor="hand2")
-            
+
         def on_menu_leave(event):
             back_main_canvas.itemconfig("menu_bg", fill=palette['background_4'])
             back_main_canvas.itemconfig("menu_text", fill=palette['main_menu_button_background'])
             back_main_canvas.configure(cursor="")
-        
+
         back_main_canvas.bind("<Button-1>", on_menu_click)
         back_main_canvas.bind("<Enter>", on_menu_enter)
         back_main_canvas.bind("<Leave>", on_menu_leave)
@@ -402,7 +402,7 @@ class LearnHub:
             if completed:
                 canvas.create_oval(2, 2, circle_size-2, circle_size-2, fill=color, outline=color, width=3)
                 canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill=palette['background_3'], outline='white', width=2)
-                canvas.create_text(circle_size//2, circle_size//2, text="✓", fill='white', 
+                canvas.create_text(circle_size//2, circle_size//2, text="✓", fill='white',
                                 font=('Arial', max(10, int(self.screen_width * 0.01)), 'bold'))
             else:
                 canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill='', outline=color, width=2)
@@ -928,24 +928,24 @@ The quantum future awaits! 🌟🚀
         # Try it button - centered
         try_canvas = tk.Canvas(content_frame, highlightthickness=0, bd=0, width=100, height=35)
         try_canvas.pack()
-        
+
         # Draw try button
         try_canvas.create_rectangle(0, 0, 100, 35, fill=palette['try_it_button_background'], outline=palette['try_it_button_background'], tags="bg")
-        try_canvas.create_text(50, 17, text="Try It →", 
+        try_canvas.create_text(50, 17, text="Try It →",
                              font=('Arial', 10, 'bold'),
                              fill=palette['background_black'], tags="text")
-        
+
         def on_try_click(event):
             self.open_url(url)
-        
+
         def on_try_enter(event):
             try_canvas.itemconfig("bg", fill=palette['close_button_hover_background'])
             try_canvas.configure(cursor='hand2')
-        
+
         def on_try_leave(event):
             try_canvas.itemconfig("bg", fill=palette['try_it_button_background'])
             try_canvas.configure(cursor='')
-        
+
         try_canvas.bind("<Button-1>", on_try_click)
         try_canvas.bind("<Enter>", on_try_enter)
         try_canvas.bind("<Leave>", on_try_leave)
@@ -1060,24 +1060,24 @@ The quantum future awaits! 🌟🚀
         # Try it button
         try_canvas2 = tk.Canvas(header_frame, highlightthickness=0, bd=0, width=80, height=30)
         try_canvas2.pack(side=tk.RIGHT)
-        
+
         # Draw try button
         try_canvas2.create_rectangle(0, 0, 80, 30, fill=palette['try_it_button_background'], outline=palette['try_it_button_background'], tags="bg")
-        try_canvas2.create_text(40, 15, text="Try It →", 
+        try_canvas2.create_text(40, 15, text="Try It →",
                               font=('Arial', 10, 'bold'),
                               fill=palette['background_black'], tags="text")
-        
+
         def on_try2_click(event):
             self.open_url(url)
-        
+
         def on_try2_enter(event):
             try_canvas2.itemconfig("bg", fill=palette['close_button_hover_background'])
             try_canvas2.configure(cursor='hand2')
-        
+
         def on_try2_leave(event):
             try_canvas2.itemconfig("bg", fill=palette['try_it_button_background'])
             try_canvas2.configure(cursor='')
-        
+
         try_canvas2.bind("<Button-1>", on_try2_click)
         try_canvas2.bind("<Enter>", on_try2_enter)
         try_canvas2.bind("<Leave>", on_try2_leave)
@@ -1162,6 +1162,7 @@ The quantum future awaits! 🌟🚀
         except Exception as e:
             print(f"Error opening URL: {e}")
 
+
     def back_to_menu(self):
         """Go back to the main screen/menu"""
         self.animation_running = False
@@ -1173,12 +1174,22 @@ The quantum future awaits! 🌟🚀
             except:
                 pass
 
-        self.root.destroy()
         try:
-            # Try to import and launch the main menu
+            # Create main menu FIRST
             from game_mode_selection import GameModeSelection
             selection_window = GameModeSelection()
+
+            # Make sure new window is visible
+            selection_window.root.update()
+            selection_window.root.lift()
+            selection_window.root.focus_force()
+
+            # THEN destroy current window
+            self.root.destroy()
+
+            # Start the main menu mainloop
             selection_window.run()
+
         except ImportError:
             try:
                 # Alternative: try to import main menu
@@ -1191,12 +1202,11 @@ The quantum future awaits! 🌟🚀
                     main.main()
                 except ImportError:
                     print("Could not find main menu module. Please run the main application.")
-                    # Optionally create a simple menu selection
-                    self.create_simple_menu_selection()
+                    self.root.destroy()
         except Exception as e:
             print(f"Error returning to main screen: {e}")
-            # Fallback to simple menu
-            self.create_simple_menu_selection()
+            self.root.destroy()
+
 
     def create_simple_menu_selection(self):
         """Create a simple menu selection as fallback"""
@@ -1229,9 +1239,9 @@ The quantum future awaits! 🌟🚀
 
         # Learn Hub button
         # Learn button using canvas for macOS compatibility
-        self.create_canvas_dialog_button(button_frame, "📚 Learn Hub", 
-                                        lambda: self.reopen_learn_hub(menu_root), 
-                                        200, 45, palette['learn_button_background'], 
+        self.create_canvas_dialog_button(button_frame, "📚 Learn Hub",
+                                        lambda: self.reopen_learn_hub(menu_root),
+                                        200, 45, palette['learn_button_background'],
                                         palette['background_black'], pady=5)
 
         # Placeholder for other modes
@@ -1241,8 +1251,8 @@ The quantum future awaits! 🌟🚀
         placeholder_label.pack(pady=20)
 
         # Close button using canvas for macOS compatibility
-        self.create_canvas_dialog_button(button_frame, "❌ Exit", menu_root.destroy, 
-                                        200, 45, palette['close_button_background'], 
+        self.create_canvas_dialog_button(button_frame, "❌ Exit", menu_root.destroy,
+                                        200, 45, palette['close_button_background'],
                                         palette['close_button_text_color'], pady=5)
 
         menu_root.mainloop()
