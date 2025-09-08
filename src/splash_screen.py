@@ -34,24 +34,21 @@ class SplashScreen:
         # Store fullscreen mode
         self.fullscreen = fullscreen
         
+        # Get screen dimensions
+        screen_width = self.splash.winfo_screenwidth()
+        screen_height = self.splash.winfo_screenheight()
+        
         if fullscreen:
             # Set fullscreen mode
             self.splash.attributes('-fullscreen', True)
-            # Get actual screen dimensions
-            screen_width = self.splash.winfo_screenwidth()
-            screen_height = self.splash.winfo_screenheight()
             self.splash.geometry(f"{screen_width}x{screen_height}+0+0")
             
             # Add escape key binding for testing
             self.splash.bind('<Escape>', lambda e: self.splash.quit())
         else:
-            # Get screen dimensions
-            screen_width = self.splash.winfo_screenwidth()
-            screen_height = self.splash.winfo_screenheight()
-            
-            # Splash screen dimensions
-            splash_width = 600
-            splash_height = 400
+            # Use fixed splash screen dimensions that work well with 1920x1200
+            splash_width = 800
+            splash_height = 500
             
             # Center the splash screen
             x = (screen_width - splash_width) // 2
@@ -264,8 +261,11 @@ class SplashScreen:
             try:
                 if hasattr(self, 'loading_label') and self.loading_label.winfo_exists():
                     self.loading_label.config(text=texts[index % len(texts)])
-                    if index < 20 and self.text_animation_active:  # Animate for ~4 seconds
-                        self.splash.after(800, lambda: update_text(index + 1))
+                    # Disabled animation to prevent lambda issues
+                    # if index < 20 and self.text_animation_active:  # Animate for ~4 seconds
+                    #     def continue_animation():
+                    #         update_text(index + 1)
+                    #     self.splash.after(800, continue_animation)
             except tk.TclError:
                 # Widget has been destroyed, stop animation
                 self.text_animation_active = False
