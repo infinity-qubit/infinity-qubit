@@ -23,22 +23,23 @@ class LearnHub:
         self.root = root
         self.root.title("Infinity Qubit - Learn Hub")
 
-        # Get screen dimensions for fullscreen
+        # Set fullscreen mode
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-
-        # Make window fullscreen without title bar
-        self.root.overrideredirect(True)
-        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
+        
+        # Enable fullscreen
+        self.root.attributes('-fullscreen', True)
+        self.root.geometry(f"{screen_width}x{screen_height}")
         self.root.configure(bg=palette['background_2'])
+        self.root.resizable(False, False)  # Fixed size window
 
-        # Store dimensions for relative sizing
+        # Store dimensions for relative sizing (use full screen)
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.window_width = screen_width
         self.window_height = screen_height
 
-        # Bind Escape key to exit fullscreen
+        # Bind Escape key to exit
         self.root.bind('<Escape>', self.exit_fullscreen)
         self.root.bind('<F11>', self.toggle_fullscreen)
 
@@ -61,23 +62,63 @@ class LearnHub:
         self.root.focus_force()
 
     def exit_fullscreen(self, event=None):
-        """Exit fullscreen mode"""
-        self.root.overrideredirect(False)
-        self.root.state('normal')
-        self.root.geometry("1200x800")
+        """Exit the learn hub"""
+        self.back_to_menu()
+        
+    def create_canvas_dialog_button(self, parent, text, command, width, height, bg_color, fg_color, padx=0, pady=0):
+        """Create a canvas-based button for macOS compatibility"""
+        # Create frame for proper packing
+        btn_frame = tk.Frame(parent, bg=parent.cget('bg'))
+        btn_frame.pack(padx=padx, pady=pady)
+        
+        # Create canvas for the button
+        btn_canvas = tk.Canvas(btn_frame, width=width, height=height, 
+                              bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
+        btn_canvas.pack()
+        
+        # Create button rectangle and text
+        rect_id = btn_canvas.create_rectangle(2, 2, width-2, height-2, 
+                                            fill=bg_color, outline=bg_color, width=0)
+        text_id = btn_canvas.create_text(width//2, height//2, text=text,
+                                       font=('Arial', 12, 'bold'), fill=fg_color)
+        
+        # Add click handler
+        def on_click(event):
+            command()
+        
+        # Add hover effects
+        def on_enter(event):
+            btn_canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
+            btn_canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
+        
+        def on_leave(event):
+            btn_canvas.itemconfig(rect_id, fill=bg_color)
+            btn_canvas.itemconfig(text_id, fill=fg_color)
+        
+        btn_canvas.bind("<Button-1>", on_click)
+        btn_canvas.bind("<Enter>", on_enter)
+        btn_canvas.bind("<Leave>", on_leave)
+        btn_canvas.configure(cursor='hand2')
+        
+        return btn_canvas
         
     def toggle_fullscreen(self, event=None):
         """Toggle fullscreen mode"""
-        is_fullscreen = self.root.overrideredirect()
-        if is_fullscreen:
-            self.root.overrideredirect(False)
-            self.root.state('normal')
-            self.root.geometry("1200x800")
-        else:
+        # Toggle between windowed and fullscreen mode
+        if self.root.attributes('-fullscreen'):
+            # Exit fullscreen
+            self.root.attributes('-fullscreen', False)
+            # Reset to optimal window size and center
             screen_width = self.root.winfo_screenwidth()
             screen_height = self.root.winfo_screenheight()
-            self.root.overrideredirect(True)
-            self.root.geometry(f"{screen_width}x{screen_height}+0+0")
+            target_width = int(screen_width * 0.85)
+            target_height = int(screen_height * 0.85)
+            x = (screen_width - target_width) // 2
+            y = (screen_height - target_height) // 2
+            self.root.geometry(f"{target_width}x{target_height}+{x}+{y}")
+        else:
+            # Enter fullscreen
+            self.root.attributes('-fullscreen', True)
 
     def start_animations(self):
         """Start background animations"""
@@ -153,26 +194,49 @@ class LearnHub:
 
         # Back to Main Screen button - top right with relative sizing
         button_font_size = max(10, int(self.screen_width * 0.008))
-        back_main_btn = tk.Button(nav_frame, text="🏠 Main Screen",
-                                command=self.back_to_menu,
-                                font=('Arial', button_font_size, 'bold'),
-                                bg=palette['background_4'], fg=palette['main_menu_button_background'],
-                                padx=int(self.screen_width * 0.012), 
-                                pady=int(self.screen_height * 0.008),
-                                cursor='hand2',
-                                relief=tk.FLAT,
-                                borderwidth=1,
-                                bd=1)
-        back_main_btn.pack(side=tk.RIGHT)
-
-        # Add hover effect to top button
-        def on_nav_enter(event):
-            back_main_btn.configure(bg=palette['main_menu_button_background'], fg=palette['background_black'])
-        def on_nav_leave(event):
-            back_main_btn.configure(bg=palette['background_4'], fg=palette['main_menu_button_background'])
-
-        back_main_btn.bind("<Enter>", on_nav_enter)
-        back_main_btn.bind("<Leave>", on_nav_leave)
+        # Canvas-based main menu button for better color control on macOS
+        button_font_size = max(10, int(self.screen_width * 0.008))
+        button_width = max(140, int(self.screen_width * 0.09))
+        button_height = max(35, int(self.screen_height * 0.03))
+        
+        back_main_canvas = tk.Canvas(nav_frame,
+                                   width=button_width,
+                                   height=button_height,
+                                   bg=palette['background_2'],
+                                   highlightthickness=0,
+                                   bd=0)
+        back_main_canvas.pack(side=tk.RIGHT)
+        
+        # Draw button background
+        back_main_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
+                                        fill=palette['background_4'],
+                                        outline="#2b3340", width=1,
+                                        tags="menu_bg")
+        
+        # Add text to button
+        back_main_canvas.create_text(button_width//2, button_height//2,
+                                   text="🏠 Main Screen",
+                                   font=('Arial', button_font_size, 'bold'),
+                                   fill=palette['main_menu_button_background'],
+                                   tags="menu_text")
+        
+        # Bind click events
+        def on_menu_click(event):
+            self.back_to_menu()
+            
+        def on_menu_enter(event):
+            back_main_canvas.itemconfig("menu_bg", fill=palette['main_menu_button_background'])
+            back_main_canvas.itemconfig("menu_text", fill=palette['background_black'])
+            back_main_canvas.configure(cursor="hand2")
+            
+        def on_menu_leave(event):
+            back_main_canvas.itemconfig("menu_bg", fill=palette['background_4'])
+            back_main_canvas.itemconfig("menu_text", fill=palette['main_menu_button_background'])
+            back_main_canvas.configure(cursor="")
+        
+        back_main_canvas.bind("<Button-1>", on_menu_click)
+        back_main_canvas.bind("<Enter>", on_menu_enter)
+        back_main_canvas.bind("<Leave>", on_menu_leave)
 
         # Quantum circuit animation canvas with relative height
         canvas_height = int(self.screen_height * 0.12)
@@ -862,13 +926,29 @@ The quantum future awaits! 🌟🚀
         desc_label.pack(pady=(10, 15))
 
         # Try it button - centered
-        try_btn = tk.Button(content_frame, text="Try It →",
-                        bg=palette['try_it_button_background'], fg=palette['background_black'],
-                        font=('Arial', 10, 'bold'),
-                        padx=20, pady=8,
-                        cursor='hand2',
-                        command=lambda: self.open_url(url))
-        try_btn.pack()
+        try_canvas = tk.Canvas(content_frame, highlightthickness=0, bd=0, width=100, height=35)
+        try_canvas.pack()
+        
+        # Draw try button
+        try_canvas.create_rectangle(0, 0, 100, 35, fill=palette['try_it_button_background'], outline=palette['try_it_button_background'], tags="bg")
+        try_canvas.create_text(50, 17, text="Try It →", 
+                             font=('Arial', 10, 'bold'),
+                             fill=palette['background_black'], tags="text")
+        
+        def on_try_click(event):
+            self.open_url(url)
+        
+        def on_try_enter(event):
+            try_canvas.itemconfig("bg", fill=palette['close_button_hover_background'])
+            try_canvas.configure(cursor='hand2')
+        
+        def on_try_leave(event):
+            try_canvas.itemconfig("bg", fill=palette['try_it_button_background'])
+            try_canvas.configure(cursor='')
+        
+        try_canvas.bind("<Button-1>", on_try_click)
+        try_canvas.bind("<Enter>", on_try_enter)
+        try_canvas.bind("<Leave>", on_try_leave)
 
         # Hover effects
         def on_enter(event):
@@ -978,13 +1058,29 @@ The quantum future awaits! 🌟🚀
         rating_label.pack(anchor=tk.W)
 
         # Try it button
-        try_btn = tk.Button(header_frame, text="Try It →",
-                           bg=palette['try_it_button_background'], fg=palette['background_black'],
-                           font=('Arial', 10, 'bold'),
-                           padx=15, pady=5,
-                           cursor='hand2',
-                           command=lambda: self.open_url(url))
-        try_btn.pack(side=tk.RIGHT)
+        try_canvas2 = tk.Canvas(header_frame, highlightthickness=0, bd=0, width=80, height=30)
+        try_canvas2.pack(side=tk.RIGHT)
+        
+        # Draw try button
+        try_canvas2.create_rectangle(0, 0, 80, 30, fill=palette['try_it_button_background'], outline=palette['try_it_button_background'], tags="bg")
+        try_canvas2.create_text(40, 15, text="Try It →", 
+                              font=('Arial', 10, 'bold'),
+                              fill=palette['background_black'], tags="text")
+        
+        def on_try2_click(event):
+            self.open_url(url)
+        
+        def on_try2_enter(event):
+            try_canvas2.itemconfig("bg", fill=palette['close_button_hover_background'])
+            try_canvas2.configure(cursor='hand2')
+        
+        def on_try2_leave(event):
+            try_canvas2.itemconfig("bg", fill=palette['try_it_button_background'])
+            try_canvas2.configure(cursor='')
+        
+        try_canvas2.bind("<Button-1>", on_try2_click)
+        try_canvas2.bind("<Enter>", on_try2_enter)
+        try_canvas2.bind("<Leave>", on_try2_leave)
 
         # Description
         desc_label = tk.Label(content_frame, text=description,
@@ -1132,13 +1228,11 @@ The quantum future awaits! 🌟🚀
         button_frame.pack(expand=True)
 
         # Learn Hub button
-        learn_btn = tk.Button(button_frame, text="📚 Learn Hub",
-                            command=lambda: self.reopen_learn_hub(menu_root),
-                            font=('Arial', 12, 'bold'),
-                            bg=palette['learn_button_background'], fg=palette['background_black'],
-                            padx=20, pady=10,
-                            cursor='hand2', width=15)
-        learn_btn.pack(pady=5)
+        # Learn button using canvas for macOS compatibility
+        self.create_canvas_dialog_button(button_frame, "📚 Learn Hub", 
+                                        lambda: self.reopen_learn_hub(menu_root), 
+                                        200, 45, palette['learn_button_background'], 
+                                        palette['background_black'], pady=5)
 
         # Placeholder for other modes
         placeholder_label = tk.Label(button_frame, text="Other game modes coming soon...",
@@ -1146,14 +1240,10 @@ The quantum future awaits! 🌟🚀
                                     fg=palette['placeholder_text_color'], bg=palette['background'])
         placeholder_label.pack(pady=20)
 
-        # Close button
-        close_btn = tk.Button(button_frame, text="❌ Exit",
-                            command=menu_root.destroy,
-                            font=('Arial', 12, 'bold'),
-                            bg=palette['close_button_background'], fg=palette['close_button_text_color'],
-                            padx=20, pady=10,
-                            cursor='hand2', width=15)
-        close_btn.pack(pady=5)
+        # Close button using canvas for macOS compatibility
+        self.create_canvas_dialog_button(button_frame, "❌ Exit", menu_root.destroy, 
+                                        200, 45, palette['close_button_background'], 
+                                        palette['close_button_text_color'], pady=5)
 
         menu_root.mainloop()
 

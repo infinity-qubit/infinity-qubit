@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
 Game Mode Selection Window for Infinity Qubit
-Allows users to choose between different game modes with video background.
+Allows users to choose between different game modes.
 """
 
 import sys
 import tkinter as tk
 import tkinter.messagebox as messagebox
 import tkinter.ttk as ttk
-import cv2
 from PIL import Image, ImageTk
 import threading
 import time
@@ -27,24 +26,19 @@ class GameModeSelection:
         self.root = tk.Tk()
         self.root.title("Infinity Qubit - Game Mode Selection")
 
-        # Get screen dimensions
+        # Set fullscreen mode
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-
-        # Make window fullscreen without title bar
-        self.root.overrideredirect(True)
-        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
-        self.root.configure(bg=palette['black'])
         
-        # Store dimensions
+        # Enable fullscreen
+        self.root.attributes('-fullscreen', True)
+        self.root.geometry(f"{screen_width}x{screen_height}")
+        self.root.configure(bg=palette['background'])
+        self.root.resizable(False, False)  # Fixed size window
+        
+        # Store dimensions (use full screen)
         self.window_width = screen_width
         self.window_height = screen_height
-
-        # Video background variables
-        self.video_cap = None
-        self.video_label = None
-        self.video_running = False
-        self.video_thread = None
         
         # Animation control flag
         self.animations_running = True
@@ -57,7 +51,7 @@ class GameModeSelection:
         except:
             self.sound_enabled = False
 
-        self.setup_video_background()
+        # Create UI directly without video background
         self.create_selection_ui()
 
         # Make sure window is focused and on top
@@ -66,8 +60,6 @@ class GameModeSelection:
 
         # Handle window close event (ESC key to exit)
         self.root.bind('<Escape>', self.on_escape_key)
-        self.root.bind('<F11>', self.on_f11_key)  # F11 to exit fullscreen
-
 
     def setup_video_background(self):
         """Setup MP4 video background with resolution-based file selection"""
@@ -133,14 +125,27 @@ class GameModeSelection:
         """Legacy method - now handled by animate_gif"""
         pass
 
+
     def create_fallback_background(self):
-        """Create animated fallback background if video fails"""
+        """Create animated quantum-themed background"""
         # Create animated quantum-themed background
         canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
                           bg=palette['background'], highlightthickness=0)
         canvas.place(x=0, y=0)
 
         # Draw animated particles/quantum effects
+        self.particles = []
+        particle_count = max(20, int(self.window_width * self.window_height / 20000))  # Scale with resolution
+        for i in range(particle_count):
+            x = __import__('random').randint(0, self.window_width)
+            y = __import__('random').randint(0, self.window_height)
+            dx = __import__('random').uniform(-2, 2)
+            dy = __import__('random').uniform(-2, 2)
+            color = __import__('random').choice(['#ffb86b', '#ffd08f', '#ff6b6b'])
+            self.particles.append({'x': x, 'y': y, 'dx': dx, 'dy': dy, 'color': color})
+
+        self.animate_particles(canvas)
+        return canvas
         self.particles = []
         particle_count = int(self.window_width * self.window_height / 20000)  # Scale with resolution
         for i in range(particle_count):
@@ -239,7 +244,7 @@ class GameModeSelection:
         
         # Draw start button background
         start_canvas.create_rectangle(2, 2, start_canvas_width-2, start_canvas_height-2,
-                                    fill=palette.get('start_button_color', '#4ecdc4'),
+                                    fill=palette.get('start_button_color', '#ffb86b'),  # Use orange as fallback
                                     outline="#2b3340", width=1,
                                     tags="start_bg")
         
@@ -255,11 +260,11 @@ class GameModeSelection:
             self.execute_command(self.selected_command)
         
         def on_start_enter(event):
-            start_canvas.itemconfig("start_bg", fill="#5fd9d1")  # Lighter shade
+            start_canvas.itemconfig("start_bg", fill=palette.get('start_button_hover_color', '#ffd08f'))  # Use palette hover color
             start_canvas.configure(cursor="hand2")
             
         def on_start_leave(event):
-            start_canvas.itemconfig("start_bg", fill=palette.get('start_button_color', '#4ecdc4'))
+            start_canvas.itemconfig("start_bg", fill=palette.get('start_button_color', '#ffb86b'))  # Use palette color, fallback to orange
             start_canvas.configure(cursor="")
         
         start_canvas.bind("<Button-1>", on_start_click)
@@ -508,9 +513,16 @@ class GameModeSelection:
             # Choose palette keys for bg and fg
             mode_key = config['mode_key']
             
-            # Colors for canvas-based buttons
-            bg_color = "#ffb86b"  # Orange background
-            fg_color = "#000000"  # Black text for better readability
+            # Map mode keys to palette keys
+            def get_palette_key(mode, suffix):
+                if mode == 'learn_hub':
+                    return f'learn_hub_{suffix}'
+                else:
+                    return f'{mode}_mode_{suffix}'
+            
+            # Colors for canvas-based buttons (use palette colors)
+            bg_color = palette[get_palette_key(mode_key, 'button_color')]  # Orange background from palette
+            fg_color = palette[get_palette_key(mode_key, 'button_text_color')]  # Text color from palette
             
             # Create canvas-based button (same approach as exit button)
             canvas_width = int(self.window_width * 0.9)
@@ -558,11 +570,13 @@ class GameModeSelection:
             
             def make_label_hover_handlers(canvas, label, mk):
                 def on_enter(event):
-                    canvas.itemconfig(f"button_bg_{mk}", fill="#ffd08f")  # Lighter orange
+                    hover_key = get_palette_key(mk, 'button_hover_color')
+                    canvas.itemconfig(f"button_bg_{mk}", fill=palette[hover_key])  # Use palette hover color
                     canvas.configure(cursor="hand2")
                     label.configure(cursor="hand2")
                 def on_leave(event):
-                    canvas.itemconfig(f"button_bg_{mk}", fill=bg_color)  # Back to normal
+                    normal_key = get_palette_key(mk, 'button_color')
+                    canvas.itemconfig(f"button_bg_{mk}", fill=palette[normal_key])  # Use palette normal color
                     canvas.configure(cursor="")
                     label.configure(cursor="")
                 return on_enter, on_leave
@@ -588,10 +602,12 @@ class GameModeSelection:
             
             def make_hover_handlers(canvas, mk):
                 def on_enter(event):
-                    canvas.itemconfig(f"button_bg_{mk}", fill="#ffd08f")  # Lighter orange
+                    hover_key = get_palette_key(mk, 'button_hover_color')
+                    canvas.itemconfig(f"button_bg_{mk}", fill=palette[hover_key])  # Use palette hover color
                     canvas.configure(cursor="hand2")
                 def on_leave(event):
-                    canvas.itemconfig(f"button_bg_{mk}", fill=bg_color)  # Back to normal
+                    normal_key = get_palette_key(mk, 'button_color')
+                    canvas.itemconfig(f"button_bg_{mk}", fill=palette[normal_key])  # Use palette normal color
                     canvas.configure(cursor="")
                 return on_enter, on_leave
             
@@ -617,19 +633,28 @@ class GameModeSelection:
         """Select a game mode and update the info display"""
         self.play_sound()
         
+        # Map mode keys to palette keys
+        def get_palette_key(mode, suffix):
+            if mode == 'learn_hub':
+                return f'learn_hub_{suffix}'
+            else:
+                return f'{mode}_mode_{suffix}'
+        
         # Reset all buttons to normal state
         for key, btn_info in self.mode_buttons.items():
             canvas = btn_info['canvas']
             label = btn_info['label']
             
             # Update canvas appearance to normal state
-            canvas.itemconfig(f"button_bg_{key}", fill='#ffb86b', outline='#2b3340', width=2)
+            normal_color_key = get_palette_key(key, 'button_color')
+            text_color_key = get_palette_key(key, 'button_text_color')
+            canvas.itemconfig(f"button_bg_{key}", fill=palette[normal_color_key], outline='#2b3340', width=2)
             
             # Update label appearance
             label.configure(
                 font=('Arial', btn_info['normal_font_size'], 'bold'),
-                fg='#000000',  # Black text
-                bg='#ffb86b'   # Orange background
+                fg=palette[text_color_key],  # Use palette text color
+                bg=palette[normal_color_key]   # Use palette background color
             )
         
         # Highlight selected button
@@ -637,13 +662,15 @@ class GameModeSelection:
         selected_label = self.mode_buttons[mode_key]['label']
         
         # Update canvas for selected state
-        selected_canvas.itemconfig(f"button_bg_{mode_key}", fill='#ff8c42', outline='#ffffff', width=3)
+        hover_color_key = get_palette_key(mode_key, 'button_hover_color')
+        text_color_key = get_palette_key(mode_key, 'button_text_color')
+        selected_canvas.itemconfig(f"button_bg_{mode_key}", fill=palette[hover_color_key], outline='#ffd08f', width=3)
         
         # Update label for selected state
         selected_label.configure(
             font=('Arial', self.mode_buttons[mode_key]['selected_font_size'], 'bold'),
-            fg='#000000',  # Black text (consistent with unselected)
-            bg='#ff8c42'   # Darker orange background
+            fg=palette[text_color_key],  # Use palette text color
+            bg=palette[hover_color_key]   # Use palette hover background
         )
         
         self.selected_mode = mode_key
@@ -669,8 +696,22 @@ class GameModeSelection:
         self.on_closing()
 
     def on_f11_key(self, event):
-        """Handle F11 key press"""
-        self.on_closing()
+        """Handle F11 key press - toggle fullscreen"""
+        # Toggle between windowed and fullscreen mode
+        if self.root.attributes('-fullscreen'):
+            # Exit fullscreen
+            self.root.attributes('-fullscreen', False)
+            # Reset to optimal window size and center
+            screen_width = self.root.winfo_screenwidth()
+            screen_height = self.root.winfo_screenheight()
+            target_width = int(screen_width * 0.85)
+            target_height = int(screen_height * 0.85)
+            x = (screen_width - target_width) // 2
+            y = (screen_height - target_height) // 2
+            self.root.geometry(f"{target_width}x{target_height}+{x}+{y}")
+        else:
+            # Enter fullscreen
+            self.root.attributes('-fullscreen', True)
 
     def create_info_display(self):
         """Create the initial info display area"""
@@ -709,11 +750,6 @@ class GameModeSelection:
         self.root.deiconify()
         self.root.lift()
         self.root.focus_set()
-        # Restart video if available
-        if self.video_cap and not self.video_running:
-            self.video_running = True
-            self.video_thread = threading.Thread(target=self.play_video, daemon=True)
-            self.video_thread.start()
 
     def start_puzzle_mode(self):
         """Start the puzzle mode"""
@@ -767,14 +803,11 @@ class GameModeSelection:
             messagebox.showerror("Error", f"Error starting Learn Hub: {str(e)}")
 
     def stop_video(self):
-        """Stop GIF animation"""
+        """Stop any animations"""
         self.animations_running = False
-        self.video_running = False
-        # Clean up GIF resources
-        if hasattr(self, 'gif_frames'):
-            self.gif_frames.clear()
-        if hasattr(self, 'gif_image'):
-            self.gif_image.close()
+        # Clean up any background animation resources
+        if hasattr(self, 'particles'):
+            self.particles.clear()
 
     def on_closing(self):
         """Handle window closing"""

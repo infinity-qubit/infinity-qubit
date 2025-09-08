@@ -5,3 +5,4 @@ infinity_qubit.sh
 **/.DS_Store
 *.pkg
 .vscode/
+resources/saves/*
