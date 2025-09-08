@@ -40,12 +40,13 @@ class SplashScreen:
         # Store fullscreen mode
         self.fullscreen = fullscreen
 
+        # Get screen dimensions
+        screen_width = self.splash.winfo_screenwidth()
+        screen_height = self.splash.winfo_screenheight()
+
         if fullscreen:
             # Set fullscreen mode
             self.splash.attributes('-fullscreen', True)
-            # Get actual screen dimensions
-            screen_width = self.splash.winfo_screenwidth()
-            screen_height = self.splash.winfo_screenheight()
             self.splash.geometry(f"{screen_width}x{screen_height}+0+0")
 
             # Add escape key binding for testing
