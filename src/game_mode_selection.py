@@ -33,7 +33,6 @@ class GameModeSelection:
         # Enable fullscreen
         self.root.attributes('-fullscreen', True)
         self.root.geometry(f"{screen_width}x{screen_height}")
-        self.root.state('zoomed')  # Maximize window on Windows/Linux
         self.root.configure(bg=palette['background'])
         self.root.resizable(False, False)  # Fixed size window
         
