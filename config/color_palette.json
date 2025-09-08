@@ -148,7 +148,9 @@
   "CZ_fill_2": "#121212",
   "normal_gate_fill": "#ffb86b",
 
-  "circuit_canvas_text_fill": "#121212"
+  "circuit_canvas_text_fill": "#121212",
+  "button_hover_background": "#ffd08f",
+  "button_hover_text_color": "#2c1f12"
     }
   },
   {

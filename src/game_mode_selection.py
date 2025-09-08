@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
 Game Mode Selection Window for Infinity Qubit
-Allows users to choose between different game modes with video background.
+Allows users to choose between different game modes.
 """
 
 import sys
 import tkinter as tk
 import tkinter.messagebox as messagebox
 import tkinter.ttk as ttk
-import cv2
 from PIL import Image, ImageTk
 import threading
 import time
@@ -27,24 +26,20 @@ class GameModeSelection:
         self.root = tk.Tk()
         self.root.title("Infinity Qubit - Game Mode Selection")
 
-        # Get screen dimensions
+        # Set fullscreen mode
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-
-        # Make window fullscreen without title bar
-        self.root.overrideredirect(True)
-        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
-        self.root.configure(bg=palette['black'])
         
-        # Store dimensions
+        # Enable fullscreen
+        self.root.attributes('-fullscreen', True)
+        self.root.geometry(f"{screen_width}x{screen_height}")
+        self.root.state('zoomed')  # Maximize window on Windows/Linux
+        self.root.configure(bg=palette['background'])
+        self.root.resizable(False, False)  # Fixed size window
+        
+        # Store dimensions (use full screen)
         self.window_width = screen_width
         self.window_height = screen_height
-
-        # Video background variables
-        self.video_cap = None
-        self.video_label = None
-        self.video_running = False
-        self.video_thread = None
         
         # Animation control flag
         self.animations_running = True
@@ -57,7 +52,7 @@ class GameModeSelection:
         except:
             self.sound_enabled = False
 
-        self.setup_video_background()
+        # Create UI directly without video background
         self.create_selection_ui()
 
         # Make sure window is focused and on top
@@ -66,138 +61,28 @@ class GameModeSelection:
 
         # Handle window close event (ESC key to exit)
         self.root.bind('<Escape>', self.on_escape_key)
-        self.root.bind('<F11>', self.on_f11_key)  # F11 to exit fullscreen
-
-    def setup_video_background(self):
-        """Setup optimized GIF background with lazy loading"""
-        try:
-            # Loading GIF file
-            gif_path = get_resource_path('resources/images/Art Render GIF by time.gif')
-            self.gif_image = Image.open(gif_path)
-            
-            # Initialize frame caching system
-            self.gif_frames = {}  # Changed to dict for lazy loading
-            self.gif_durations = []
-            self.total_frames = 0
-            self.frame_skip = 2  # Skip every other frame for better performance
-            
-            # Count total frames and get durations (fast pass)
-            try:
-                while True:
-                    duration = self.gif_image.info.get('duration', 100)
-                    self.gif_durations.append(duration * self.frame_skip)  # Adjust duration for skipped frames
-                    self.total_frames += 1
-                    self.gif_image.seek(self.total_frames)
-            except EOFError:
-                pass  # End of sequence
-            
-            if self.total_frames == 0:
-                print("Warning: Could not load GIF frames. Using fallback background.")
-                self.create_fallback_background()
-                return
-
-            # Reset to first frame
-            self.gif_image.seek(0)
-
-            # Create background label
-            self.video_label = tk.Label(self.root, bg=palette['black'])
-            self.video_label.place(x=0, y=0, relwidth=1, relheight=1)
-
-            # Start GIF animation with lazy loading
-            self.video_running = True
-            self.current_frame = 0
-            
-            # Load first frame immediately
-            self.load_frame(0)
-            self.animate_gif()
-
-        except Exception as e:
-            print(f"Error setting up GIF background: {e}")
-            self.create_fallback_background()
-
-    def load_frame(self, frame_index):
-        """Lazy load a specific frame"""
-        try:
-            # Skip frames for performance
-            actual_frame = frame_index * self.frame_skip
-            if actual_frame >= self.total_frames:
-                actual_frame = actual_frame % self.total_frames
-                
-            # Check if frame is already cached
-            if frame_index in self.gif_frames:
-                return self.gif_frames[frame_index]
-            
-            # Load and process the frame
-            self.gif_image.seek(actual_frame)
-            frame = self.gif_image.copy()
-            
-            # Resize frame to window size
-            frame = frame.resize((self.window_width, self.window_height), Image.Resampling.LANCZOS)
-            
-            # Apply dark overlay for better text readability
-            overlay = Image.new('RGBA', frame.size, (0, 0, 0, 100))
-            if frame.mode != 'RGBA':
-                frame = frame.convert('RGBA')
-            frame = Image.alpha_composite(frame, overlay)
-            frame = frame.convert('RGB')
-            
-            # Cache the processed frame
-            processed_frame = ImageTk.PhotoImage(frame)
-            self.gif_frames[frame_index] = processed_frame
-            
-            # Limit cache size to prevent memory issues
-            if len(self.gif_frames) > 10:  # Keep only last 10 frames
-                oldest_key = min(self.gif_frames.keys())
-                del self.gif_frames[oldest_key]
-            
-            return processed_frame
-            
-        except Exception as e:
-            print(f"Error loading frame {frame_index}: {e}")
-            return None
-
-    def animate_gif(self):
-        """Animate GIF with lazy loading"""
-        if not self.video_running or not hasattr(self, 'root'):
-            return
-            
-        try:
-            # Check if the root window still exists
-            if not self.root.winfo_exists():
-                return
-                
-            # Load current frame lazily
-            frame = self.load_frame(self.current_frame)
-            if frame and self.video_label and self.video_label.winfo_exists():
-                self.video_label.configure(image=frame)
-                self.video_label.image = frame  # Keep a reference
-            
-            # Move to next frame
-            effective_total = max(1, self.total_frames // self.frame_skip)
-            self.current_frame = (self.current_frame + 1) % effective_total
-            
-            # Schedule next frame only if still running
-            if self.video_running and hasattr(self, 'root'):
-                duration_index = min(self.current_frame, len(self.gif_durations) - 1)
-                duration = max(80, self.gif_durations[duration_index])  # Minimum 80ms for smoother playback
-                self.root.after(duration, self.animate_gif)
-            
-        except Exception as e:
-            print(f"Error in GIF animation: {e}")
-            self.video_running = False
-
-    def play_video(self):
-        """Legacy method - now handled by animate_gif"""
-        pass
+        self.root.bind('<F11>', self.on_f11_key)  # F11 to toggle fullscreen
 
     def create_fallback_background(self):
-        """Create animated fallback background if video fails"""
+        """Create animated quantum-themed background"""
         # Create animated quantum-themed background
         canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height,
                           bg=palette['background'], highlightthickness=0)
         canvas.place(x=0, y=0)
 
         # Draw animated particles/quantum effects
+        self.particles = []
+        particle_count = max(20, int(self.window_width * self.window_height / 20000))  # Scale with resolution
+        for i in range(particle_count):
+            x = __import__('random').randint(0, self.window_width)
+            y = __import__('random').randint(0, self.window_height)
+            dx = __import__('random').uniform(-2, 2)
+            dy = __import__('random').uniform(-2, 2)
+            color = __import__('random').choice(['#ffb86b', '#ffd08f', '#ff6b6b'])
+            self.particles.append({'x': x, 'y': y, 'dx': dx, 'dy': dy, 'color': color})
+
+        self.animate_particles(canvas)
+        return canvas
         self.particles = []
         particle_count = int(self.window_width * self.window_height / 20000)  # Scale with resolution
         for i in range(particle_count):
@@ -748,8 +633,22 @@ class GameModeSelection:
         self.on_closing()
 
     def on_f11_key(self, event):
-        """Handle F11 key press"""
-        self.on_closing()
+        """Handle F11 key press - toggle fullscreen"""
+        # Toggle between windowed and fullscreen mode
+        if self.root.attributes('-fullscreen'):
+            # Exit fullscreen
+            self.root.attributes('-fullscreen', False)
+            # Reset to optimal window size and center
+            screen_width = self.root.winfo_screenwidth()
+            screen_height = self.root.winfo_screenheight()
+            target_width = int(screen_width * 0.85)
+            target_height = int(screen_height * 0.85)
+            x = (screen_width - target_width) // 2
+            y = (screen_height - target_height) // 2
+            self.root.geometry(f"{target_width}x{target_height}+{x}+{y}")
+        else:
+            # Enter fullscreen
+            self.root.attributes('-fullscreen', True)
 
     def create_info_display(self):
         """Create the initial info display area"""
@@ -788,11 +687,6 @@ class GameModeSelection:
         self.root.deiconify()
         self.root.lift()
         self.root.focus_set()
-        # Restart video if available
-        if self.video_cap and not self.video_running:
-            self.video_running = True
-            self.video_thread = threading.Thread(target=self.play_video, daemon=True)
-            self.video_thread.start()
 
     def start_puzzle_mode(self):
         """Start the puzzle mode"""
@@ -846,14 +740,11 @@ class GameModeSelection:
             messagebox.showerror("Error", f"Error starting Learn Hub: {str(e)}")
 
     def stop_video(self):
-        """Stop GIF animation"""
+        """Stop any animations"""
         self.animations_running = False
-        self.video_running = False
-        # Clean up GIF resources
-        if hasattr(self, 'gif_frames'):
-            self.gif_frames.clear()
-        if hasattr(self, 'gif_image'):
-            self.gif_image.close()
+        # Clean up any background animation resources
+        if hasattr(self, 'particles'):
+            self.particles.clear()
 
     def on_closing(self):
         """Handle window closing"""
