@@ -1,3 +1,8 @@
+import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
@@ -7,7 +12,6 @@ from qiskit.quantum_info import Statevector
 import pygame
 from PIL import Image, ImageTk
 import sys
-import os
 
 sys.path.append('..')
 from run import PROJECT_ROOT, get_resource_path
@@ -19,7 +23,7 @@ palette = extract_color_palette(get_colors_from_file(color_file_path), 'puzzle_m
 
 class PuzzleMode:
     SAVE_FILE = os.path.expanduser("resources/saves/infinity_qubit_puzzle_save.json")
-    
+
     def __init__(self, root):
         self.root = root
         self.root.title("🧩 Infinity Qubit - Puzzle Mode")
@@ -33,20 +37,21 @@ class PuzzleMode:
             print("Warning: Could not initialize sound system")
             self.sound_enabled = False
 
-        # Get screen dimensions for fullscreen
+        # Set fullscreen mode
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
 
-        # Make window fullscreen without title bar
-        self.root.overrideredirect(True)
-        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
+        # Enable fullscreen
+        self.root.attributes('-fullscreen', True)
+        self.root.geometry(f"{screen_width}x{screen_height}")
         self.root.configure(bg=palette['background'])
+        self.root.resizable(False, False)  # Fixed size window
 
-        # Store dimensions
+        # Store dimensions (use full screen)
         self.window_width = screen_width
         self.window_height = screen_height
 
-        # Handle ESC key to exit fullscreen
+        # Handle ESC key to exit
         self.root.bind('<Escape>', lambda e: self.return_to_main_menu())
 
         # Game state
@@ -93,7 +98,72 @@ class PuzzleMode:
                 print("✅ Progress loaded.")
             except Exception as e:
                 print(f"❌ Could not load progress: {e}")
-    
+
+
+    def create_canvas_dialog_button(self, parent, text, command, bg_color, text_color,
+                                   width=120, height=40, font_size=12, font_weight='bold'):
+        """Create a canvas-based button for dialogs and popup windows"""
+        # Create canvas for the button
+        canvas = tk.Canvas(parent, width=width, height=height,
+                          highlightthickness=0, bd=0, bg=parent['bg'])
+
+        # Draw button background and text with proper closure
+        def create_draw_function(canvas, bg, txt, txt_color, w, h, fs, fw):
+            def draw_button(event=None):
+                canvas.delete("all")
+                canvas_width = canvas.winfo_width()
+                canvas_height = canvas.winfo_height()
+                if canvas_width > 1 and canvas_height > 1:
+                    canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                          fill=bg, outline="#2b3340", width=1, tags="bg")
+                    canvas.create_text(canvas_width//2, canvas_height//2, text=txt,
+                                     font=('Arial', fs, fw), fill=txt_color, tags="text")
+            return draw_button
+
+        draw_function = create_draw_function(canvas, bg_color, text, text_color, width, height, font_size, font_weight)
+
+        # Bind configure event and initial draw
+        canvas.bind('<Configure>', draw_function)
+        canvas.after(10, draw_function)
+
+        # Click handler
+        def on_click(event):
+            command()
+
+        # Hover effects with proper closure
+        def create_hover_functions(canvas, bg, hover_bg):
+            def on_enter(event):
+                canvas.delete("bg")
+                canvas_width = canvas.winfo_width()
+                canvas_height = canvas.winfo_height()
+                if canvas_width > 1 and canvas_height > 1:
+                    canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                          fill=hover_bg, outline="#2b3340", width=1, tags="bg")
+                canvas.configure(cursor='hand2')
+                canvas.tag_lower("bg")
+
+            def on_leave(event):
+                canvas.delete("bg")
+                canvas_width = canvas.winfo_width()
+                canvas_height = canvas.winfo_height()
+                if canvas_width > 1 and canvas_height > 1:
+                    canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                          fill=bg, outline="#2b3340", width=1, tags="bg")
+                canvas.configure(cursor='')
+                canvas.tag_lower("bg")
+
+            return on_enter, on_leave
+
+        hover_color = palette.get('button_hover_background', '#ffd08f')
+        on_enter, on_leave = create_hover_functions(canvas, bg_color, hover_color)
+
+        # Bind events
+        canvas.bind("<Button-1>", on_click)
+        canvas.bind("<Enter>", on_enter)
+        canvas.bind("<Leave>", on_leave)
+
+        return canvas
+
     def load_puzzle_levels(self):
         """Load puzzle levels from JSON file"""
         try:
@@ -138,7 +208,6 @@ class PuzzleMode:
             }
         ]
 
-    # ...existing code... (load_sounds, play_sound, create_puzzle_levels methods remain the same)
 
     def load_sounds(self):
         """Load sound effects for the puzzle mode"""
@@ -152,7 +221,7 @@ class PuzzleMode:
                 'clear': get_resource_path('resources/sounds/clear.wav'),
                 'level_complete': get_resource_path('resources/sounds/correct.wav')
             }
-            
+
             # Load sounds into pygame
             self.sounds = {}
             for sound_name, file_path in sound_files.items():
@@ -163,7 +232,7 @@ class PuzzleMode:
                     print(f"⚠️ Could not load {sound_name} from {file_path}: {e}")
                     # Create a placeholder/dummy sound or skip this sound
                     self.sounds[sound_name] = None
-                    
+
         except Exception as e:
             print(f"Warning: Could not load sounds: {e}")
             self.sound_enabled = False
@@ -173,7 +242,7 @@ class PuzzleMode:
         """Play a sound effect"""
         if not self.sound_enabled:
             return
-        
+
         try:
             if sound_name in self.sounds and self.sounds[sound_name] is not None:
                 self.sounds[sound_name].play()
@@ -234,24 +303,46 @@ class PuzzleMode:
         subtitle_label.place(relx=0, rely=0.7, anchor='w')
 
         # Back to Main Menu button - top right
-        main_menu_btn = tk.Button(header_frame, text="🏠 Main Menu",
-                                command=self.return_to_main_menu,
-                                font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
-                                bg=palette['background_3'], fg=palette['main_menu_button_text_color'],
-                                padx=15, pady=8,
-                                cursor='hand2',
-                                relief=tk.FLAT,
-                                borderwidth=1)
-        main_menu_btn.place(relx=1, rely=0.5, anchor='e')
+        # Canvas-based main menu button for better color control on macOS
+        button_width = max(120, int(self.window_width / 12))
+        button_height = max(35, int(self.window_height / 25))
 
-        # Add hover effect
-        def on_nav_enter(event):
-            main_menu_btn.configure(bg=palette['main_menu_button_text_color'], fg='#000000')
-        def on_nav_leave(event):
-            main_menu_btn.configure(bg=palette['background_3'], fg=palette['main_menu_button_text_color'])
+        main_menu_canvas = tk.Canvas(header_frame,
+                                   width=button_width,
+                                   height=button_height,
+                                   bg=palette['puzzle_mode_button_color'],
+                                   highlightthickness=0,
+                                   bd=0)
+        main_menu_canvas.place(relx=1, rely=0.5, anchor='e')
 
-        main_menu_btn.bind("<Enter>", on_nav_enter)
-        main_menu_btn.bind("<Leave>", on_nav_leave)
+        # Draw button background
+        main_menu_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
+                                        fill=palette['puzzle_mode_button_color'],
+                                        outline=palette['puzzle_mode_button_color'], width=1,
+                                        tags="menu_bg")
+
+        # Add text to button
+        main_menu_canvas.create_text(button_width//2, button_height//2,
+                                   text="🏠 Main Menu",
+                                   font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
+                                   fill=palette['puzzle_mode_button_text_color'],
+                                   tags="menu_text")
+
+        # Bind click events
+        def on_menu_click(event):
+            self.return_to_main_menu()
+
+        def on_menu_enter(event):
+            main_menu_canvas.itemconfig("menu_bg", fill=palette['puzzle_mode_button_hover_color'])
+            main_menu_canvas.configure(cursor="hand2")
+
+        def on_menu_leave(event):
+            main_menu_canvas.itemconfig("menu_bg", fill=palette['puzzle_mode_button_color'])
+            main_menu_canvas.configure(cursor="")
+
+        main_menu_canvas.bind("<Button-1>", on_menu_click)
+        main_menu_canvas.bind("<Enter>", on_menu_enter)
+        main_menu_canvas.bind("<Leave>", on_menu_leave)
 
     def setup_level_info_panel(self, parent):
         """Setup the level information panel using relative positioning"""
@@ -260,7 +351,7 @@ class PuzzleMode:
 
         # Title
         info_title = tk.Label(info_frame, text="🎯 Level Information",
-                            font=('Arial', max(16, int(self.window_width / 100)), 'bold'), 
+                            font=('Arial', max(16, int(self.window_width / 100)), 'bold'),
                             fg=palette['info_title_color'], bg=palette['background_2'])
         info_title.place(relx=0.5, rely=0.15, anchor='center')
 
@@ -273,17 +364,17 @@ class PuzzleMode:
         level_frame.place(relx=0, rely=0, relwidth=0.48, relheight=1)
 
         self.level_label = tk.Label(level_frame, text="Level: 1",
-                                font=('Arial', max(14, int(self.window_width / 120)), 'bold'), 
+                                font=('Arial', max(14, int(self.window_width / 120)), 'bold'),
                                 fg=palette['level_counter_color'], bg=palette['background_3'])
         self.level_label.place(relx=0.5, rely=0.15, anchor='center')
 
         self.level_name_label = tk.Label(level_frame, text="Level Name",
-                                    font=('Arial', max(12, int(self.window_width / 130)), 'bold'), 
+                                    font=('Arial', max(12, int(self.window_width / 130)), 'bold'),
                                     fg=palette['level_name_color'], bg=palette['background_3'])
         self.level_name_label.place(relx=0.5, rely=0.4, anchor='center')
 
         self.level_description_label = tk.Label(level_frame, text="Description",
-                                            font=('Arial', max(10, int(self.window_width / 150))), 
+                                            font=('Arial', max(10, int(self.window_width / 150))),
                                             fg=palette['description_title_color'], bg=palette['background_3'],
                                             wraplength=int(self.window_width * 0.35))
         self.level_description_label.place(relx=0.5, rely=0.75, anchor='center')
@@ -293,17 +384,17 @@ class PuzzleMode:
         stats_frame.place(relx=0.52, rely=0, relwidth=0.48, relheight=1)
 
         self.difficulty_label = tk.Label(stats_frame, text="Difficulty: Beginner",
-                                    font=('Arial', max(12, int(self.window_width / 130)), 'bold'), 
+                                    font=('Arial', max(12, int(self.window_width / 130)), 'bold'),
                                     fg=palette['difficulty_title_color'], bg=palette['background_3'])
         self.difficulty_label.place(relx=0.5, rely=0.15, anchor='center')
 
         self.score_label = tk.Label(stats_frame, text="Score: 0",
-                                font=('Arial', max(12, int(self.window_width / 130)), 'bold'), 
+                                font=('Arial', max(12, int(self.window_width / 130)), 'bold'),
                                 fg=palette['score_counter_color'], bg=palette['background_3'])
         self.score_label.place(relx=0.5, rely=0.4, anchor='center')
 
         self.gates_limit_label = tk.Label(stats_frame, text="Max Gates: 1",
-                                        font=('Arial', max(10, int(self.window_width / 150))), 
+                                        font=('Arial', max(10, int(self.window_width / 150))),
                                         fg=palette['max_gates_counter_color'], bg=palette['background_3'])
         self.gates_limit_label.place(relx=0.5, rely=0.65, anchor='center')
 
@@ -314,7 +405,7 @@ class PuzzleMode:
 
         # Title
         circuit_title = tk.Label(circuit_frame, text="🔧 Quantum Circuit Designer",
-                                font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                                font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
                                 fg=palette['main_circuit_title_color'], bg=palette['background_2'])
         circuit_title.place(relx=0.5, rely=0.1, anchor='center')
 
@@ -342,7 +433,7 @@ class PuzzleMode:
         gate_frame.place(relx=0, rely=0, relwidth=0.4, relheight=1)
 
         tk.Label(gate_frame, text="🎨 Available Gates",
-                font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
                 fg=palette['available_gates_title_color'], bg=palette['background_2']).place(relx=0.5, rely=0.08, anchor='center')
 
         # Gate buttons container
@@ -365,7 +456,7 @@ class PuzzleMode:
         """Setup puzzle control buttons using relative positioning"""
         # Title
         control_title = tk.Label(parent, text="🎮 Puzzle Controls",
-                               font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                               font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
                                fg=palette['controls_title_text_color'], bg=palette['background_2'])
         control_title.place(relx=0.5, rely=0.08, anchor='center')
 
@@ -385,41 +476,60 @@ class PuzzleMode:
             btn_container = tk.Frame(control_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
             btn_container.place(relx=0.5, rely=0.09 + i * 0.22, anchor='center', relwidth=0.9, relheight=0.18)
 
-            btn = tk.Button(btn_container, text=text, command=command,
-                           font=('Arial', max(11, int(self.window_width / 140)), 'bold'), 
-                           bg=bg_color, fg=fg_color,
-                           cursor='hand2', relief=tk.FLAT, bd=0)
-            btn.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.9, relheight=0.8)
+            # Create canvas-based button instead of tk.Button
+            btn_canvas = tk.Canvas(btn_container, bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
+            btn_canvas.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.9, relheight=0.8)
+
+            # Calculate canvas dimensions for text centering
+            btn_container.update_idletasks()
+            canvas_width = int(btn_container.winfo_width() * 0.9)
+            canvas_height = int(btn_container.winfo_height() * 0.8)
+
+            # Create button rectangle and text
+            font_size = max(11, int(self.window_width / 140))
+            rect_id = btn_canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                                fill=bg_color, outline=bg_color, width=0)
+            text_id = btn_canvas.create_text(canvas_width//2, canvas_height//2, text=text,
+                                           font=('Arial', font_size, 'bold'), fill=fg_color)
+
+            # Add click handler with proper closure
+            def create_click_handler(cmd):
+                return lambda event: cmd()
+
+            btn_canvas.bind("<Button-1>", create_click_handler(command))
+            btn_canvas.configure(cursor='hand2')
 
             # Add hover effects
             original_bg = bg_color
-            def create_hover_functions(button, orig_color, orig_fg):
+            def create_hover_functions(canvas, rect_id, text_id, orig_color, orig_fg):
                 def on_enter(event):
-                    button.configure(bg=palette['button_hover_background'], fg=palette['button_hover_text_color'])
+                    canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
+                    canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
                 def on_leave(event):
-                    button.configure(bg=orig_color, fg=orig_fg)
+                    canvas.itemconfig(rect_id, fill=orig_color)
+                    canvas.itemconfig(text_id, fill=orig_fg)
                 return on_enter, on_leave
 
-            on_enter, on_leave = create_hover_functions(btn, original_bg, fg_color)
-            btn.bind("<Enter>", on_enter)
-            btn.bind("<Leave>", on_leave)
+            on_enter, on_leave = create_hover_functions(btn_canvas, rect_id, text_id, original_bg, fg_color)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
 
         # Status info
         status_frame = tk.Frame(control_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=1)
         status_frame.place(relx=0.5, rely=0.95, anchor='center', relwidth=0.9, relheight=0.12)
 
         status_title = tk.Label(status_frame, text="📊 Circuit Status",
-                               font=('Arial', max(10, int(self.window_width / 160)), 'bold'), 
+                               font=('Arial', max(10, int(self.window_width / 160)), 'bold'),
                                fg=palette['circuit_status_title_color'], bg=palette['background_3'])
         status_title.place(relx=0.5, rely=0.25, anchor='center')
 
         self.gates_count_label = tk.Label(status_frame, text="Gates: 0",
-                                         font=('Arial', max(9, int(self.window_width / 180))), 
+                                         font=('Arial', max(9, int(self.window_width / 180))),
                                          fg=palette['gates_counter_color'], bg=palette['background_3'])
         self.gates_count_label.place(relx=0.3, rely=0.7, anchor='center')
 
         self.gates_used_label = tk.Label(status_frame, text="Used: 0/1",
-                                        font=('Arial', max(9, int(self.window_width / 180))), 
+                                        font=('Arial', max(9, int(self.window_width / 180))),
                                         fg=palette['used_gates_counter_color'], bg=palette['background_3'])
         self.gates_used_label.place(relx=0.7, rely=0.7, anchor='center')
 
@@ -427,7 +537,7 @@ class PuzzleMode:
         """Setup quantum state analysis area using relative positioning"""
         # Title
         analysis_title = tk.Label(parent, text="📊 Quantum State Analysis",
-                                font=('Arial', max(14, int(self.window_width / 100)), 'bold'), 
+                                font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
                                 fg=palette['state_analysis_title_color'], bg=palette['background_2'])
         analysis_title.place(relx=0.5, rely=0.08, anchor='center')
 
@@ -440,15 +550,15 @@ class PuzzleMode:
         text_frame.place(relx=0.02, rely=0.02, relwidth=0.96, relheight=0.96)
 
         self.state_display = tk.Text(text_frame,
-                                   font=('Consolas', max(9, int(self.window_width / 200))), 
+                                   font=('Consolas', max(9, int(self.window_width / 200))),
                                    bg=palette['background_4'], fg=palette['state_display_text_color'],
                                    relief=tk.FLAT, bd=0, insertbackground=palette['state_display_insert_background'],
-                                   selectbackground=palette['state_display_select_background'], 
+                                   selectbackground=palette['state_display_select_background'],
                                    selectforeground=palette['state_display_select_foreground'],
                                    wrap=tk.WORD)
 
         scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.state_display.yview,
-                                bg=palette['background_3'], troughcolor=palette['background'], 
+                                bg=palette['background_3'], troughcolor=palette['background'],
                                 activebackground=palette['state_scrollbar_active_background'])
         self.state_display.configure(yscrollcommand=scrollbar.set)
 
@@ -476,23 +586,40 @@ class PuzzleMode:
             toggle_frame = tk.Frame(self.gates_container, bg=palette['background_2'])
             toggle_frame.pack(pady=(5, 15))
 
-            self.toggle_btn = tk.Button(toggle_frame, text="🔄 Show Multi-Qubit Gates",
-                                    command=self.toggle_gate_view,
-                                    font=('Arial', 11, 'bold'),
-                                    bg=palette['show_multi_qubit_gates_button_background'], fg=palette['show_multi_qubit_gates_button_text_color'],
-                                    padx=20, pady=8,
-                                    cursor='hand2', relief=tk.FLAT)
-            self.toggle_btn.pack()
+            # Canvas toggle button
+            self.toggle_canvas = tk.Canvas(toggle_frame, highlightthickness=0, bd=0, width=250, height=40)
+            self.toggle_canvas.pack()
 
-            # Add hover effect for toggle button
+            def draw_toggle_button():
+                self.toggle_canvas.delete("all")
+                width = 250
+                height = 40
+                bg_color = palette['show_multi_qubit_gates_button_background']
+                text_color = palette['show_multi_qubit_gates_button_text_color']
+                self.toggle_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline=bg_color, tags="bg")
+                self.toggle_canvas.create_text(width//2, height//2, text="🔄 Show Multi-Qubit Gates",
+                                             font=('Arial', 11, 'bold'),
+                                             fill=text_color, tags="text")
+
+            draw_toggle_button()
+
+            # Click handler
+            def on_toggle_click(event):
+                self.toggle_gate_view()
+
+            # Hover effects for toggle button
             def on_toggle_enter(event):
-                self.toggle_btn.configure(bg=palette['show_multi_qubit_gates_button_active_background'], fg=palette['show_multi_qubit_gates_button_active_text_color'])
+                self.toggle_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+                self.toggle_canvas.configure(cursor='hand2')
 
             def on_toggle_leave(event):
-                self.toggle_btn.configure(bg=palette['show_multi_qubit_gates_button_background'], fg=palette['show_multi_qubit_gates_button_text_color'])
+                self.toggle_canvas.itemconfig("bg", fill=palette['show_multi_qubit_gates_button_background'])
+                self.toggle_canvas.configure(cursor='')
 
-            self.toggle_btn.bind("<Enter>", on_toggle_enter)
-            self.toggle_btn.bind("<Leave>", on_toggle_leave)
+            # Bind events
+            self.toggle_canvas.bind("<Button-1>", on_toggle_click)
+            self.toggle_canvas.bind("<Enter>", on_toggle_enter)
+            self.toggle_canvas.bind("<Leave>", on_toggle_leave)
 
         # Create container for gate display
         self.gate_display_frame = tk.Frame(self.gates_container, bg=palette['background_2'])
@@ -500,6 +627,81 @@ class PuzzleMode:
 
         # Show initial gate set
         self.display_current_gates()
+
+    def create_canvas_gate_button(self, parent, gate, color, description, relx, rely, relwidth, relheight):
+        """Helper method to create a canvas-based gate button with proper closures"""
+        # Container for the gate button using relative positioning
+        btn_container = tk.Frame(parent, bg=palette['background_3'], relief=tk.RAISED, bd=1)
+        btn_container.place(relx=relx, rely=rely, anchor='center', relwidth=relwidth, relheight=relheight)
+
+        # Canvas button using relative positioning within its container
+        btn_canvas = tk.Canvas(btn_container, highlightthickness=0, bd=0, bg=color)
+        btn_canvas.place(relx=0.5, rely=0.4, anchor='center', relwidth=0.85, relheight=0.7)
+
+        # Create button background and text with proper closure
+        def create_draw_function(canvas, gate_color, gate_text):
+            def draw_button(event=None):
+                canvas.delete("all")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:  # Only draw if we have valid dimensions
+                    canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
+                    canvas.create_text(width//2, height//2, text=gate_text,
+                                     font=('Arial', max(12, int(self.window_width / 140)), 'bold'),
+                                     fill=palette['gate_symbol_color'], tags="text")
+            return draw_button
+
+        draw_button = create_draw_function(btn_canvas, color, gate)
+
+        # Bind configure event to redraw when size changes
+        btn_canvas.bind('<Configure>', draw_button)
+        # Initial draw after the widget is mapped
+        btn_canvas.after(10, draw_button)
+
+        # Click handler with proper closure
+        def create_click_handler(gate_name):
+            def on_button_click(event):
+                self.add_gate(gate_name)
+            return on_button_click
+
+        click_handler = create_click_handler(gate)
+
+        # Hover effects with proper closure
+        def create_hover_handlers(canvas, gate_color):
+            def on_enter(event):
+                canvas.delete("bg")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(0, 0, width, height, fill=palette['button_hover_background'], outline=palette['button_hover_background'], tags="bg")
+                canvas.configure(cursor='hand2')
+                canvas.tag_lower("bg")  # Ensure background is behind text
+
+            def on_leave(event):
+                canvas.delete("bg")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
+                canvas.configure(cursor='')
+                canvas.tag_lower("bg")  # Ensure background is behind text
+
+            return on_enter, on_leave
+
+        on_enter, on_leave = create_hover_handlers(btn_canvas, color)
+
+        # Bind events
+        btn_canvas.bind("<Button-1>", click_handler)
+        btn_canvas.bind("<Enter>", on_enter)
+        btn_canvas.bind("<Leave>", on_leave)
+
+        # Description label using relative positioning
+        desc_label = tk.Label(btn_container, text=description,
+                            font=('Arial', max(8, int(self.window_width / 200))),
+                            fg=palette['gate_description_color'], bg=palette['background_3'])
+        desc_label.place(relx=0.5, rely=0.85, anchor='center')
+
+        return btn_container, btn_canvas
 
     def display_current_gates(self):
         """Display the current set of gates (single or multi-qubit)"""
@@ -540,7 +742,7 @@ class PuzzleMode:
             for i, gate in enumerate(self.single_gates):
                 row = i // cols
                 col = i % cols
-                
+
                 # Calculate relative positions
                 relx = col * 0.33 + 0.165  # Center each button in its column (0.165, 0.495, 0.825)
                 rely = row * 0.45 + 0.20   # Space rows evenly
@@ -548,36 +750,9 @@ class PuzzleMode:
                 color = gate_colors.get(gate, '#ffffff')
                 description = gate_descriptions.get(gate, '')
 
-                # Container for the gate button using relative positioning
-                btn_container = tk.Frame(gates_main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-                btn_container.place(relx=relx, rely=rely, anchor='center', relwidth=0.28, relheight=0.4)
-
-                # Button using relative positioning within its container
-                btn = tk.Button(btn_container, text=gate,
-                            command=lambda g=gate: self.add_gate(g),
-                            font=('Arial', max(12, int(self.window_width / 140)), 'bold'),
-                            bg=color, fg=palette['gate_symbol_color'],
-                            cursor='hand2',
-                            relief=tk.FLAT, bd=0)
-                btn.place(relx=0.5, rely=0.4, anchor='center', relwidth=0.85, relheight=0.7)
-
-                # Description label using relative positioning
-                desc_label = tk.Label(btn_container, text=description,
-                                    font=('Arial', max(8, int(self.window_width / 200))), 
-                                    fg=palette['gate_description_color'], bg=palette['background_3'])
-                desc_label.place(relx=0.5, rely=0.85, anchor='center')
-
-                # Add hover effect
-                def create_hover_effect(button, orig_color):
-                    def on_enter(event):
-                        button.configure(bg=palette['gate_hover_background'])
-                    def on_leave(event):
-                        button.configure(bg=orig_color)
-                    return on_enter, on_leave
-
-                on_enter, on_leave = create_hover_effect(btn, color)
-                btn.bind("<Enter>", on_enter)
-                btn.bind("<Leave>", on_leave)
+                # Create canvas button using helper method
+                self.create_canvas_gate_button(gates_main_container, gate, color, description,
+                                             relx, rely, 0.28, 0.4)
 
         elif self.current_gate_view == 'multi' and self.multi_gates:
             # Display multi-qubit gates in grid layout (same structure as single gates)
@@ -594,7 +769,7 @@ class PuzzleMode:
             for i, gate in enumerate(self.multi_gates):
                 row = i // cols
                 col = i % cols
-                
+
                 # Calculate relative positions
                 relx = col * 0.33 + 0.165  # Center each button in its column
                 rely = row * 0.25 + 0.15   # Space rows evenly
@@ -602,36 +777,9 @@ class PuzzleMode:
                 color = gate_colors.get(gate, '#ffffff')
                 description = gate_descriptions.get(gate, '')
 
-                # Container for the gate button using relative positioning
-                btn_container = tk.Frame(gates_main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-                btn_container.place(relx=relx, rely=rely, anchor='center', relwidth=0.28, relheight=0.2)
-
-                # Button using relative positioning within its container
-                btn = tk.Button(btn_container, text=gate,
-                            command=lambda g=gate: self.add_gate(g),
-                            font=('Arial', max(12, int(self.window_width / 140)), 'bold'),
-                            bg=color, fg=palette['gate_symbol_color'],
-                            cursor='hand2',
-                            relief=tk.FLAT, bd=0)
-                btn.place(relx=0.5, rely=0.4, anchor='center', relwidth=0.85, relheight=0.6)
-
-                # Description label using relative positioning
-                desc_label = tk.Label(btn_container, text=description,
-                                    font=('Arial', max(8, int(self.window_width / 200))), 
-                                    fg=palette['gate_description_color'], bg=palette['background_3'])
-                desc_label.place(relx=0.5, rely=0.85, anchor='center')
-
-                # Add hover effect
-                def create_hover_effect_multi(button, orig_color):
-                    def on_enter(event):
-                        button.configure(bg=palette['gate_hover_background'])
-                    def on_leave(event):
-                        button.configure(bg=orig_color)
-                    return on_enter, on_leave
-
-                on_enter, on_leave = create_hover_effect_multi(btn, color)
-                btn.bind("<Enter>", on_enter)
-                btn.bind("<Leave>", on_leave)
+                # Create canvas button using helper method
+                self.create_canvas_gate_button(gates_main_container, gate, color, description,
+                                             relx, rely, 0.28, 0.2)
 
         # If only one type of gates is available, show them without toggle
         elif not self.multi_gates and self.single_gates:
@@ -650,7 +798,7 @@ class PuzzleMode:
             for i, gate in enumerate(self.single_gates):
                 row = i // cols
                 col = i % cols
-                
+
                 # Calculate relative positions
                 relx = col * 0.33 + 0.165  # Center each button in its column
                 rely = row * 0.25 + 0.15   # Space rows evenly
@@ -658,24 +806,9 @@ class PuzzleMode:
                 color = gate_colors.get(gate, '#ffffff')
                 description = gate_descriptions.get(gate, '')
 
-                # Container for the gate button using relative positioning
-                btn_container = tk.Frame(gates_main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-                btn_container.place(relx=relx, rely=rely, anchor='center', relwidth=0.28, relheight=0.2)
-
-                # Button using relative positioning within its container
-                btn = tk.Button(btn_container, text=gate,
-                            command=lambda g=gate: self.add_gate(g),
-                            font=('Arial', max(12, int(self.window_width / 140)), 'bold'),
-                            bg=color, fg=palette['gate_symbol_color'],
-                            cursor='hand2',
-                            relief=tk.FLAT, bd=0)
-                btn.place(relx=0.5, rely=0.4, anchor='center', relwidth=0.85, relheight=0.6)
-
-                # Description label using relative positioning
-                desc_label = tk.Label(btn_container, text=description,
-                                    font=('Arial', max(8, int(self.window_width / 200))), 
-                                    fg=palette['gate_description_color'], bg=palette['background_3'])
-                desc_label.place(relx=0.5, rely=0.85, anchor='center')
+                # Create canvas button using helper method
+                self.create_canvas_gate_button(gates_main_container, gate, color, description,
+                                             relx, rely, 0.28, 0.2)
 
         elif not self.single_gates and self.multi_gates:
             # Only multi gates available, show them directly in grid
@@ -693,7 +826,7 @@ class PuzzleMode:
             for i, gate in enumerate(self.multi_gates):
                 row = i // cols
                 col = i % cols
-                
+
                 # Calculate relative positions
                 relx = col * 0.33 + 0.165  # Center each button in its column
                 rely = row * 0.25 + 0.15   # Space rows evenly
@@ -701,47 +834,34 @@ class PuzzleMode:
                 color = gate_colors.get(gate, '#ffffff')
                 description = gate_descriptions.get(gate, '')
 
-                # Container for the gate button using relative positioning
-                btn_container = tk.Frame(gates_main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-                btn_container.place(relx=relx, rely=rely, anchor='center', relwidth=0.28, relheight=0.2)
-
-                # Button using relative positioning within its container
-                btn = tk.Button(btn_container, text=gate,
-                            command=lambda g=gate: self.add_gate(g),
-                            font=('Arial', max(12, int(self.window_width / 140)), 'bold'),
-                            bg=color, fg=palette['gate_symbol_color'],
-                            cursor='hand2',
-                            relief=tk.FLAT, bd=0)
-                btn.place(relx=0.5, rely=0.4, anchor='center', relwidth=0.85, relheight=0.6)
-
-                # Description label using relative positioning
-                desc_label = tk.Label(btn_container, text=description,
-                                    font=('Arial', max(9, int(self.window_width / 180))), 
-                                    fg=palette['gate_description_color'], bg=palette['background_3'])
-                desc_label.place(relx=0.5, rely=0.85, anchor='center')
+                # Create canvas button using helper method
+                self.create_canvas_gate_button(gates_main_container, gate, color, description,
+                                             relx, rely, 0.28, 0.2)
 
     def toggle_gate_view(self):
         """Toggle between single-qubit and multi-qubit gate views"""
         if self.current_gate_view == 'single':
             self.current_gate_view = 'multi'
-            self.toggle_btn.config(text="🔄 Show Single-Qubit Gates")
+            # Update canvas text
+            self.toggle_canvas.itemconfig("text", text="🔄 Show Single-Qubit Gates")
         else:
             self.current_gate_view = 'single'
-            self.toggle_btn.config(text="🔄 Show Multi-Qubit Gates")
-        
+            # Update canvas text
+            self.toggle_canvas.itemconfig("text", text="🔄 Show Multi-Qubit Gates")
+
         self.display_current_gates()
 
     def add_gate(self, gate):
         """Add a gate to the circuit"""
         level = self.levels[self.current_level]
         max_gates = level.get('max_gates', 999)
-        
+
         # Check gate limit
         if len(self.placed_gates) >= max_gates:
             self.play_sound('error')
             self.show_gate_limit_warning(max_gates)
             return
-        
+
         # Handle multi-qubit gates
         if gate in ['CNOT', 'CZ']:
             self.add_two_qubit_gate(gate)
@@ -749,7 +869,7 @@ class PuzzleMode:
             self.add_toffoli_gate(gate)
         else:
             self.add_single_qubit_gate(gate)
-        
+
         self.play_sound('gate_place')
         self.draw_circuit()
 
@@ -758,45 +878,44 @@ class PuzzleMode:
         dialog = tk.Toplevel(self.root)
         dialog.title("⚠️ Gate Limit Reached")
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog_dimensions = (600, 500)
-        dialog.geometry(f"{dialog_dimensions[0]}x{dialog_dimensions[1]}")
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.focus_set()
-        
-        # Center the dialog on screen and ensure it's on top
-        dialog.update_idletasks()
+
+        # Calculate center position immediately
+        dialog_width = 600
+        dialog_height = 500
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
-        x = (screen_width - dialog_dimensions[0]) // 2
-        y = (screen_height - dialog_dimensions[1]) // 2
-        dialog.geometry(f"{dialog_dimensions[0]}x{dialog_dimensions[1]}+{x}+{y}")
-        
+        x = (screen_width - dialog_width) // 2
+        y = (screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
         # Ensure dialog is on top
         dialog.lift()
         dialog.attributes("-topmost", True)
-        
+
         # Main container with border
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-        
+
         # Header with warning icon
         header_frame = tk.Frame(main_frame, bg=palette['background_2'])
         header_frame.pack(fill=tk.X, pady=(15, 10))
-        
+
         warning_label = tk.Label(header_frame, text="⚠️🚫⚠️",
                                font=('Arial', 24), fg='#ff6b6b', bg=palette['background_2'])
         warning_label.pack()
-        
+
         title_label = tk.Label(header_frame, text="GATE LIMIT REACHED!",
                              font=('Arial', 18, 'bold'), fg='#ff6b6b', bg=palette['background_2'])
         title_label.pack(pady=(5, 0))
-        
+
         # Content frame
         content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=15)
-        
+
         # Warning message
         warning_text = f"""You have reached the maximum gate limit for this level.
 
@@ -805,54 +924,69 @@ class PuzzleMode:
 💡 Or try optimizing your circuit
 
 Remember: Efficient solutions earn bonus points!"""
-        
+
         warning_message = tk.Label(content_frame, text=warning_text,
-                                 font=('Arial', 13), 
-                                 fg=palette['level_complete_info_label_text_color'], 
+                                 font=('Arial', 13),
+                                 fg=palette['level_complete_info_label_text_color'],
                                  bg=palette['background_3'],
                                  justify=tk.CENTER)
         warning_message.pack(expand=True, pady=20)
-        
+
         # Button frame
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
         button_frame.pack(pady=(10, 15))
-        
+
         # Clear circuit button
-        clear_btn = tk.Button(button_frame, text="🔄 Clear Circuit",
-                            command=lambda: [self.clear_circuit(), dialog.destroy()],
-                            font=('Arial', 12, 'bold'),
-                            bg=palette['clear_button_background'], 
-                            fg=palette['clear_button_text_color'],
-                            padx=20, pady=8,
-                            cursor='hand2', relief=tk.FLAT)
-        clear_btn.pack(side=tk.LEFT, padx=10)
-        
-        # OK button
-        ok_btn = tk.Button(button_frame, text="✓ Got it!",
-                          command=dialog.destroy,
-                          font=('Arial', 12, 'bold'),
-                          bg=palette['next_level_button_background'], 
-                          fg=palette['next_level_button_text_color'],
-                          padx=20, pady=8,
-                          cursor='hand2', relief=tk.FLAT)
-        ok_btn.pack(side=tk.LEFT, padx=10)
-        
-        # Add hover effects
+        clear_canvas = tk.Canvas(button_frame, highlightthickness=0, bd=0, width=160, height=40)
+        clear_canvas.pack(side=tk.LEFT, padx=10)
+
+        # Draw clear button
+        clear_canvas.create_rectangle(0, 0, 160, 40, fill=palette['clear_button_background'], outline=palette['clear_button_background'], tags="bg")
+        clear_canvas.create_text(80, 20, text="🔄 Clear Circuit",
+                               font=('Arial', 12, 'bold'),
+                               fill=palette['clear_button_text_color'], tags="text")
+
+        def on_clear_click(event):
+            self.clear_circuit()
+            dialog.destroy()
+
         def on_clear_enter(event):
-            clear_btn.configure(bg=palette['button_hover_background'], fg=palette['button_hover_text_color'])
+            clear_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            clear_canvas.configure(cursor='hand2')
+
         def on_clear_leave(event):
-            clear_btn.configure(bg=palette['clear_button_background'], fg=palette['clear_button_text_color'])
-            
+            clear_canvas.itemconfig("bg", fill=palette['clear_button_background'])
+            clear_canvas.configure(cursor='')
+
+        clear_canvas.bind("<Button-1>", on_clear_click)
+        clear_canvas.bind("<Enter>", on_clear_enter)
+        clear_canvas.bind("<Leave>", on_clear_leave)
+
+        # OK button
+        ok_canvas = tk.Canvas(button_frame, highlightthickness=0, bd=0, width=120, height=40)
+        ok_canvas.pack(side=tk.LEFT, padx=10)
+
+        # Draw OK button
+        ok_canvas.create_rectangle(0, 0, 120, 40, fill=palette['next_level_button_background'], outline=palette['next_level_button_background'], tags="bg")
+        ok_canvas.create_text(60, 20, text="✓ Got it!",
+                            font=('Arial', 12, 'bold'),
+                            fill=palette['next_level_button_text_color'], tags="text")
+
+        def on_ok_click(event):
+            dialog.destroy()
+
         def on_ok_enter(event):
-            ok_btn.configure(bg=palette['next_level_button_hover_background'])
+            ok_canvas.itemconfig("bg", fill=palette['next_level_button_hover_background'])
+            ok_canvas.configure(cursor='hand2')
+
         def on_ok_leave(event):
-            ok_btn.configure(bg=palette['next_level_button_background'])
-            
-        clear_btn.bind("<Enter>", on_clear_enter)
-        clear_btn.bind("<Leave>", on_clear_leave)
-        ok_btn.bind("<Enter>", on_ok_enter)
-        ok_btn.bind("<Leave>", on_ok_leave)
-        
+            ok_canvas.itemconfig("bg", fill=palette['next_level_button_background'])
+            ok_canvas.configure(cursor='')
+
+        ok_canvas.bind("<Button-1>", on_ok_click)
+        ok_canvas.bind("<Enter>", on_ok_enter)
+        ok_canvas.bind("<Leave>", on_ok_leave)
+
         # Handle ESC key to close
         dialog.bind('<Escape>', lambda e: dialog.destroy())
 
@@ -860,7 +994,7 @@ Remember: Efficient solutions earn bonus points!"""
         """Add a single qubit gate with target selection"""
         level = self.levels[self.current_level]
         num_qubits = level['qubits']
-        
+
         if num_qubits == 1:
             # Only one qubit, add directly
             gate_info = {'gate': gate, 'qubits': [0]}
@@ -876,21 +1010,21 @@ Remember: Efficient solutions earn bonus points!"""
         """Add a two-qubit gate with control and target selection"""
         level = self.levels[self.current_level]
         num_qubits = level['qubits']
-        
+
         if num_qubits < 2:
             self.show_error_dialog(f"{gate} gate requires at least 2 qubits!")
             return
-        
+
         # Ask for control and target qubits
         control = self.ask_qubit_selection("Select control qubit:", num_qubits)
         if control is None:
             return
-        
+
         available_targets = [i for i in range(num_qubits) if i != control]
         target = self.ask_qubit_selection("Select target qubit:", num_qubits, available_targets)
         if target is None:
             return
-        
+
         gate_info = {'gate': gate, 'qubits': [control, target]}
         self.placed_gates.append(gate_info)
 
@@ -898,26 +1032,26 @@ Remember: Efficient solutions earn bonus points!"""
         """Add a Toffoli gate with two controls and one target"""
         level = self.levels[self.current_level]
         num_qubits = level['qubits']
-        
+
         if num_qubits < 3:
             self.show_error_dialog("Toffoli gate requires at least 3 qubits!")
             return
-        
+
         # Ask for two control qubits and one target
         control1 = self.ask_qubit_selection("Select first control qubit:", num_qubits)
         if control1 is None:
             return
-        
+
         available_control2 = [i for i in range(num_qubits) if i != control1]
         control2 = self.ask_qubit_selection("Select second control qubit:", num_qubits, available_control2)
         if control2 is None:
             return
-        
+
         available_targets = [i for i in range(num_qubits) if i not in [control1, control2]]
         target = self.ask_qubit_selection("Select target qubit:", num_qubits, available_targets)
         if target is None:
             return
-        
+
         gate_info = {'gate': gate, 'qubits': [control1, control2, target]}
         self.placed_gates.append(gate_info)
 
@@ -931,7 +1065,7 @@ Remember: Efficient solutions earn bonus points!"""
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.focus_set()
-        
+
         # Center the dialog on screen and ensure it's on top
         dialog.update_idletasks()
         screen_width = dialog.winfo_screenwidth()
@@ -939,58 +1073,45 @@ Remember: Efficient solutions earn bonus points!"""
         x = (screen_width - 400) // 2
         y = (screen_height - 200) // 2
         dialog.geometry(f"400x200+{x}+{y}")
-        
+
         # Ensure dialog is on top
         dialog.lift()
         dialog.attributes("-topmost", True)
-        
+
         # Main container with border
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-        
+
         # Header with error icon
         header_frame = tk.Frame(main_frame, bg=palette['background_2'])
         header_frame.pack(fill=tk.X, pady=(15, 10))
-        
+
         error_label = tk.Label(header_frame, text="❌⚠️❌",
                              font=('Arial', 20), fg='#ff6b6b', bg=palette['background_2'])
         error_label.pack()
-        
+
         title_label = tk.Label(header_frame, text="ERROR",
                              font=('Arial', 16, 'bold'), fg='#ff6b6b', bg=palette['background_2'])
         title_label.pack(pady=(5, 0))
-        
+
         # Content frame
         content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+
         # Error message
         error_message = tk.Label(content_frame, text=message,
-                               font=('Arial', 12), 
-                               fg=palette['level_complete_info_label_text_color'], 
+                               font=('Arial', 12),
+                               fg=palette['level_complete_info_label_text_color'],
                                bg=palette['background_3'],
                                wraplength=350, justify=tk.CENTER)
         error_message.pack(expand=True, pady=15)
-        
-        # OK button
-        ok_btn = tk.Button(main_frame, text="✓ OK",
-                          command=dialog.destroy,
-                          font=('Arial', 12, 'bold'),
-                          bg=palette['next_level_button_background'], 
-                          fg=palette['next_level_button_text_color'],
-                          padx=30, pady=8,
-                          cursor='hand2', relief=tk.FLAT)
-        ok_btn.pack(pady=(10, 15))
-        
-        # Add hover effect
-        def on_ok_enter(event):
-            ok_btn.configure(bg=palette['next_level_button_hover_background'])
-        def on_ok_leave(event):
-            ok_btn.configure(bg=palette['next_level_button_background'])
-            
-        ok_btn.bind("<Enter>", on_ok_enter)
-        ok_btn.bind("<Leave>", on_ok_leave)
-        
+
+        # OK button using canvas for macOS compatibility
+        self.create_canvas_dialog_button(main_frame, "✓ OK", dialog.destroy, 120, 40,
+                                        palette['next_level_button_background'],
+                                        palette['next_level_button_text_color'],
+                                        pady=(10, 15))
+
         # Handle ESC key to close
         dialog.bind('<Escape>', lambda e: dialog.destroy())
 
@@ -998,10 +1119,10 @@ Remember: Efficient solutions earn bonus points!"""
         """Ask user to select a qubit with no decorations dialog"""
         if available_qubits is None:
             available_qubits = list(range(num_qubits))
-        
+
         if len(available_qubits) == 1:
             return available_qubits[0]
-        
+
         # Create a simple selection dialog without decorations
         dialog = tk.Toplevel(self.root)
         dialog.title("Select Qubit")
@@ -1010,41 +1131,45 @@ Remember: Efficient solutions earn bonus points!"""
         dialog.configure(bg=palette['background_2'])
         dialog.transient(self.root)
         dialog.grab_set()
-        
+
         # Center the dialog on screen
         dialog.update_idletasks()
         x = (dialog.winfo_screenwidth() - 300) // 2
         y = (dialog.winfo_screenheight() - 150) // 2
         dialog.geometry(f"300x150+{x}+{y}")
-        
+
         result = [None]
-        
-        tk.Label(dialog, text=prompt, font=('Arial', 12), 
+
+        tk.Label(dialog, text=prompt, font=('Arial', 12),
                 fg=palette['prompt_text_color'], bg=palette['background_2']).pack(pady=10)
-        
+
         button_frame = tk.Frame(dialog, bg=palette['background_2'])
         button_frame.pack(pady=10)
-        
+
         def select_qubit(qubit):
             result[0] = qubit
             dialog.destroy()
-        
+
         for qubit in available_qubits:
-            btn = tk.Button(button_frame, text=f"Qubit {qubit}", 
-                           command=lambda q=qubit: select_qubit(q),
-                           font=('Arial', 10), bg=palette['qubit_selection_button_background'], 
-                           fg=palette['qubit_selection_button_text_color'],
-                           padx=15, pady=5, cursor='hand2')
-            btn.pack(side=tk.LEFT, padx=5)
-        
+            canvas_btn = self.create_canvas_dialog_button(
+                button_frame, f"Qubit {qubit}",
+                lambda q=qubit: select_qubit(q),
+                palette['qubit_selection_button_background'],
+                palette['qubit_selection_button_text_color'],
+                width=80, height=35, font_size=10
+            )
+            canvas_btn.pack(side=tk.LEFT, padx=5)
+
         # Cancel button
-        cancel_btn = tk.Button(button_frame, text="Cancel", 
-                              command=dialog.destroy,
-                              font=('Arial', 10), bg=palette['cancel_selection_button_background'], 
-                              fg=palette['cancel_selection_button_text_color'],
-                              padx=15, pady=5, cursor='hand2')
-        cancel_btn.pack(side=tk.LEFT, padx=5)
-        
+        cancel_canvas = self.create_canvas_dialog_button(
+            button_frame, "Cancel",
+            dialog.destroy,
+            palette['cancel_selection_button_background'],
+            palette['cancel_selection_button_text_color'],
+            width=80, height=35, font_size=10
+        )
+        cancel_canvas.pack(side=tk.LEFT, padx=5)
+
         dialog.wait_window()
         return result[0]
 
@@ -1057,23 +1182,23 @@ Remember: Efficient solutions earn bonus points!"""
     def run_circuit(self):
         """Run the quantum circuit and check if puzzle is solved"""
         level = self.levels[self.current_level]
-        
+
         if not self.placed_gates:
             self.show_info_dialog("No Circuit", "Please add some gates to your circuit first!")
             return
-        
+
         try:
             # Create quantum circuit
             qc = QuantumCircuit(level['qubits'])
-            
+
             # Set initial state
             self.set_initial_state(qc, level['input_state'])
-            
+
             # Add gates
             for gate_info in self.placed_gates:
                 gate = gate_info['gate']
                 qubits = gate_info['qubits']
-                
+
                 if gate == 'H':
                     qc.h(qubits[0])
                 elif gate == 'X':
@@ -1092,39 +1217,39 @@ Remember: Efficient solutions earn bonus points!"""
                     qc.cz(qubits[0], qubits[1])
                 elif gate == 'Toffoli':
                     qc.ccx(qubits[0], qubits[1], qubits[2])
-            
+
             # Get final state
             state_vector = Statevector.from_instruction(qc)
-            
+
             # Check if puzzle is solved
             if self.check_solution(state_vector, level):
                 self.level_complete()
             else:
                 self.display_circuit_results(state_vector, level)
-                
+
         except Exception as e:
             self.show_error_dialog(f"Error running circuit: {str(e)}")
 
     def run_circuit(self):
         """Run the quantum circuit and check if puzzle is solved"""
         level = self.levels[self.current_level]
-        
+
         if not self.placed_gates:
             self.show_info_dialog("No Circuit", "Please add some gates to your circuit first!")
             return
-        
+
         try:
             # Create quantum circuit
             qc = QuantumCircuit(level['qubits'])
-            
+
             # Set initial state
             self.set_initial_state(qc, level['input_state'])
-            
+
             # Add gates
             for gate_info in self.placed_gates:
                 gate = gate_info['gate']
                 qubits = gate_info['qubits']
-                
+
                 if gate == 'H':
                     qc.h(qubits[0])
                 elif gate == 'X':
@@ -1143,16 +1268,16 @@ Remember: Efficient solutions earn bonus points!"""
                     qc.cz(qubits[0], qubits[1])
                 elif gate == 'Toffoli':
                     qc.ccx(qubits[0], qubits[1], qubits[2])
-            
+
             # Get final state
             state_vector = Statevector.from_instruction(qc)
-            
+
             # Check if puzzle is solved
             if self.check_solution(state_vector, level):
                 self.level_complete()
             else:
                 self.display_circuit_results(state_vector, level)
-                
+
         except Exception as e:
             self.show_error_dialog(f"Error running circuit: {str(e)}")
 
@@ -1184,20 +1309,20 @@ Remember: Efficient solutions earn bonus points!"""
         # Single qubit states
         if target_state == '|1⟩' and level['qubits'] == 1:
             # |1⟩ state: [0, 1]
-            return (abs(state_data[1]) > 0.99 and abs(state_data[0]) < tolerance and 
+            return (abs(state_data[1]) > 0.99 and abs(state_data[0]) < tolerance and
                     abs(np.real(state_data[1]) - 1.0) < tolerance and
                     abs(np.imag(state_data[1])) < tolerance)
 
         elif target_state == '|0⟩' and level['qubits'] == 1:
             # |0⟩ state: [1, 0]
-            return (abs(state_data[0]) > 0.99 and abs(state_data[1]) < tolerance and 
+            return (abs(state_data[0]) > 0.99 and abs(state_data[1]) < tolerance and
                     abs(np.real(state_data[0]) - 1.0) < tolerance and
                     abs(np.imag(state_data[0])) < tolerance)
 
         elif target_state == '|+⟩' and level['qubits'] == 1:
             # |+⟩ = (|0⟩ + |1⟩)/√2: [1/√2, 1/√2]
             expected_amp = 1/np.sqrt(2)
-            return (abs(abs(state_data[0]) - expected_amp) < tolerance and 
+            return (abs(abs(state_data[0]) - expected_amp) < tolerance and
                     abs(abs(state_data[1]) - expected_amp) < tolerance and
                     abs(np.real(state_data[0]) - expected_amp) < tolerance and
                     abs(np.imag(state_data[0])) < tolerance and
@@ -1207,7 +1332,7 @@ Remember: Efficient solutions earn bonus points!"""
         elif target_state == '|-⟩' and level['qubits'] == 1:
             # |-⟩ = (|0⟩ - |1⟩)/√2: [1/√2, -1/√2]
             expected_amp = 1/np.sqrt(2)
-            return (abs(abs(state_data[0]) - expected_amp) < tolerance and 
+            return (abs(abs(state_data[0]) - expected_amp) < tolerance and
                     abs(abs(state_data[1]) - expected_amp) < tolerance and
                     abs(np.real(state_data[0]) - expected_amp) < tolerance and
                     abs(np.imag(state_data[0])) < tolerance and
@@ -1217,14 +1342,14 @@ Remember: Efficient solutions earn bonus points!"""
         elif target_state == '|i·1⟩' and level['qubits'] == 1:
             # Y|0⟩ = i|1⟩: [0, i]
             return (abs(state_data[0]) < tolerance and
-                    abs(state_data[1]) > 0.99 and 
+                    abs(state_data[1]) > 0.99 and
                     abs(np.real(state_data[1])) < tolerance and
                     abs(np.imag(state_data[1]) - 1.0) < tolerance)
 
         elif target_state == '|+i⟩' and level['qubits'] == 1:
             # S|+⟩ = (|0⟩ + i|1⟩)/√2: [1/√2, i/√2]
             expected_amp = 1/np.sqrt(2)
-            return (abs(abs(state_data[0]) - expected_amp) < tolerance and 
+            return (abs(abs(state_data[0]) - expected_amp) < tolerance and
                     abs(abs(state_data[1]) - expected_amp) < tolerance and
                     abs(np.real(state_data[0]) - expected_amp) < tolerance and
                     abs(np.imag(state_data[0])) < tolerance and
@@ -1236,7 +1361,7 @@ Remember: Efficient solutions earn bonus points!"""
             expected_amp = 1/np.sqrt(2)
             expected_phase = np.exp(1j * np.pi / 4)  # e^(iπ/4)
             expected_1_state = expected_amp * expected_phase
-            return (abs(abs(state_data[0]) - expected_amp) < tolerance and 
+            return (abs(abs(state_data[0]) - expected_amp) < tolerance and
                     abs(abs(state_data[1]) - expected_amp) < tolerance and
                     abs(np.real(state_data[0]) - expected_amp) < tolerance and
                     abs(np.imag(state_data[0])) < tolerance and
@@ -1246,7 +1371,7 @@ Remember: Efficient solutions earn bonus points!"""
         elif target_state == '|11⟩' and level['qubits'] == 2:
             # |11⟩ state: [0, 0, 0, 1]
             return (abs(state_data[3]) > 0.99 and
-                    abs(state_data[0]) < tolerance and abs(state_data[1]) < tolerance and 
+                    abs(state_data[0]) < tolerance and abs(state_data[1]) < tolerance and
                     abs(state_data[2]) < tolerance and
                     abs(np.real(state_data[3]) - 1.0) < tolerance and
                     abs(np.imag(state_data[3])) < tolerance)
@@ -1366,22 +1491,22 @@ Remember: Efficient solutions earn bonus points!"""
 
         # Placeholder implementations for undefined states
         # These return True for now but should be properly defined
-        elif target_state in ['|err⟩', '|QFT⟩', '|MaxEnt⟩', '|Secret⟩', 
+        elif target_state in ['|err⟩', '|QFT⟩', '|MaxEnt⟩', '|Secret⟩',
                                 '|Interference⟩', '|ErrorCode⟩', '|Ultimate⟩']:
             # For these custom states, we need to define what they actually represent
             # For now, return True to allow level progression during development
             print(f"Warning: Target state '{target_state}' not fully implemented")
-            
+
             # Placeholder logic - you can replace these with actual state definitions
             if target_state == '|QFT⟩' and level['qubits'] == 2:
                 # 2-qubit QFT of |00⟩ should give equal superposition with phases
                 return all(abs(abs(state_data[i]) - 0.5) < tolerance for i in range(4))
-            
+
             elif target_state == '|MaxEnt⟩' and level['qubits'] == 4:
                 # Maximally entangled 4-qubit state - check for equal superposition
                 expected_amp = 1/4
                 return all(abs(abs(state_data[i]) - expected_amp) < tolerance for i in range(16))
-            
+
             # For other undefined states, return True (temporary)
             return True
 
@@ -1394,43 +1519,42 @@ Remember: Efficient solutions earn bonus points!"""
         """Display the results of running the circuit"""
         self.state_display.config(state=tk.NORMAL)
         self.state_display.delete(1.0, tk.END)
-        
+
         self.state_display.insert(tk.END, "🔬 Circuit Results\n")
         self.state_display.insert(tk.END, "═" * 30 + "\n\n")
-        
+
         # Display state vector
         self.state_display.insert(tk.END, "📊 Final Quantum State:\n")
         state_data = state_vector.data
-        
+
         for i, amplitude in enumerate(state_data):
             if abs(amplitude) > 0.001:  # Only show significant amplitudes
                 binary = format(i, f'0{level["qubits"]}b')
                 prob = abs(amplitude) ** 2
                 self.state_display.insert(tk.END, f"|{binary}⟩: {amplitude:.3f} (prob: {prob:.3f})\n")
-        
+
         self.state_display.insert(tk.END, f"\n🎯 Target: {level['target_state']}\n")
         self.state_display.insert(tk.END, "❌ Puzzle not solved yet. Try adjusting your circuit!\n")
         self.play_sound('error')
-        
         self.state_display.config(state=tk.DISABLED)
 
     def level_complete(self):
         """Handle level completion with styled dialog"""
         self.play_sound('level_complete')
         level = self.levels[self.current_level]
-        
+
         # Calculate score based on efficiency
         max_gates = level.get('max_gates', len(self.placed_gates))
         efficiency_bonus = max(0, (max_gates - len(self.placed_gates)) * 10)
         level_score = 100 + efficiency_bonus
         self.score += level_score
-        
+
         # Update score display
         self.score_label.config(text=f"Score: {self.score}")
-        
+
         # Create custom styled dialog
         self.show_level_complete_dialog(level, level_score, max_gates)
-        
+
         # Note: We no longer automatically proceed to next level here
         # The user must click the "Next Level" button or close the dialog
 
@@ -1447,7 +1571,7 @@ Remember: Efficient solutions earn bonus points!"""
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
         dialog.grab_set()
-        
+
         # Center the dialog in the middle of the screen
         dialog.update_idletasks()
         screen_width = dialog.winfo_screenwidth()
@@ -1455,86 +1579,82 @@ Remember: Efficient solutions earn bonus points!"""
         x = (screen_width - dialog_dimensions[0]) // 2
         y = (screen_height - dialog_dimensions[1]) // 2
         dialog.geometry(f"{dialog_dimensions[0]}x{dialog_dimensions[1]}+{x}+{y}")
-        
+
         # Main container with border
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-        
+
         # Header with celebration emoji
         header_frame = tk.Frame(main_frame, bg=palette['background_2'])
         header_frame.pack(fill=tk.X, pady=(20, 15))
-        
+
         celebration_label = tk.Label(header_frame, text="🎉✨🏆✨🎉",
                                 font=('Arial', 28), fg='#ffd700', bg=palette['background_2'])
         celebration_label.pack()
-        
+
         title_label = tk.Label(header_frame, text="LEVEL COMPLETE!",
                             font=('Arial', 24, 'bold'), fg=palette['level_complete_title_color'], bg=palette['background_2'])
         title_label.pack(pady=(10, 0))
-        
+
         # Content frame
         content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        
+
         # Level info
         info_text = f"""🎯 {level['name']}
-        
+
     ⚡ Gates Used: {len(self.placed_gates)}/{max_gates}
     🏅 Level Score: +{level_score}
     💰 Total Score: {self.score}
 
     {self.get_performance_message(len(self.placed_gates), max_gates)}"""
-        
+
         info_label = tk.Label(content_frame, text=info_text,
                             font=('Arial', 16), fg=palette['level_complete_info_label_text_color'], bg=palette['background_3'],
                             justify=tk.CENTER)
         info_label.pack(expand=True, pady=30)
-        
+
         # Button frame with more space
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
         button_frame.pack(fill=tk.X, pady=(20, 25))
-        
+
         # Button container for horizontal layout
         btn_container = tk.Frame(button_frame, bg=palette['background_2'])
         btn_container.pack()
-        
-        # Next Level button - larger size
-        next_btn = tk.Button(btn_container, text="🚀 Next Level",
-                        command=lambda: [dialog.destroy(), self.proceed_to_next_level()],
-                        font=('Arial', 16, 'bold'),
-                        bg=palette['next_level_button_background'], fg=palette['next_level_button_text_color'],
-                        padx=40, pady=15,
-                        cursor='hand2', relief=tk.FLAT)
-        next_btn.pack(side=tk.LEFT, padx=20)
-        
-        # Close button - larger size
-        close_btn = tk.Button(btn_container, text="❌ Close",
-                            command=dialog.destroy,
-                            font=('Arial', 16, 'bold'),
-                            bg=palette['close_button_background'], fg=palette['close_button_hover_text_color'],
-                            padx=40, pady=15,
-                            cursor='hand2', relief=tk.FLAT)
-        close_btn.pack(side=tk.LEFT, padx=20)
-        
-        # Add hover effects
-        def on_next_enter(event):
-            next_btn.configure(bg=palette['next_level_button_hover_background'], fg=palette['next_level_button_text_color'])
-        def on_next_leave(event):
-            next_btn.configure(bg=palette['next_level_button_background'], fg=palette['next_level_button_text_color'])
-            
-        def on_close_enter(event):
-            close_btn.configure(bg=palette['close_button_hover_text_color'], fg=palette['close_button_text_color'])
-        def on_close_leave(event):
-            close_btn.configure(bg=palette['close_button_background'], fg=palette['close_button_hover_text_color'])
-            
-        next_btn.bind("<Enter>", on_next_enter)
-        next_btn.bind("<Leave>", on_next_leave)
-        close_btn.bind("<Enter>", on_close_enter)
-        close_btn.bind("<Leave>", on_close_leave)
-        
+
+        # Next Level button - canvas-based
+        next_canvas = self.create_canvas_dialog_button(
+            btn_container, "🚀 Next Level",
+            lambda: [dialog.destroy(), self.proceed_to_next_level()],
+            palette['next_level_button_background'], palette['next_level_button_text_color'],
+            width=200, height=50, font_size=16
+        )
+        next_canvas.pack(side=tk.LEFT, padx=20)
+
+        # Close button - canvas-based
+        close_canvas = self.create_canvas_dialog_button(
+            btn_container, "❌ Close",
+            dialog.destroy,
+            palette['close_button_background'], palette['close_button_hover_text_color'],
+            width=140, height=50, font_size=16
+        )
+        close_canvas.pack(side=tk.LEFT, padx=20)
+
         # Hide next level button if this is the last level
         if self.current_level + 1 >= len(self.levels):
-            next_btn.config(text="🏆 Game Complete!", state='disabled', bg='#888888')
+            # Update the text on the canvas button
+            def update_next_button():
+                next_canvas.delete("all")
+                canvas_width = next_canvas.winfo_width()
+                canvas_height = next_canvas.winfo_height()
+                if canvas_width > 1 and canvas_height > 1:
+                    next_canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                               fill='#888888', outline="#2b3340", width=1, tags="bg")
+                    next_canvas.create_text(canvas_width//2, canvas_height//2, text="🏆 Game Complete!",
+                                          font=('Arial', 16, 'bold'), fill='#ffffff', tags="text")
+            next_canvas.after(10, update_next_button)
+            # Disable the button by removing click binding
+            next_canvas.unbind("<Button-1>")
 
     def proceed_to_next_level(self):
         """Proceed to the next level"""
@@ -1564,7 +1684,7 @@ Remember: Efficient solutions earn bonus points!"""
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
         dialog.grab_set()
-        
+
         # Center the dialog
         dialog.update_idletasks()
         screen_width = dialog.winfo_screenwidth()
@@ -1572,27 +1692,27 @@ Remember: Efficient solutions earn bonus points!"""
         x = (screen_width - 450) // 2
         y = (screen_height - 350) // 2
         dialog.geometry(f"450x350+{x}+{y}")
-        
+
         # Main container with border
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+
         # Header with celebration
         header_frame = tk.Frame(main_frame, bg=palette['background_2'])
         header_frame.pack(fill=tk.X, pady=(15, 10))
-        
+
         celebration_label = tk.Label(header_frame, text="🏆🎊🌟🎊🏆",
                                    font=('Arial', 24), fg='#ffd700', bg=palette['background_2'])
         celebration_label.pack()
-        
+
         title_label = tk.Label(header_frame, text="QUANTUM MASTER!",
                              font=('Arial', 20, 'bold'), fg=palette['quantum_master_title_color'], bg=palette['background_2'])
         title_label.pack(pady=(5, 0))
-        
+
         # Content frame
         content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-        
+
         # Completion message
         completion_text = f"""🎉 CONGRATULATIONS! 🎉
 
@@ -1603,39 +1723,30 @@ You've mastered all quantum puzzle levels!
 ⚡ You're now a Quantum Circuit Master!
 
 Thank you for playing Infinity Qubit! 💫"""
-        
+
         completion_label = tk.Label(content_frame, text=completion_text,
                                   font=('Arial', 12), fg='#ffffff', bg=palette['background_3'],
                                   justify=tk.CENTER)
         completion_label.pack(expand=True, pady=20)
-        
+
         # Button frame
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
         button_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        # Return to menu button
-        menu_btn = tk.Button(button_frame, text="🏠 Return to Main Menu",
-                           command=lambda: [dialog.destroy(), self.go_back_to_menu()],
-                           font=('Arial', 12, 'bold'),
-                           bg='#4ecdc4', fg='#000000',
-                           padx=30, pady=10,
-                           cursor='hand2', relief=tk.FLAT)
-        menu_btn.pack(pady=10)
-        
-        # Add hover effect
-        def on_enter(event):
-            menu_btn.configure(bg='#ffffff', fg='#000000')
-        def on_leave(event):
-            menu_btn.configure(bg='#4ecdc4', fg='#000000')
-            
-        menu_btn.bind("<Enter>", on_enter)
-        menu_btn.bind("<Leave>", on_leave)
+
+        # Return to menu button - canvas-based
+        menu_canvas = self.create_canvas_dialog_button(
+            button_frame, "🏠 Return to Main Menu",
+            lambda: [dialog.destroy(), self.go_back_to_menu()],
+            palette['run_button_background'], palette['run_button_text_color'],
+            width=220, height=40, font_size=12
+        )
+        menu_canvas.pack(pady=10)
 
     def show_hint(self):
         """Show hint for current level"""
         level = self.levels[self.current_level]
         hint = level.get('hint', 'No hint available for this level.')
-        
+
         # Create custom hint dialog without decorations
         dialog = tk.Toplevel(self.root)
         dialog.title("💡 Hint")
@@ -1645,7 +1756,7 @@ Thank you for playing Infinity Qubit! 💫"""
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.focus_set()
-        
+
         # Center the dialog on screen and ensure it's on top
         dialog.update_idletasks()
         screen_width = dialog.winfo_screenwidth()
@@ -1653,52 +1764,43 @@ Thank you for playing Infinity Qubit! 💫"""
         x = (screen_width - 500) // 2
         y = (screen_height - 300) // 2
         dialog.geometry(f"500x300+{x}+{y}")
-        
+
         # Ensure dialog is on top
         dialog.lift()
         dialog.attributes("-topmost", True)
-        
+
         # Main container with border
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-        
+
         # Title with icon
         title_label = tk.Label(main_frame, text="💡 Hint",
-                             font=('Arial', 18, 'bold'), 
+                             font=('Arial', 18, 'bold'),
                              fg=palette['title_color'], bg=palette['background_2'])
         title_label.pack(pady=(15, 10))
-        
+
         # Hint content frame
         content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+
         # Hint text
         hint_label = tk.Label(content_frame, text=hint,
-                            font=('Arial', 14), 
-                            fg=palette['level_complete_info_label_text_color'], 
+                            font=('Arial', 14),
+                            fg=palette['level_complete_info_label_text_color'],
                             bg=palette['background_3'],
                             wraplength=450, justify=tk.CENTER)
         hint_label.pack(expand=True, pady=20)
-        
-        # Close button
-        close_btn = tk.Button(main_frame, text="✓ Got it!",
-                            command=dialog.destroy,
-                            font=('Arial', 12, 'bold'),
-                            bg=palette['next_level_button_background'], 
-                            fg=palette['next_level_button_text_color'],
-                            padx=30, pady=10,
-                            cursor='hand2', relief=tk.FLAT)
-        close_btn.pack(pady=(10, 15))
-        
-        # Add hover effect
-        def on_enter(event):
-            close_btn.configure(bg=palette['next_level_button_hover_background'])
-        def on_leave(event):
-            close_btn.configure(bg=palette['next_level_button_background'])
-            
-        close_btn.bind("<Enter>", on_enter)
-        close_btn.bind("<Leave>", on_leave)
-        
+
+        # Close button - canvas-based
+        close_canvas = self.create_canvas_dialog_button(
+            main_frame, "✓ Got it!",
+            dialog.destroy,
+            palette['next_level_button_background'],
+            palette['next_level_button_text_color'],
+            width=120, height=40, font_size=12
+        )
+        close_canvas.pack(pady=(10, 15))
+
         # Handle ESC key to close
         dialog.bind('<Escape>', lambda e: dialog.destroy())
 
@@ -1713,7 +1815,7 @@ Thank you for playing Infinity Qubit! 💫"""
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.focus_set()
-        
+
         # Center the dialog on screen and ensure it's on top
         dialog.update_idletasks()
         screen_width = dialog.winfo_screenwidth()
@@ -1721,92 +1823,76 @@ Thank you for playing Infinity Qubit! 💫"""
         x = (screen_width - 450) // 2
         y = (screen_height - 250) // 2
         dialog.geometry(f"450x250+{x}+{y}")
-        
+
         # Ensure dialog is on top
         dialog.lift()
         dialog.attributes("-topmost", True)
-        
+
         result = [None]
-        
+
         # Main container with border
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+
         # Title
         title_label = tk.Label(main_frame, text="⏭️ Skip Level",
-                             font=('Arial', 16, 'bold'), 
+                             font=('Arial', 16, 'bold'),
                              fg=palette['title_color'], bg=palette['background_2'])
         title_label.pack(pady=(15, 10))
-        
+
         # Message
-        message_label = tk.Label(main_frame, 
+        message_label = tk.Label(main_frame,
                                text="Are you sure you want to skip this level?\nYou won't earn points for skipping.",
-                               font=('Arial', 12), 
+                               font=('Arial', 12),
                                fg=palette['subtitle_color'], bg=palette['background_2'],
                                justify=tk.CENTER)
         message_label.pack(pady=15)
-        
+
         # Button frame
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
         button_frame.pack(pady=(20, 15))
-        
+
         def confirm_skip():
             result[0] = True
             dialog.destroy()
-            
+
         def cancel_skip():
             result[0] = False
             dialog.destroy()
-        
-        # Yes button
-        yes_btn = tk.Button(button_frame, text="✓ Yes, Skip",
-                           command=confirm_skip,
-                           font=('Arial', 12, 'bold'),
-                           bg=palette['skip_button_background'], 
-                           fg=palette['skip_button_text_color'],
-                           padx=20, pady=8,
-                           cursor='hand2', relief=tk.FLAT)
-        yes_btn.pack(side=tk.LEFT, padx=10)
-        
-        # No button
-        no_btn = tk.Button(button_frame, text="✗ No, Continue",
-                          command=cancel_skip,
-                          font=('Arial', 12, 'bold'),
-                          bg=palette['close_button_background'], 
-                          fg=palette['close_button_hover_text_color'],
-                          padx=20, pady=8,
-                          cursor='hand2', relief=tk.FLAT)
-        no_btn.pack(side=tk.LEFT, padx=10)
-        
-        # Add hover effects
-        def on_yes_enter(event):
-            yes_btn.configure(bg=palette['button_hover_background'])
-        def on_yes_leave(event):
-            yes_btn.configure(bg=palette['skip_button_background'])
-            
-        def on_no_enter(event):
-            no_btn.configure(bg=palette['close_button_hover_text_color'], fg=palette['close_button_text_color'])
-        def on_no_leave(event):
-            no_btn.configure(bg=palette['close_button_background'], fg=palette['close_button_hover_text_color'])
-            
-        yes_btn.bind("<Enter>", on_yes_enter)
-        yes_btn.bind("<Leave>", on_yes_leave)
-        no_btn.bind("<Enter>", on_no_enter)
-        no_btn.bind("<Leave>", on_no_leave)
-        
+
+        # Yes button - canvas-based
+        yes_canvas = self.create_canvas_dialog_button(
+            button_frame, "✓ Yes, Skip",
+            confirm_skip,
+            palette['skip_button_background'],
+            palette['skip_button_text_color'],
+            width=120, height=40, font_size=12
+        )
+        yes_canvas.pack(side=tk.LEFT, padx=10)
+
+        # No button - canvas-based
+        no_canvas = self.create_canvas_dialog_button(
+            button_frame, "✗ No, Continue",
+            cancel_skip,
+            palette['close_button_background'],
+            palette['close_button_hover_text_color'],
+            width=140, height=40, font_size=12
+        )
+        no_canvas.pack(side=tk.LEFT, padx=10)
+
         # Handle ESC key to cancel
         dialog.bind('<Escape>', lambda e: cancel_skip())
-        
+
         # Wait for dialog to close and get result
         dialog.wait_window()
-        
+
         # Process result
         if result[0]:
             if self.current_level + 1 < len(self.levels):
                 self.load_level(self.current_level + 1)
             else:
                 self.game_complete()
-        
+
         # Save the progress after skipping
         self.save_progress()
 
@@ -1825,11 +1911,11 @@ Thank you for playing Infinity Qubit! 💫"""
         self.level_description_label.config(text=level['description'])
         self.difficulty_label.config(text=f"Difficulty: {level['difficulty']}")
         self.gates_limit_label.config(text=f"Max Gates: {level.get('max_gates', '∞')}")
-        
+
         # Color code difficulty
         diff_colors = {
             'Beginner': palette['beginner_color'],
-            'Intermediate': palette['intermediate_color'], 
+            'Intermediate': palette['intermediate_color'],
             'Advanced': palette['advanced_color'],
             'Expert': palette['expert_color'],
             'Master': palette['master_color']
@@ -1844,7 +1930,7 @@ Thank you for playing Infinity Qubit! 💫"""
 
         # Draw circuit
         self.draw_circuit()
-        
+
         # Display initial state information
         self.display_states(level)
 
@@ -1852,23 +1938,23 @@ Thank you for playing Infinity Qubit! 💫"""
         """Display level state information"""
         self.state_display.config(state=tk.NORMAL)
         self.state_display.delete(1.0, tk.END)
-        
+
         self.state_display.insert(tk.END, f"🎯 Puzzle Goal\n")
         self.state_display.insert(tk.END, "─" * 30 + "\n\n")
         self.state_display.insert(tk.END, f"Transform: {level['input_state']} → {level['target_state']}\n\n")
-        
+
         self.state_display.insert(tk.END, f"📝 Level Details:\n")
         self.state_display.insert(tk.END, f"• Input State: {level['input_state']}\n")
         self.state_display.insert(tk.END, f"• Target State: {level['target_state']}\n")
         self.state_display.insert(tk.END, f"• Qubits: {level['qubits']}\n")
         self.state_display.insert(tk.END, f"• Max Gates: {level.get('max_gates', 'Unlimited')}\n")
         self.state_display.insert(tk.END, f"• Available Gates: {', '.join(level['available_gates'])}\n\n")
-        
+
         self.state_display.insert(tk.END, "💡 Ready to solve!\n")
         self.state_display.insert(tk.END, "Place gates and run your circuit to see the results.\n")
-        
+
         self.state_display.config(state=tk.DISABLED)
-        
+
         # Update status
         self.update_circuit_status()
 
@@ -1876,95 +1962,103 @@ Thank you for playing Infinity Qubit! 💫"""
         """Update circuit status display"""
         level = self.levels[self.current_level]
         max_gates = level.get('max_gates', 999)
-        
+
         self.gates_count_label.config(text=f"Gates: {len(self.placed_gates)}")
         self.gates_used_label.config(text=f"Used: {len(self.placed_gates)}/{max_gates}")
+
 
     def return_to_main_menu(self):
         """Return to main menu from button click"""
         self.play_sound('button_click')
-        
+
         # Create custom confirmation dialog without decorations
         dialog = tk.Toplevel(self.root)
         dialog.title("Return to Main Menu")
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog.geometry("400x280")  # Increased height for reset button
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
-        dialog.grab_set()
-        dialog.focus_set()
-        
-        # Center the dialog on screen and ensure it's on top
-        dialog.update_idletasks()
+
+        # Calculate center position BEFORE creating the geometry
+        dialog_width = 400
+        dialog_height = 280
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
-        x = (screen_width - 400) // 2
-        y = (screen_height - 280) // 2
-        dialog.geometry(f"400x280+{x}+{y}")
-        
-        # Ensure dialog is on top
+        x = (screen_width - dialog_width) // 2
+        y = (screen_height - dialog_height) // 2
+
+        # Set geometry with calculated position immediately
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        # Ensure dialog is on top and visible BEFORE grab_set
         dialog.lift()
         dialog.attributes("-topmost", True)
-        
+        dialog.update_idletasks()  # Make sure dialog is rendered
+        dialog.deiconify()  # Ensure it's visible
+
+        # NOW set grab and focus after dialog is fully visible
+        dialog.grab_set()
+        dialog.focus_set()
+
+        # Initialize result variable
         result = [None]
-        
+
         # Main container with border
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+
         # Title
         title_label = tk.Label(main_frame, text="Return to Main Menu",
-                             font=('Arial', 16, 'bold'), 
-                             fg=palette['title_color'], bg=palette['background_2'])
+                            font=('Arial', 16, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_2'])
         title_label.pack(pady=(15, 10))
-        
+
         # Message
-        message_label = tk.Label(main_frame, 
-                               text="Are you sure you want to return to the main menu?\nYour progress will be saved.",
-                               font=('Arial', 12), 
-                               fg=palette['subtitle_color'], bg=palette['background_2'],
-                               justify=tk.CENTER)
+        message_label = tk.Label(main_frame,
+                            text="Are you sure you want to return to the main menu?\nYour progress will be saved.",
+                            font=('Arial', 12),
+                            fg=palette['subtitle_color'], bg=palette['background_2'],
+                            justify=tk.CENTER)
         message_label.pack(pady=10)
-        
+
         # Button frame
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
         button_frame.pack(pady=(10, 5))
-        
+
         def confirm_return():
             result[0] = True
             dialog.destroy()
-            
+
         def cancel_return():
             result[0] = False
             dialog.destroy()
-        
-        # Yes button
-        yes_btn = tk.Button(button_frame, text="✓ Yes, Return",
-                           command=confirm_return,
-                           font=('Arial', 12, 'bold'),
-                           bg=palette['next_level_button_background'], 
-                           fg=palette['next_level_button_text_color'],
-                           padx=20, pady=8,
-                           cursor='hand2', relief=tk.FLAT)
-        yes_btn.pack(side=tk.LEFT, padx=10)
-        
-        # No button
-        no_btn = tk.Button(button_frame, text="✗ No, Stay",
-                          command=cancel_return,
-                          font=('Arial', 12, 'bold'),
-                          bg=palette['close_button_background'], 
-                          fg=palette['close_button_hover_text_color'],
-                          padx=20, pady=8,
-                          cursor='hand2', relief=tk.FLAT)
-        no_btn.pack(side=tk.LEFT, padx=10)
+
+        # Yes button - canvas-based
+        yes_canvas = self.create_canvas_dialog_button(
+            button_frame, "✓ Yes, Return",
+            confirm_return,
+            palette['next_level_button_background'],
+            palette['next_level_button_text_color'],
+            width=120, height=40, font_size=12
+        )
+        yes_canvas.pack(side=tk.LEFT, padx=10)
+
+        # No button - canvas-based
+        no_canvas = self.create_canvas_dialog_button(
+            button_frame, "✗ No, Stay",
+            cancel_return,
+            palette['close_button_background'],
+            palette['close_button_hover_text_color'],
+            width=120, height=40, font_size=12
+        )
+        no_canvas.pack(side=tk.LEFT, padx=10)
 
         # --- Reset Progress Button in its own frame ---
         reset_frame = tk.Frame(main_frame, bg=palette['background_2'])
         reset_frame.pack(pady=(15, 5))
 
         reset_label = tk.Label(reset_frame, text="Or reset your progress:",
-                               font=('Arial', 10, 'italic'),
-                               fg=palette['subtitle_color'], bg=palette['background_2'])
+                            font=('Arial', 10, 'italic'),
+                            fg=palette['subtitle_color'], bg=palette['background_2'])
         reset_label.pack(pady=(0, 5))
 
         def reset_progress():
@@ -1977,50 +2071,28 @@ Thank you for playing Infinity Qubit! 💫"""
             dialog.destroy()
             self.root.after(100, lambda: self.load_level(0))
 
-        reset_btn = tk.Button(reset_frame, text="🔄 Reset Progress",
-                            command=reset_progress,
-                            font=('Arial', 12, 'bold'),
-                            bg=palette['clear_button_background'],
-                            fg=palette['clear_button_text_color'],
-                            padx=20, pady=8,
-                            cursor='hand2', relief=tk.FLAT)
-        reset_btn.pack()
+        # Reset button - canvas-based
+        reset_canvas = self.create_canvas_dialog_button(
+            reset_frame, "🔄 Reset Progress",
+            reset_progress,
+            palette['clear_button_background'],
+            palette['clear_button_text_color'],
+            width=160, height=40, font_size=12
+        )
+        reset_canvas.pack()
 
-        # Add hover effect for reset button
-        def on_reset_enter(event):
-            reset_btn.configure(bg=palette['button_hover_background'], fg=palette['button_hover_text_color'])
-        def on_reset_leave(event):
-            reset_btn.configure(bg=palette['clear_button_background'], fg=palette['clear_button_text_color'])
-        reset_btn.bind("<Enter>", on_reset_enter)
-        reset_btn.bind("<Leave>", on_reset_leave)
-
-        # Add hover effects for yes/no buttons
-        def on_yes_enter(event):
-            yes_btn.configure(bg=palette['next_level_button_hover_background'])
-        def on_yes_leave(event):
-            yes_btn.configure(bg=palette['next_level_button_background'])
-            
-        def on_no_enter(event):
-            no_btn.configure(bg=palette['close_button_hover_text_color'], fg=palette['close_button_text_color'])
-        def on_no_leave(event):
-            no_btn.configure(bg=palette['close_button_background'], fg=palette['close_button_hover_text_color'])
-            
-        yes_btn.bind("<Enter>", on_yes_enter)
-        yes_btn.bind("<Leave>", on_yes_leave)
-        no_btn.bind("<Enter>", on_no_enter)
-        no_btn.bind("<Leave>", on_no_leave)
-        
         # Handle ESC key to cancel
         dialog.bind('<Escape>', lambda e: cancel_return())
-        
+
         # Wait for dialog to close and get result
         dialog.wait_window()
-        
+
         # Process result
         if result[0]:
             # Save the progress before exiting
-            self.go_back_to_menu()
             self.save_progress()
+            self.go_back_to_menu()
+
 
     def on_window_close(self):
         """Handle window close event (X button)"""
@@ -2028,27 +2100,47 @@ Thank you for playing Infinity Qubit! 💫"""
         self.save_progress()
         self.go_back_to_menu()
 
+
     def go_back_to_menu(self):
         """Navigate back to the game mode selection"""
-        self.root.destroy()
         try:
+            # Create main menu FIRST
             from game_mode_selection import GameModeSelection
-            GameModeSelection()
+            selection_window = GameModeSelection()
+
+            # Make sure new window is visible
+            selection_window.root.update()
+            selection_window.root.lift()
+            selection_window.root.focus_force()
+
+            # Stop any pygame/sound processes before destroying
+            if hasattr(self, 'sound_enabled') and self.sound_enabled:
+                try:
+                    pygame.mixer.quit()
+                except:
+                    pass
+
+            # THEN destroy current window
+            self.root.destroy()
+
+            # Start the main menu mainloop
+            selection_window.run()
+
         except ImportError:
             print("Could not return to main menu - game_mode_selection module not found")
+            self.root.destroy()
         except Exception as e:
             print(f"Error returning to main menu: {e}")
+            self.root.destroy()
 
-    # ...rest of the existing methods remain the same (add_gate, run_circuit, etc.)
-    # Just need to update the draw_circuit method to match the enhanced style from sandbox
 
     def draw_circuit(self):
         """Draw the quantum circuit visualization with enhanced graphics"""
         self.circuit_canvas.delete("all")
-        
+
         level = self.levels[self.current_level]
         num_qubits = level['qubits']
-        
+
         if num_qubits == 0:
             return
 
@@ -2085,7 +2177,7 @@ Thank you for playing Infinity Qubit! 💫"""
 
         # Draw enhanced gates
         self.draw_enhanced_gates(wire_start, qubit_spacing, num_qubits)
-        
+
         # Update status
         self.update_circuit_status()
 
@@ -2102,7 +2194,7 @@ Thank you for playing Infinity Qubit! 💫"""
 
         for i, gate_info in enumerate(self.placed_gates):
             x = gate_x_start + i * gate_spacing
-            
+
             # Handle both old format (string) and new format (dict)
             if isinstance(gate_info, str):
                 gate = gate_info
@@ -2110,7 +2202,7 @@ Thank you for playing Infinity Qubit! 💫"""
             else:
                 gate = gate_info['gate']
                 qubits = gate_info['qubits']
-            
+
             color = gate_colors.get(gate, '#ffffff')
 
             if gate in ['CNOT', 'CZ'] and len(qubits) >= 2:
@@ -2123,7 +2215,7 @@ Thank you for playing Infinity Qubit! 💫"""
     def draw_single_qubit_gate_enhanced(self, x, qubit_spacing, gate, target_qubit, color):
         """Draw enhanced single qubit gate"""
         y_pos = (target_qubit + 1) * qubit_spacing + 20
-        
+
         # 3D shadow effect
         self.circuit_canvas.create_rectangle(x - 22, y_pos - 17,
                                            x + 22, y_pos + 17,
@@ -2191,7 +2283,7 @@ Thank you for playing Infinity Qubit! 💫"""
     def draw_toffoli_gate_enhanced(self, x, qubit_spacing, qubits, color):
         """Draw enhanced Toffoli gate"""
         control1_qubit, control2_qubit, target_qubit = qubits
-        
+
         y_positions = [
             (control1_qubit + 1) * qubit_spacing + 20,
             (control2_qubit + 1) * qubit_spacing + 20,

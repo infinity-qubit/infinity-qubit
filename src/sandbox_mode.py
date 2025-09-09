@@ -1,3 +1,8 @@
+import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import numpy as np
@@ -5,13 +10,13 @@ from qiskit import QuantumCircuit # type: ignore
 from qiskit.quantum_info import Statevector # type: ignore
 from qiskit.visualization import plot_bloch_multivector, plot_state_qsphere # type: ignore
 import pygame # type: ignore
+
 import matplotlib.pyplot as plt # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # type: ignore
 import sys
 
 # For the save system
 import re
-import os
 import json
 import datetime
 from tkinter import simpledialog, filedialog
@@ -33,20 +38,21 @@ class SandboxMode:
         self.root = root
         self.root.title("Quantum Sandbox Mode")
 
-        # Get screen dimensions for fullscreen
+        # Set fullscreen mode
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
 
         # Make window fullscreen without title bar
-        self.root.overrideredirect(False)
+        self.root.overrideredirect(True)
         self.root.geometry(f"{screen_width}x{screen_height}+0+0")
         self.root.configure(bg=palette['background'])
+        self.root.resizable(False, False)  # Fixed size window
 
-        # Store dimensions
+        # Store dimensions (use full screen)
         self.window_width = screen_width
         self.window_height = screen_height
-        
-        # Bind Escape key to exit fullscreen
+
+        # Bind Escape key to exit
         self.root.bind('<Escape>', self.exit_fullscreen)
         self.root.bind('<F11>', self.toggle_fullscreen)
 
@@ -101,13 +107,13 @@ class SandboxMode:
         # Create timestamp-based filename
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         filename = os.path.join(self.SAVE_DIR, f"circuit_{self.num_qubits}qubits_{timestamp}.json")
-        
+
         data = {
             "num_qubits": self.num_qubits,
             "placed_gates": self.placed_gates,
             "initial_state": self.initial_state
         }
-        
+
         try:
             with open(filename, "w") as f:
                 json.dump(data, f)
@@ -123,7 +129,7 @@ class SandboxMode:
             self.play_sound('error', self.play_error_sound_fallback)
             self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
             return
-        
+
         files = [f for f in os.listdir(self.SAVE_DIR) if f.endswith(".json")]
         if not files:
             self.play_sound('error', self.play_error_sound_fallback)
@@ -137,7 +143,7 @@ class SandboxMode:
         dialog = tk.Toplevel(self.root)
         dialog.title("Load Circuit")
         dialog.configure(bg=palette['background'])
-        
+
         # Make dialog fullscreen-compatible and always on top
         dialog.overrideredirect(True)
         dialog.attributes('-topmost', True)
@@ -193,7 +199,7 @@ class SandboxMode:
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Create window in canvas for scrollable frame
-        canvas.create_window((0, 0), window=scrollable_frame, anchor=tk.NW, 
+        canvas.create_window((0, 0), window=scrollable_frame, anchor=tk.NW,
                             width=dialog_width - 50)  # Adjust width to fit dialog
 
         # Sort files by timestamp (newest first)
@@ -222,7 +228,6 @@ class SandboxMode:
                 qubits, timestamp = match.groups()
                 datetime_obj = datetime.datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S")
                 friendly_date = datetime_obj.strftime("%b %d, %Y %I:%M %p")
-                
                 btn_frame = tk.Frame(scrollable_frame, bg=palette['background_4'], 
                                 relief=tk.RAISED, bd=2)
                 btn_frame.pack(fill=tk.X, padx=10, pady=5)
@@ -242,7 +247,7 @@ class SandboxMode:
                     e.widget.configure(bg=palette['button_hover_background'])
                 def on_leave(e):
                     e.widget.configure(bg=palette['background_4'])
-                
+
                 load_btn.bind("<Enter>", on_enter)
                 load_btn.bind("<Leave>", on_leave)
 
@@ -268,7 +273,7 @@ class SandboxMode:
         # Mouse wheel scrolling
         def on_mousewheel(event):
             canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        
+
         canvas.bind_all("<MouseWheel>", on_mousewheel)
 
         # Bind Escape to close
@@ -279,19 +284,24 @@ class SandboxMode:
         self.root.overrideredirect(False)
         self.root.state('normal')
         self.root.geometry("1200x800")
-    
+
     def toggle_fullscreen(self, event=None):
         """Toggle fullscreen mode"""
-        is_fullscreen = self.root.overrideredirect()
-        if is_fullscreen:
-            self.root.overrideredirect(False)
-            self.root.state('normal')
-            self.root.geometry("1200x800")
-        else:
+        # Toggle between windowed and fullscreen mode
+        if self.root.attributes('-fullscreen'):
+            # Exit fullscreen
+            self.root.attributes('-fullscreen', False)
+            # Reset to optimal window size and center
             screen_width = self.root.winfo_screenwidth()
             screen_height = self.root.winfo_screenheight()
-            self.root.overrideredirect(True)
-            self.root.geometry(f"{screen_width}x{screen_height}+0+0")
+            target_width = int(screen_width * 0.85)
+            target_height = int(screen_height * 0.85)
+            x = (screen_width - target_width) // 2
+            y = (screen_height - target_height) // 2
+            self.root.geometry(f"{target_width}x{target_height}+{x}+{y}")
+        else:
+            # Enter fullscreen
+            self.root.attributes('-fullscreen', True)
 
     def play_sound(self, sound_name, fallback_func=None):
         """Play a sound file or fallback to programmatic sound"""
@@ -409,6 +419,43 @@ class SandboxMode:
         except:
             pass
 
+    def create_canvas_dialog_button(self, parent, text, command, width, height, bg_color, fg_color, padx=0, pady=0):
+        """Create a canvas-based button for macOS compatibility"""
+        # Create frame for proper packing
+        btn_frame = tk.Frame(parent, bg=parent.cget('bg'))
+        btn_frame.pack(padx=padx, pady=pady)
+
+        # Create canvas for the button
+        btn_canvas = tk.Canvas(btn_frame, width=width, height=height,
+                              bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
+        btn_canvas.pack()
+
+        # Create button rectangle and text
+        rect_id = btn_canvas.create_rectangle(2, 2, width-2, height-2,
+                                            fill=bg_color, outline=bg_color, width=0)
+        text_id = btn_canvas.create_text(width//2, height//2, text=text,
+                                       font=('Arial', 12, 'bold'), fill=fg_color)
+
+        # Add click handler
+        def on_click(event):
+            command()
+
+        # Add hover effects
+        def on_enter(event):
+            btn_canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
+            btn_canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
+
+        def on_leave(event):
+            btn_canvas.itemconfig(rect_id, fill=bg_color)
+            btn_canvas.itemconfig(text_id, fill=fg_color)
+
+        btn_canvas.bind("<Button-1>", on_click)
+        btn_canvas.bind("<Enter>", on_enter)
+        btn_canvas.bind("<Leave>", on_leave)
+        btn_canvas.configure(cursor='hand2')
+
+        return btn_canvas
+
     def setup_ui(self):
         """Setup the sandbox UI with enhanced styling matching learn hub"""
         # Main container with gradient-like effect
@@ -428,8 +475,8 @@ class SandboxMode:
 
         # Main content container with relative padding
         main_container = tk.Frame(content_frame, bg=palette['background_3'])
-        main_container.pack(fill=tk.BOTH, expand=True, 
-                        padx=int(self.screen_width * 0.02), 
+        main_container.pack(fill=tk.BOTH, expand=True,
+                        padx=int(self.screen_width * 0.02),
                         pady=(0, int(self.screen_height * 0.02)))
 
         # Control panel
@@ -441,8 +488,8 @@ class SandboxMode:
     def create_simple_header(self, parent):
         """Create a simple header without animation to save space"""
         header_frame = tk.Frame(parent, bg=palette['background_3'])
-        header_frame.pack(fill=tk.X, 
-                        padx=int(self.screen_width * 0.02), 
+        header_frame.pack(fill=tk.X,
+                        padx=int(self.screen_width * 0.02),
                         pady=(int(self.screen_height * 0.015), int(self.screen_height * 0.01)))
 
         # Add a top navigation bar with title and menu button
@@ -466,39 +513,75 @@ class SandboxMode:
 
         # Back to Main Menu button - top right with relative sizing
         button_font_size = max(9, int(self.screen_width * 0.007))
-        main_menu_btn = tk.Button(nav_frame, text="🏠 Main Menu",
-                                command=self.return_to_main_menu,
-                                font=('Arial', button_font_size, 'bold'),
-                                bg=palette['background_4'], fg=palette['main_menu_button_text_color'],
-                                padx=int(self.screen_width * 0.01), 
-                                pady=int(self.screen_height * 0.008),
-                                cursor='hand2',
-                                relief=tk.FLAT,
-                                borderwidth=1)
-        main_menu_btn.pack(side=tk.RIGHT)
+        # Canvas-based main menu button for better color control on macOS
+        button_font_size = max(10, int(self.screen_width * 0.008))
+        button_width = max(120, int(self.screen_width * 0.08))
+        button_height = max(35, int(self.screen_height * 0.03))
 
-        # Add hover effect
-        def on_nav_enter(event):
-            main_menu_btn.configure(bg=palette['main_menu_button_text_color'], fg=palette['background_black'])
-        def on_nav_leave(event):
-            main_menu_btn.configure(bg=palette['background_4'], fg=palette['main_menu_button_text_color'])
+        main_menu_canvas = tk.Canvas(nav_frame,
+                                   width=button_width,
+                                   height=button_height,
+                                   bg=palette['sandbox_mode_button_color'],
+                                   highlightthickness=0,
+                                   bd=0)
+        main_menu_canvas.pack(side=tk.RIGHT)
 
-        main_menu_btn.bind("<Enter>", on_nav_enter)
-        main_menu_btn.bind("<Leave>", on_nav_leave)
+        # Draw button background
+        main_menu_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
+                                        fill=palette['sandbox_mode_button_color'],
+                                        outline=palette['sandbox_mode_button_color'], width=1,
+                                        tags="menu_bg")
+
+        # Add text to button
+        main_menu_canvas.create_text(button_width//2, button_height//2,
+                                   text="🏠 Main Menu",
+                                   font=('Arial', button_font_size, 'bold'),
+                                   fill=palette['sandbox_mode_button_text_color'],
+                                   tags="menu_text")
+
+        # Bind click events
+        def on_menu_click(event):
+            self.return_to_main_menu()
+
+        def on_menu_enter(event):
+            main_menu_canvas.itemconfig("menu_bg", fill=palette['sandbox_mode_button_hover_color'])
+            main_menu_canvas.itemconfig("menu_text", fill=palette['sandbox_mode_button_text_color'])
+            main_menu_canvas.configure(cursor="hand2")
+
+        def on_menu_leave(event):
+            main_menu_canvas.itemconfig("menu_bg", fill=palette['sandbox_mode_button_color'])
+            main_menu_canvas.itemconfig("menu_text", fill=palette['sandbox_mode_button_text_color'])
+            main_menu_canvas.configure(cursor="")
+
+        main_menu_canvas.bind("<Button-1>", on_menu_click)
+        main_menu_canvas.bind("<Enter>", on_menu_enter)
+        main_menu_canvas.bind("<Leave>", on_menu_leave)
+
 
     def return_to_main_menu(self):
         """Return to the main menu"""
         self.play_sound('click')
-        self.root.destroy()
 
         try:
-            # Import and start game mode selection
+            # Create main menu FIRST
             from game_mode_selection import GameModeSelection
             selection_window = GameModeSelection()
+
+            # Make sure new window is visible
+            selection_window.root.update()
+            selection_window.root.lift()
+            selection_window.root.focus_force()
+
+            # THEN destroy current window
+            self.root.destroy()
+
+            # Start the main menu mainloop
             selection_window.run()
+
         except ImportError as e:
             print(f"Error importing game mode selection: {e}")
-            # Fallback - try to run main
+            # Fallback - destroy current window
+            self.root.destroy()
             try:
                 import main
                 main.main()
@@ -506,6 +589,8 @@ class SandboxMode:
                 print("Could not return to main menu. Please restart the application.")
         except Exception as e:
             print(f"Error returning to main menu: {e}")
+            self.root.destroy()
+
 
     def setup_control_panel(self, parent):
         """Setup the control panel with enhanced styling"""
@@ -515,48 +600,48 @@ class SandboxMode:
         # Enhanced title with relative font size
         title_font_size = max(14, int(self.screen_width * 0.012))
         control_title = tk.Label(control_frame, text="🎛️ Circuit Configuration",
-                                font=('Arial', title_font_size, 'bold'), 
+                                font=('Arial', title_font_size, 'bold'),
                                 fg=palette['circuit_title_text_color'], bg=palette['background_3'])
         control_title.pack(pady=(int(self.screen_height * 0.012), int(self.screen_height * 0.008)))
 
         # Main controls container with relative padding
         controls_container = tk.Frame(control_frame, bg=palette['background_3'])
-        controls_container.pack(padx=int(self.screen_width * 0.015), 
+        controls_container.pack(padx=int(self.screen_width * 0.015),
                             pady=(0, int(self.screen_height * 0.012)))
 
         # Qubit controls - left side with relative sizing
         qubit_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-        qubit_frame.pack(side=tk.LEFT, fill=tk.Y, 
-                        padx=(0, int(self.screen_width * 0.012)), 
-                        pady=int(self.screen_height * 0.004), 
-                        ipadx=int(self.screen_width * 0.012), 
+        qubit_frame.pack(side=tk.LEFT, fill=tk.Y,
+                        padx=(0, int(self.screen_width * 0.012)),
+                        pady=int(self.screen_height * 0.004),
+                        ipadx=int(self.screen_width * 0.012),
                         ipady=int(self.screen_height * 0.008))
 
         label_font_size = max(11, int(self.screen_width * 0.009))
         tk.Label(qubit_frame, text="⚛️ Number of Qubits",
-                font=('Arial', label_font_size, 'bold'), 
+                font=('Arial', label_font_size, 'bold'),
                 fg=palette['qubit_number_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
 
         self.qubit_var = tk.IntVar(value=1)
         spinbox_font_size = max(11, int(self.screen_width * 0.009))
         qubit_spinbox = tk.Spinbox(qubit_frame, from_=1, to=4, textvariable=self.qubit_var,
-                                command=self.on_qubit_change, 
-                                font=('Arial', spinbox_font_size), 
+                                command=self.on_qubit_change,
+                                font=('Arial', spinbox_font_size),
                                 width=int(self.screen_width * 0.006),
-                                bg=palette['background'], fg=palette['qubit_spinbox_color'], 
+                                bg=palette['background'], fg=palette['qubit_spinbox_color'],
                                 insertbackground=palette['qubit_spinbox_color'])
         qubit_spinbox.pack(pady=int(self.screen_height * 0.004))
 
         # Initial state selection - right side with relative sizing
         state_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-        state_frame.pack(side=tk.LEFT, fill=tk.Y, 
-                        padx=int(self.screen_width * 0.004), 
-                        pady=int(self.screen_height * 0.004), 
-                        ipadx=int(self.screen_width * 0.012), 
+        state_frame.pack(side=tk.LEFT, fill=tk.Y,
+                        padx=int(self.screen_width * 0.004),
+                        pady=int(self.screen_height * 0.004),
+                        ipadx=int(self.screen_width * 0.012),
                         ipady=int(self.screen_height * 0.008))
 
         tk.Label(state_frame, text="🎯 Initial State",
-                font=('Arial', label_font_size, 'bold'), 
+                font=('Arial', label_font_size, 'bold'),
                 fg=palette['initial_state_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
 
         self.state_var = tk.StringVar(value="|0⟩")
@@ -573,7 +658,7 @@ class SandboxMode:
         combo_font_size = max(10, int(self.screen_width * 0.008))
         self.state_combo = ttk.Combobox(state_frame, textvariable=self.state_var,
                                     values=state_options, state="readonly",
-                                    font=('Arial', combo_font_size), 
+                                    font=('Arial', combo_font_size),
                                     width=int(self.screen_width * 0.006),
                                     style='Custom.TCombobox')
         self.state_combo.pack(pady=int(self.screen_height * 0.004))
@@ -587,13 +672,13 @@ class SandboxMode:
         # Enhanced title with icon and relative font size
         title_font_size = max(12, int(self.screen_width * 0.01))
         circuit_title = tk.Label(circuit_frame, text="🔧 Quantum Circuit Designer",
-                                font=('Arial', title_font_size, 'bold'), 
+                                font=('Arial', title_font_size, 'bold'),
                                 fg=palette['circuit_designer_title_color'], bg=palette['background_3'])
         circuit_title.pack(pady=(int(self.screen_height * 0.01), int(self.screen_height * 0.008)))
 
         # Circuit canvas with enhanced styling and relative sizing
         canvas_container = tk.Frame(circuit_frame, bg=palette['background'], relief=tk.SUNKEN, bd=3)
-        canvas_container.pack(padx=int(self.screen_width * 0.02), 
+        canvas_container.pack(padx=int(self.screen_width * 0.02),
                             pady=(0, int(self.screen_height * 0.01)))
 
         # Use relative canvas dimensions
@@ -602,7 +687,7 @@ class SandboxMode:
 
         self.circuit_canvas = tk.Canvas(canvas_container, width=canvas_width, height=canvas_height,
                                     bg=palette['background_2'], highlightthickness=0)
-        self.circuit_canvas.pack(padx=int(self.screen_width * 0.005), 
+        self.circuit_canvas.pack(padx=int(self.screen_width * 0.005),
                                 pady=int(self.screen_height * 0.005))
 
         self.canvas_width = canvas_width
@@ -680,35 +765,46 @@ class SandboxMode:
             btn_container = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.RAISED, bd=2)
             btn_container.pack(fill=tk.X, pady=8, padx=5)  # Reduced padding for 4 buttons
 
-            # Create the actual button
-            btn = tk.Button(btn_container, text=text, command=command,
-                           font=('Arial', 11, 'bold'), bg=bg_color, fg=fg_color,
-                           padx=15, pady=10, cursor='hand2', relief=tk.FLAT, bd=0,  # Reduced pady
-                           activebackground='#ffffff', activeforeground=palette['background_black'])
-            btn.pack(padx=4, pady=4, fill=tk.X)
+            # Create canvas-based button instead of tk.Button
+            btn_canvas = tk.Canvas(btn_container, bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
+            btn_canvas.pack(padx=4, pady=4, fill=tk.X)
 
-            # Store button reference for hover effects
+            # Update canvas dimensions after packing
+            btn_container.update_idletasks()
+            canvas_width = btn_container.winfo_width() - 8  # Account for padding
+            canvas_height = 40  # Fixed height for consistency
+            btn_canvas.configure(width=canvas_width, height=canvas_height)
+
+            # Create button rectangle and text
+            rect_id = btn_canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                                fill=bg_color, outline=bg_color, width=0)
+            text_id = btn_canvas.create_text(canvas_width//2, canvas_height//2, text=text,
+                                           font=('Arial', 11, 'bold'), fill=fg_color)
+
+            # Add click handler with proper closure
+            def create_click_handler(cmd):
+                return lambda event: cmd()
+
+            btn_canvas.bind("<Button-1>", create_click_handler(command))
+            btn_canvas.configure(cursor='hand2')
+
+            # Add hover effects for canvas
             original_bg = bg_color
 
-            def create_hover_functions(button, orig_color):
+            def create_hover_functions(canvas, rect_id, text_id, orig_color, orig_fg):
                 def on_enter(event):
-                    if orig_color == '#00ff88':
-                        button.configure(bg='#ffffff', fg=palette['background_black'])
-                    elif orig_color == '#ff6b6b':
-                        button.configure(bg='#ffffff', fg=palette['background_black'])
-                    elif orig_color == '#9b59b6':  # New color for 3D visualizer
-                        button.configure(bg='#ffffff', fg=palette['background_black'])
-                    else:
-                        button.configure(bg='#ffffff', fg=palette['background_black'])
+                    canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
+                    canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
 
                 def on_leave(event):
-                    button.configure(bg=orig_color, fg=fg_color)
+                    canvas.itemconfig(rect_id, fill=orig_color)
+                    canvas.itemconfig(text_id, fill=orig_fg)
 
                 return on_enter, on_leave
 
-            on_enter, on_leave = create_hover_functions(btn, original_bg)
-            btn.bind("<Enter>", on_enter)
-            btn.bind("<Leave>", on_leave)
+            on_enter, on_leave = create_hover_functions(btn_canvas, rect_id, text_id, original_bg, fg_color)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
 
         # Add status info at the bottom of the controls
         status_frame = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.SUNKEN, bd=1)
@@ -776,7 +872,7 @@ class SandboxMode:
             self.show_3d_visualization(final_state)
 
         except ImportError as ie:
-            self.show_custom_dialog("Import Error", 
+            self.show_custom_dialog("Import Error",
                 f"Missing required packages for 3D visualization.\n\n"
                 f"Please install: pip install matplotlib\n"
                 f"Error: {str(ie)}", "error")
@@ -791,69 +887,63 @@ class SandboxMode:
         dialog = tk.Toplevel(self.root)
         dialog.title(title)
         dialog.configure(bg=palette['background'])
-        
+
         # Make dialog fullscreen-compatible and always on top
         dialog.overrideredirect(True)
         dialog.attributes('-topmost', True)
-        
+
         # Calculate relative sizing
         dialog_width = int(self.screen_width * 0.3)
         dialog_height = int(self.screen_height * 0.25)
         x = (self.screen_width - dialog_width) // 2
         y = (self.screen_height - dialog_height) // 2
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
-        
+
         # Make dialog modal
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.focus_force()  # Force focus to dialog
-        
+
         # Add a border since overrideredirect removes window decorations
         border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
         border_frame.pack(fill=tk.BOTH, expand=True)
-        
+
         # Main frame inside border
         main_frame = tk.Frame(border_frame, bg=palette['background_3'], relief=tk.FLAT, bd=0)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
-        
+
         # Add title bar since we removed window decorations
         title_bar = tk.Frame(main_frame, bg=palette['background_4'], height=int(self.screen_height * 0.03))
         title_bar.pack(fill=tk.X)
         title_bar.pack_propagate(False)
-        
+
         # Title in title bar
         title_font_size = max(10, int(self.screen_width * 0.008))
         title_bar_label = tk.Label(title_bar, text=f"● {title}",
                                 font=('Arial', title_font_size, 'bold'),
                                 fg=palette['title_color'], bg=palette['background_4'])
         title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008), pady=int(self.screen_height * 0.005))
-        
+
         # Close button in title bar
         close_btn_font_size = max(8, int(self.screen_width * 0.006))
-        close_title_btn = tk.Button(title_bar, text="✕",
-                                command=dialog.destroy,
-                                font=('Arial', close_btn_font_size, 'bold'),
-                                bg=palette['background_4'], fg=palette['title_color'],
-                                padx=int(self.screen_width * 0.005), 
-                                pady=0,
-                                cursor='hand2', relief=tk.FLAT, bd=0)
-        close_title_btn.pack(side=tk.RIGHT, padx=int(self.screen_width * 0.005))
-        
+        self.create_canvas_dialog_button(title_bar, "✕", dialog.destroy, 30, 25,
+                                       palette['background_4'], palette['title_color'])
+
         # Content area
         content_frame = tk.Frame(main_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.01))
-        
+
         # Icon and message
         icon_map = {"info": "ℹ️", "warning": "⚠️", "error": "❌", "success": "✅"}
         icon = icon_map.get(dialog_type, "ℹ️")
-        
+
         # Icon and title together
         header_font_size = max(12, int(self.screen_width * 0.01))
         header_label = tk.Label(content_frame, text=f"{icon} {title}",
                             font=('Arial', header_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_3'])
         header_label.pack(pady=(int(self.screen_height * 0.01), int(self.screen_height * 0.008)))
-        
+
         # Message
         message_font_size = max(10, int(self.screen_width * 0.008))
         message_label = tk.Label(content_frame, text=message,
@@ -861,65 +951,41 @@ class SandboxMode:
                                 fg=palette['subtitle_color'], bg=palette['background_3'],
                                 wraplength=int(dialog_width * 0.8), justify=tk.CENTER)
         message_label.pack(pady=int(self.screen_height * 0.01))
-        
+
         # Button frame
         button_frame = tk.Frame(content_frame, bg=palette['background_3'])
         button_frame.pack(pady=(int(self.screen_height * 0.015), int(self.screen_height * 0.01)))
-        
-        # OK button with relative sizing
+
+        # OK button using canvas for macOS compatibility
         button_font_size = max(9, int(self.screen_width * 0.007))
-        ok_button = tk.Button(button_frame, text="OK",
-                            command=dialog.destroy,
-                            font=('Arial', button_font_size, 'bold'),
-                            bg=palette['background_4'], fg=palette['main_menu_button_text_color'],
-                            padx=int(self.screen_width * 0.015), 
-                            pady=int(self.screen_height * 0.008),
-                            cursor='hand2', relief=tk.RAISED, bd=2)
-        ok_button.pack()
-        
-        # Hover effects
-        def on_enter(event):
-            ok_button.configure(bg=palette['main_menu_button_text_color'], fg=palette['background_black'])
-        def on_leave(event):
-            ok_button.configure(bg=palette['background_4'], fg=palette['main_menu_button_text_color'])
-        
-        ok_button.bind("<Enter>", on_enter)
-        ok_button.bind("<Leave>", on_leave)
-        
-        # Hover effects for title bar close button
-        def on_close_enter(event):
-            close_title_btn.configure(bg=palette['background_black'], fg='#ff4444')
-        def on_close_leave(event):
-            close_title_btn.configure(bg=palette['background_4'], fg=palette['title_color'])
-        
-        close_title_btn.bind("<Enter>", on_close_enter)
-        close_title_btn.bind("<Leave>", on_close_leave)
-        
+        self.create_canvas_dialog_button(button_frame, "OK", dialog.destroy, 120, 40,
+                                       palette['background_4'], palette['main_menu_button_text_color'])
+
         # Make title bar draggable (optional)
         def start_move(event):
             dialog.x = event.x
             dialog.y = event.y
-        
+
         def on_move(event):
             deltax = event.x - dialog.x
             deltay = event.y - dialog.y
             x = dialog.winfo_x() + deltax
             y = dialog.winfo_y() + deltay
             dialog.geometry(f"+{x}+{y}")
-        
+
         title_bar.bind("<Button-1>", start_move)
         title_bar.bind("<B1-Motion>", on_move)
         title_bar_label.bind("<Button-1>", start_move)
         title_bar_label.bind("<B1-Motion>", on_move)
-        
+
         # Focus handling
         dialog.focus_set()
         ok_button.focus_set()
-        
+
         # Bind Enter and Escape keys
         dialog.bind('<Return>', lambda e: dialog.destroy())
         dialog.bind('<Escape>', lambda e: dialog.destroy())
-        
+
         # Wait for dialog to close
         dialog.wait_window()
 
@@ -967,16 +1033,10 @@ class SandboxMode:
                                     fg=palette['3D_visualizer_title_color'], bg=palette['background_4'])
             title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.008))
 
-            # Close button in title bar
+            # Close button in title bar using canvas for macOS compatibility
             close_btn_font_size = max(10, int(self.screen_width * 0.008))
-            close_title_btn = tk.Button(title_bar, text="✕ Close",
-                                    command=viz_window.destroy,
-                                    font=('Arial', close_btn_font_size, 'bold'),
-                                    bg=palette['background_4'], fg=palette['title_color'],
-                                    padx=int(self.screen_width * 0.008), 
-                                    pady=int(self.screen_height * 0.004),
-                                    cursor='hand2', relief=tk.FLAT, bd=0)
-            close_title_btn.pack(side=tk.RIGHT, padx=int(self.screen_width * 0.01))
+            self.create_canvas_dialog_button(title_bar, "✕ Close", viz_window.destroy, 80, 30,
+                                           palette['background_4'], palette['title_color'])
 
             # Info panel with relative sizing
             info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
@@ -991,8 +1051,8 @@ class SandboxMode:
 
             # Visualization container with relative sizing
             viz_container = tk.Frame(main_container, bg=palette['background'], relief=tk.SUNKEN, bd=3)
-            viz_container.pack(fill=tk.BOTH, expand=True, 
-                            padx=int(window_width * 0.02), 
+            viz_container.pack(fill=tk.BOTH, expand=True,
+                            padx=int(window_width * 0.02),
                             pady=int(window_height * 0.01))
 
             # Create matplotlib figure with dark theme
@@ -1004,21 +1064,21 @@ class SandboxMode:
                 try:
                     fig = plot_bloch_multivector(state_vector)
                     fig.suptitle('Single Qubit Bloch Sphere Visualization',
-                            fontsize=max(14, int(self.screen_width * 0.012)), 
+                            fontsize=max(14, int(self.screen_width * 0.012)),
                             color=palette['sphere_visualization_color'], fontweight='bold')
                 except Exception as bloch_error:
                     print(f"Bloch sphere error: {bloch_error}")
                     # Fallback to qsphere if bloch sphere fails
                     fig = plot_state_qsphere(state_vector)
                     fig.suptitle('Single Qubit Q-Sphere Visualization',
-                            fontsize=max(14, int(self.screen_width * 0.012)), 
+                            fontsize=max(14, int(self.screen_width * 0.012)),
                             color=palette['sphere_visualization_color'], fontweight='bold')
 
             else:
                 # For multiple qubits, show Q-sphere
                 fig = plot_state_qsphere(state_vector)
                 fig.suptitle(f'{self.num_qubits}-Qubit Q-Sphere Visualization',
-                        fontsize=max(14, int(self.screen_width * 0.012)), 
+                        fontsize=max(14, int(self.screen_width * 0.012)),
                         color=palette['sphere_visualization_color'], fontweight='bold')
 
             # Customize the plot appearance
@@ -1037,14 +1097,14 @@ class SandboxMode:
             # Embed the matplotlib figure in tkinter
             canvas = FigureCanvasTkAgg(fig, viz_container)
             canvas.draw()
-            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, 
-                                    padx=int(window_width * 0.01), 
+            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True,
+                                    padx=int(window_width * 0.01),
                                     pady=int(window_height * 0.01))
 
             # Control buttons at the bottom with relative sizing
             controls_frame = tk.Frame(main_container, bg=palette['background_3'])
-            controls_frame.pack(fill=tk.X, 
-                            padx=int(window_width * 0.02), 
+            controls_frame.pack(fill=tk.X,
+                            padx=int(window_width * 0.02),
                             pady=int(window_height * 0.01))
 
             # Button styling with relative font sizes
@@ -1052,37 +1112,61 @@ class SandboxMode:
             button_padx = int(self.screen_width * 0.012)
             button_pady = int(self.screen_height * 0.008)
 
-            # Save button
-            save_btn = tk.Button(controls_frame, text="💾 Save Image",
-                            command=lambda: self.save_3d_visualization(fig),
-                            font=('Arial', button_font_size, 'bold'), 
-                            bg=palette['save_image_background'], fg=palette['background_black'],
-                            padx=button_padx, pady=button_pady, 
-                            cursor='hand2', relief=tk.RAISED, bd=2)
-            save_btn.pack(side=tk.LEFT, padx=int(window_width * 0.008))
+            # Save button using canvas for macOS compatibility
+            save_canvas = tk.Canvas(controls_frame, width=140, height=35,
+                                  bg=palette['save_image_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            save_canvas.pack(side=tk.LEFT, padx=int(window_width * 0.008))
 
-            # Refresh button
-            refresh_btn = tk.Button(controls_frame, text="🔄 Refresh",
-                                command=lambda: self.refresh_3d_visualization(viz_window, state_vector),
-                                font=('Arial', button_font_size, 'bold'), 
-                                bg=palette['refresh_button_background'], fg=palette['background_black'],
-                                padx=button_padx, pady=button_pady, 
-                                cursor='hand2', relief=tk.RAISED, bd=2)
-            refresh_btn.pack(side=tk.LEFT, padx=int(window_width * 0.008))
+            save_rect_id = save_canvas.create_rectangle(2, 2, 138, 33,
+                                                      fill=palette['save_image_background'], outline=palette['save_image_background'], width=0)
+            save_text_id = save_canvas.create_text(70, 17, text="💾 Save Image",
+                                                  font=('Arial', button_font_size, 'bold'), fill=palette['background_black'])
 
-            # Close button
-            close_btn = tk.Button(controls_frame, text="❌ Close",
-                                command=viz_window.destroy,
-                                font=('Arial', button_font_size, 'bold'), 
-                                bg=palette['close_button_background'], fg=palette['close_button_text_color'],
-                                padx=button_padx, pady=button_pady, 
-                                cursor='hand2', relief=tk.RAISED, bd=2)
-            close_btn.pack(side=tk.RIGHT, padx=int(window_width * 0.008))
+            save_canvas.bind("<Button-1>", lambda e: self.save_3d_visualization(fig))
+            save_canvas.bind("<Enter>", lambda e: (save_canvas.itemconfig(save_rect_id, fill=palette['button_hover_background']),
+                                                  save_canvas.itemconfig(save_text_id, fill=palette['button_hover_text_color'])))
+            save_canvas.bind("<Leave>", lambda e: (save_canvas.itemconfig(save_rect_id, fill=palette['save_image_background']),
+                                                  save_canvas.itemconfig(save_text_id, fill=palette['background_black'])))
+            save_canvas.configure(cursor='hand2')
+
+            # Refresh button using canvas for macOS compatibility
+            refresh_canvas = tk.Canvas(controls_frame, width=120, height=35,
+                                     bg=palette['refresh_button_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            refresh_canvas.pack(side=tk.LEFT, padx=int(window_width * 0.008))
+
+            refresh_rect_id = refresh_canvas.create_rectangle(2, 2, 118, 33,
+                                                            fill=palette['refresh_button_background'], outline=palette['refresh_button_background'], width=0)
+            refresh_text_id = refresh_canvas.create_text(60, 17, text="🔄 Refresh",
+                                                        font=('Arial', button_font_size, 'bold'), fill=palette['background_black'])
+
+            refresh_canvas.bind("<Button-1>", lambda e: self.refresh_3d_visualization(viz_window, state_vector))
+            refresh_canvas.bind("<Enter>", lambda e: (refresh_canvas.itemconfig(refresh_rect_id, fill=palette['button_hover_background']),
+                                                    refresh_canvas.itemconfig(refresh_text_id, fill=palette['button_hover_text_color'])))
+            refresh_canvas.bind("<Leave>", lambda e: (refresh_canvas.itemconfig(refresh_rect_id, fill=palette['refresh_button_background']),
+                                                    refresh_canvas.itemconfig(refresh_text_id, fill=palette['background_black'])))
+            refresh_canvas.configure(cursor='hand2')
+
+            # Close button using canvas for macOS compatibility
+            close_canvas = tk.Canvas(controls_frame, width=120, height=35,
+                                   bg=palette['close_button_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            close_canvas.pack(side=tk.RIGHT, padx=int(window_width * 0.008))
+
+            close_rect_id = close_canvas.create_rectangle(2, 2, 118, 33,
+                                                        fill=palette['close_button_background'], outline=palette['close_button_background'], width=0)
+            close_text_id = close_canvas.create_text(60, 17, text="❌ Close",
+                                                    font=('Arial', button_font_size, 'bold'), fill=palette['close_button_text_color'])
+
+            close_canvas.bind("<Button-1>", lambda e: viz_window.destroy())
+            close_canvas.bind("<Enter>", lambda e: (close_canvas.itemconfig(close_rect_id, fill=palette['button_hover_background']),
+                                                   close_canvas.itemconfig(close_text_id, fill=palette['button_hover_text_color'])))
+            close_canvas.bind("<Leave>", lambda e: (close_canvas.itemconfig(close_rect_id, fill=palette['close_button_background']),
+                                                   close_canvas.itemconfig(close_text_id, fill=palette['close_button_text_color'])))
+            close_canvas.configure(cursor='hand2')
 
             # State information panel with relative sizing
             state_info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-            state_info_frame.pack(fill=tk.X, 
-                                padx=int(window_width * 0.02), 
+            state_info_frame.pack(fill=tk.X,
+                                padx=int(window_width * 0.02),
                                 pady=(0, int(window_height * 0.015)))
 
             # Calculate and display state information
@@ -1101,7 +1185,7 @@ class SandboxMode:
 
             state_font_size = max(10, int(self.screen_width * 0.008))
             state_label = tk.Label(state_info_frame, text=info_text,
-                                font=('Arial', state_font_size), 
+                                font=('Arial', state_font_size),
                                 fg='#ffffff', bg=palette['background_3'])
             state_label.pack(pady=int(window_height * 0.01))
 
@@ -1121,15 +1205,6 @@ class SandboxMode:
             title_bar.bind("<B1-Motion>", on_move)
             title_bar_label.bind("<Button-1>", start_move)
             title_bar_label.bind("<B1-Motion>", on_move)
-
-            # Hover effects for title bar close button
-            def on_close_enter(event):
-                close_title_btn.configure(bg=palette['background_black'], fg='#ff4444')
-            def on_close_leave(event):
-                close_title_btn.configure(bg=palette['background_4'], fg=palette['title_color'])
-
-            close_title_btn.bind("<Enter>", on_close_enter)
-            close_title_btn.bind("<Leave>", on_close_leave)
 
             # Bind Escape key to close
             viz_window.bind('<Escape>', lambda e: viz_window.destroy())
@@ -1251,7 +1326,7 @@ class SandboxMode:
         # Relative font size for qubit selection
         qubit_label_font = max(9, int(self.screen_width * 0.008))
         tk.Label(qubit_frame, text="🎯 Target Qubit:",
-                font=('Arial', qubit_label_font, 'bold'), 
+                font=('Arial', qubit_label_font, 'bold'),
                 fg=palette['target_qubit_title_color'], bg=palette['background_4']).place(
                     relx=0.05, rely=0.5, anchor='w')
 
@@ -1265,7 +1340,7 @@ class SandboxMode:
         # Gate buttons section title
         title_font_size = max(10, int(self.screen_width * 0.009))
         gates_title = tk.Label(container, text="Single-Qubit Gates:",
-                            font=('Arial', title_font_size, 'bold'), 
+                            font=('Arial', title_font_size, 'bold'),
                             fg=palette['single_qubit_gates_title_color'], bg=palette['background_3'])
         gates_title.place(relx=0.5, rely=0.25, anchor='center')
 
@@ -1289,12 +1364,12 @@ class SandboxMode:
         # Calculate relative font sizes
         button_font_size = max(10, int(self.screen_width * 0.009))
         desc_font_size = max(7, int(self.screen_width * 0.0055))
-        
+
         # Create 2x3 grid with relative positioning
         button_positions = [
             # Row 1: H, X, Y
             (0.15, 0.45), (0.5, 0.45), (0.85, 0.45),
-            # Row 2: Z, S, T  
+            # Row 2: Z, S, T
             (0.15, 0.83), (0.5, 0.83), (0.85, 0.83)
         ]
 
@@ -1307,31 +1382,59 @@ class SandboxMode:
             btn_container = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
             btn_container.place(relx=relx, rely=rely, relwidth=0.25, relheight=0.3, anchor='center')
 
-            # Create button with relative dimensions
-            btn = tk.Button(btn_container, text=gate,
-                            command=lambda g=gate: self.add_single_gate(g),
-                            font=('Arial', button_font_size, 'bold'),
-                            bg=color, fg=palette['background_black'],
-                            cursor='hand2', relief=tk.FLAT, bd=0)
-            btn.place(relx=0.5, rely=0.4, relwidth=0.8, relheight=0.7, anchor='center')
+            # Canvas button with relative dimensions
+            btn_canvas = tk.Canvas(btn_container, highlightthickness=0, bd=0, bg=color)
+            btn_canvas.place(relx=0.5, rely=0.4, relwidth=0.8, relheight=0.7, anchor='center')
+
+            # Create button background and text
+            def draw_button(event=None, canvas=btn_canvas, gate_color=color, gate_text=gate):
+                canvas.delete("all")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:  # Only draw if we have valid dimensions
+                    canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
+                    canvas.create_text(width//2, height//2, text=gate_text,
+                                     font=('Arial', button_font_size, 'bold'),
+                                     fill=palette['background_black'], tags="text")
+
+            # Bind configure event to redraw when size changes
+            btn_canvas.bind('<Configure>', draw_button)
+            # Initial draw after the widget is mapped
+            btn_canvas.after(10, draw_button)
+
+            # Click handler
+            def on_button_click(event, g=gate):
+                self.add_single_gate(g)
+
+            # Hover effects
+            def on_enter(event, canvas=btn_canvas, gate_color=color):
+                canvas.delete("bg")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(0, 0, width, height, fill=palette['button_hover_background'], outline=palette['button_hover_background'], tags="bg")
+                canvas.configure(cursor='hand2')
+                canvas.tag_lower("bg")
+
+            def on_leave(event, canvas=btn_canvas, gate_color=color):
+                canvas.delete("bg")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
+                canvas.configure(cursor='')
+                canvas.tag_lower("bg")
+
+            # Bind events
+            btn_canvas.bind("<Button-1>", on_button_click)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
 
             # Description label with relative positioning
             desc_label = tk.Label(btn_container, text=description,
-                                font=('Arial', desc_font_size), 
+                                font=('Arial', desc_font_size),
                                 fg=palette['gate_description_color'], bg=palette['background_4'])
             desc_label.place(relx=0.5, rely=0.87, anchor='center')
-
-            # Add hover effects for better UX
-            def create_hover_effect(button, original_color):
-                def on_enter(event):
-                    button.configure(bg='#ffffff', fg=palette['background_black'])
-                def on_leave(event):
-                    button.configure(bg=original_color, fg=palette['background_black'])
-                return on_enter, on_leave
-
-            on_enter, on_leave = create_hover_effect(btn, color)
-            btn.bind("<Enter>", on_enter)
-            btn.bind("<Leave>", on_leave)
 
     def setup_multi_gate_controls(self, parent):
         """Setup multi-qubit gate controls with enhanced styling"""
@@ -1376,11 +1479,29 @@ class SandboxMode:
         self.cnot_target_combo.pack(side=tk.LEFT, padx=2)
 
         # CNOT button
-        cnot_btn = tk.Button(cnot_controls, text="Add",
-                            command=self.add_cnot_gate,
-                            font=('Arial', 9, 'bold'), bg=palette['CNOT_gate_title_color'], fg=palette['background_black'],
-                            padx=10, pady=3, cursor='hand2', relief=tk.RAISED, bd=1)
-        cnot_btn.pack(side=tk.LEFT, padx=8)
+        cnot_canvas = tk.Canvas(cnot_controls, highlightthickness=0, bd=0, width=60, height=30)
+        cnot_canvas.pack(side=tk.LEFT, padx=8)
+
+        # Draw CNOT button
+        cnot_canvas.create_rectangle(0, 0, 60, 30, fill=palette['CNOT_gate_title_color'], outline='#2b3340', tags="bg")
+        cnot_canvas.create_text(30, 15, text="Add",
+                              font=('Arial', 9, 'bold'),
+                              fill=palette['background_black'], tags="text")
+
+        def on_cnot_click(event):
+            self.add_cnot_gate()
+
+        def on_cnot_enter(event):
+            cnot_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            cnot_canvas.configure(cursor='hand2')
+
+        def on_cnot_leave(event):
+            cnot_canvas.itemconfig("bg", fill=palette['CNOT_gate_title_color'])
+            cnot_canvas.configure(cursor='')
+
+        cnot_canvas.bind("<Button-1>", on_cnot_click)
+        cnot_canvas.bind("<Enter>", on_cnot_enter)
+        cnot_canvas.bind("<Leave>", on_cnot_leave)
 
         # CZ Gate section with compact layout
         cz_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
@@ -1413,11 +1534,29 @@ class SandboxMode:
         self.cz_target_combo.pack(side=tk.LEFT, padx=2)
 
         # CZ button
-        cz_btn = tk.Button(cz_controls, text="Add",
-                          command=self.add_cz_gate,
-                          font=('Arial', 9, 'bold'), bg=palette['CZ_gate_title_color'], fg=palette['background_black'],
-                          padx=10, pady=3, cursor='hand2', relief=tk.RAISED, bd=1)
-        cz_btn.pack(side=tk.LEFT, padx=8)
+        cz_canvas = tk.Canvas(cz_controls, highlightthickness=0, bd=0, width=60, height=30)
+        cz_canvas.pack(side=tk.LEFT, padx=8)
+
+        # Draw CZ button
+        cz_canvas.create_rectangle(0, 0, 60, 30, fill=palette['CZ_gate_title_color'], outline='#2b3340', tags="bg")
+        cz_canvas.create_text(30, 15, text="Add",
+                            font=('Arial', 9, 'bold'),
+                            fill=palette['background_black'], tags="text")
+
+        def on_cz_click(event):
+            self.add_cz_gate()
+
+        def on_cz_enter(event):
+            cz_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            cz_canvas.configure(cursor='hand2')
+
+        def on_cz_leave(event):
+            cz_canvas.itemconfig("bg", fill=palette['CZ_gate_title_color'])
+            cz_canvas.configure(cursor='')
+
+        cz_canvas.bind("<Button-1>", on_cz_click)
+        cz_canvas.bind("<Enter>", on_cz_enter)
+        cz_canvas.bind("<Leave>", on_cz_leave)
 
         # Toffoli Gate section (only show if 3+ qubits) with compact layout
         if self.num_qubits >= 3:
@@ -1459,12 +1598,22 @@ class SandboxMode:
                                                    font=('Arial', 8), width=2)
             self.toffoli_target_combo.pack(side=tk.LEFT, padx=1)
 
-            # Toffoli button
-            toffoli_btn = tk.Button(toffoli_controls, text="Add",
-                                  command=self.add_toffoli_gate,
-                                  font=('Arial', 9, 'bold'), bg=palette['toffoli_add_button_background'], fg=palette['background_black'],
-                                  padx=8, pady=3, cursor='hand2', relief=tk.RAISED, bd=1)
-            toffoli_btn.pack(side=tk.LEFT, padx=5)
+            # Toffoli button using canvas for macOS compatibility
+            toffoli_canvas = tk.Canvas(toffoli_controls, width=50, height=25,
+                                     bg=palette['toffoli_add_button_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            toffoli_canvas.pack(side=tk.LEFT, padx=5)
+
+            toffoli_rect_id = toffoli_canvas.create_rectangle(2, 2, 48, 23,
+                                                            fill=palette['toffoli_add_button_background'], outline=palette['toffoli_add_button_background'], width=0)
+            toffoli_text_id = toffoli_canvas.create_text(25, 12, text="Add",
+                                                        font=('Arial', 9, 'bold'), fill=palette['background_black'])
+
+            toffoli_canvas.bind("<Button-1>", lambda e: self.add_toffoli_gate())
+            toffoli_canvas.bind("<Enter>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['button_hover_background']),
+                                                    toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['button_hover_text_color'])))
+            toffoli_canvas.bind("<Leave>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['toffoli_add_button_background']),
+                                                    toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['background_black'])))
+            toffoli_canvas.configure(cursor='hand2')
 
     def setup_gate_panel(self, parent):
         """Setup the gate selection panel"""
@@ -1509,11 +1658,29 @@ class SandboxMode:
         single_gates = ['H', 'X', 'Y', 'Z', 'S', 'T']
         for gate in single_gates:
             color = gate_colors.get(gate, '#ffffff')
-            btn = tk.Button(single_gates_buttons, text=gate,
-                        command=lambda g=gate: self.add_single_gate(g),
-                        font=('Arial', 10, 'bold'), bg=color, fg=palette['background_black'],
-                        width=6, height=1)
-            btn.pack(side=tk.LEFT, padx=2, pady=2)
+
+            # Create canvas-based gate button for macOS compatibility
+            gate_canvas = tk.Canvas(single_gates_buttons, width=50, height=30,
+                                  bg=color, highlightthickness=0, relief=tk.FLAT, bd=0)
+            gate_canvas.pack(side=tk.LEFT, padx=2, pady=2)
+
+            gate_rect_id = gate_canvas.create_rectangle(2, 2, 48, 28,
+                                                      fill=color, outline=color, width=0)
+            gate_text_id = gate_canvas.create_text(25, 15, text=gate,
+                                                  font=('Arial', 10, 'bold'), fill=palette['background_black'])
+
+            # Create click handler with proper closure
+            def create_gate_handler(g):
+                return lambda e: self.add_single_gate(g)
+
+            gate_canvas.bind("<Button-1>", create_gate_handler(gate))
+            gate_canvas.bind("<Enter>", lambda e, c=gate_canvas, r=gate_rect_id, t=gate_text_id: (
+                c.itemconfig(r, fill=palette['button_hover_background']),
+                c.itemconfig(t, fill=palette['button_hover_text_color'])))
+            gate_canvas.bind("<Leave>", lambda e, c=gate_canvas, r=gate_rect_id, t=gate_text_id, orig_color=color: (
+                c.itemconfig(r, fill=orig_color),
+                c.itemconfig(t, fill=palette['background_black'])))
+            gate_canvas.configure(cursor='hand2')
 
         # Multi-qubit gates section
         multi_gates_frame = tk.Frame(buttons_frame, bg=palette['background_3'])
@@ -1544,11 +1711,22 @@ class SandboxMode:
                                             font=('Arial', 9), width=3)
         self.cnot_target_combo.pack(side=tk.LEFT, padx=2)
 
-        cnot_btn = tk.Button(cnot_frame, text="CNOT",
-                            command=self.add_cnot_gate,
-                            font=('Arial', 9, 'bold'), bg=palette['CNOT_color'], fg=palette['background_black'],
-                            width=6, height=1)
-        cnot_btn.pack(side=tk.LEFT, padx=5)
+        # CNOT button using canvas for macOS compatibility
+        cnot_canvas = tk.Canvas(cnot_frame, width=60, height=30,
+                               bg=palette['CNOT_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+        cnot_canvas.pack(side=tk.LEFT, padx=5)
+
+        cnot_rect_id = cnot_canvas.create_rectangle(2, 2, 58, 28,
+                                                  fill=palette['CNOT_color'], outline=palette['CNOT_color'], width=0)
+        cnot_text_id = cnot_canvas.create_text(30, 15, text="CNOT",
+                                              font=('Arial', 9, 'bold'), fill=palette['background_black'])
+
+        cnot_canvas.bind("<Button-1>", lambda e: self.add_cnot_gate())
+        cnot_canvas.bind("<Enter>", lambda e: (cnot_canvas.itemconfig(cnot_rect_id, fill=palette['button_hover_background']),
+                                              cnot_canvas.itemconfig(cnot_text_id, fill=palette['button_hover_text_color'])))
+        cnot_canvas.bind("<Leave>", lambda e: (cnot_canvas.itemconfig(cnot_rect_id, fill=palette['CNOT_color']),
+                                              cnot_canvas.itemconfig(cnot_text_id, fill=palette['background_black'])))
+        cnot_canvas.configure(cursor='hand2')
 
         # CZ controls
         cz_frame = tk.Frame(multi_gates_frame, bg=palette['background_3'])
@@ -1572,11 +1750,22 @@ class SandboxMode:
                                         font=('Arial', 9), width=3)
         self.cz_target_combo.pack(side=tk.LEFT, padx=2)
 
-        cz_btn = tk.Button(cz_frame, text="CZ",
-                        command=self.add_cz_gate,
-                        font=('Arial', 9, 'bold'), bg=palette['CZ_gate_title_color'], fg=palette['background_black'],
-                        width=6, height=1)
-        cz_btn.pack(side=tk.LEFT, padx=5)
+        # CZ button using canvas for macOS compatibility
+        cz_canvas = tk.Canvas(cz_frame, width=50, height=30,
+                             bg=palette['CZ_gate_title_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+        cz_canvas.pack(side=tk.LEFT, padx=5)
+
+        cz_rect_id = cz_canvas.create_rectangle(2, 2, 48, 28,
+                                              fill=palette['CZ_gate_title_color'], outline=palette['CZ_gate_title_color'], width=0)
+        cz_text_id = cz_canvas.create_text(25, 15, text="CZ",
+                                          font=('Arial', 9, 'bold'), fill=palette['background_black'])
+
+        cz_canvas.bind("<Button-1>", lambda e: self.add_cz_gate())
+        cz_canvas.bind("<Enter>", lambda e: (cz_canvas.itemconfig(cz_rect_id, fill=palette['button_hover_background']),
+                                            cz_canvas.itemconfig(cz_text_id, fill=palette['button_hover_text_color'])))
+        cz_canvas.bind("<Leave>", lambda e: (cz_canvas.itemconfig(cz_rect_id, fill=palette['CZ_gate_title_color']),
+                                            cz_canvas.itemconfig(cz_text_id, fill=palette['background_black'])))
+        cz_canvas.configure(cursor='hand2')
 
         # Toffoli controls (if 3+ qubits)
         if self.num_qubits >= 3:
@@ -1610,11 +1799,22 @@ class SandboxMode:
                                                     font=('Arial', 9), width=3)
             self.toffoli_target_combo.pack(side=tk.LEFT, padx=2)
 
-            toffoli_btn = tk.Button(toffoli_frame, text="Toffoli",
-                                command=self.add_toffoli_gate,
-                                font=('Arial', 9, 'bold'), bg=palette['Toffoli_color'], fg=palette['background_black'],
-                                width=6, height=1)
-            toffoli_btn.pack(side=tk.LEFT, padx=5)
+            # Toffoli button using canvas for macOS compatibility
+            toffoli_canvas = tk.Canvas(toffoli_frame, width=70, height=30,
+                                     bg=palette['Toffoli_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            toffoli_canvas.pack(side=tk.LEFT, padx=5)
+
+            toffoli_rect_id = toffoli_canvas.create_rectangle(2, 2, 68, 28,
+                                                            fill=palette['Toffoli_color'], outline=palette['Toffoli_color'], width=0)
+            toffoli_text_id = toffoli_canvas.create_text(35, 15, text="Toffoli",
+                                                        font=('Arial', 9, 'bold'), fill=palette['background_black'])
+
+            toffoli_canvas.bind("<Button-1>", lambda e: self.add_toffoli_gate())
+            toffoli_canvas.bind("<Enter>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['button_hover_background']),
+                                                    toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['button_hover_text_color'])))
+            toffoli_canvas.bind("<Leave>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['Toffoli_color']),
+                                                    toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['background_black'])))
+            toffoli_canvas.configure(cursor='hand2')
 
     def add_single_gate(self, gate):
         """Add a single-qubit gate to the selected qubit"""
