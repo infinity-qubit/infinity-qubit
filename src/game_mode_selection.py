@@ -61,6 +61,8 @@ class GameModeSelection:
         self.root.lift()
         self.root.focus_force()
 
+        self.start_animations()
+
 
     def setup_video_background(self):
         self.create_fallback_background()  # Create fallback background first
@@ -95,7 +97,10 @@ class GameModeSelection:
                 y = __import__('random').randint(0, self.window_height)
                 dx = __import__('random').uniform(-2, 2)
                 dy = __import__('random').uniform(-2, 2)
-                color = __import__('random').choice(['#ffb86b', '#ffd08f', '#ff6b6b'])
+
+                # Change this line to yellowish red colors
+                color = __import__('random').choice(['#ff6b47', '#ff7f4f', '#ff9347', '#ff8c42', '#ff7849'])
+
                 # Use consistent dictionary structure
                 self.particles.append({
                     'x': x,
@@ -250,7 +255,7 @@ class GameModeSelection:
                         dot_size = max(2, int(self.window_width / 500))
                         x, y = particle['x'], particle['y']
                         canvas.create_oval(x-dot_size, y-dot_size, x+dot_size, y+dot_size,
-                                        fill=particle['color'], outline='#4ecdc4',
+                                        fill=particle['color'], outline='#ff8c42',
                                         tags="particle", width=2)
 
                     if self.animations_running:
