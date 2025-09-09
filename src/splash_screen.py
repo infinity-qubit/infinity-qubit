@@ -124,7 +124,7 @@ class SplashScreen:
             canvas_width, canvas_height = 380, 90
 
         # Title - adjusted font size based on mode
-        title_label = tk.Label(main_frame, text="🔬 Infinity Qubit",
+        title_label = tk.Label(main_frame, text="Infinity Qubit",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background'])
         title_label.pack(pady=(40, 15))

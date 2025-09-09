@@ -129,25 +129,25 @@ class GameModeSelection:
         # Mode information dictionary
         mode_info = {
             'tutorial': {
-                'title': '📚 Tutorial Mode',
+                'title': 'Tutorial Mode',
                 'description': 'Perfect for beginners! Learn quantum computing fundamentals through interactive lessons and guided exercises.',
                 'features': ['• Step-by-step quantum gate tutorials', '• Interactive circuit builder', '• Qubit visualization'],
                 'difficulty': 'Beginner'
             },
             'puzzle': {
-                'title': '🎮 Puzzle Mode',
+                'title': 'Puzzle Mode',
                 'description': 'Challenge yourself with quantum puzzles! Solve increasingly complex quantum circuit problems.',
                 'features': ['• 30+ quantum puzzles', '• Multiple difficulty levels', '• Scoring system'],
                 'difficulty': 'Intermediate'
             },
             'sandbox': {
-                'title': '🛠️ Sandbox Mode',
+                'title': 'Sandbox Mode',
                 'description': 'Unlimited creativity! Build and experiment with quantum circuits without restrictions.',
                 'features': ['• Free-form circuit design', '• Real quantum simulation', '• Visualize circuits in 3D'],
                 'difficulty': 'Advanced'
             },
             'learn_hub': {
-                'title': '🚀 Learn Hub',
+                'title': 'Learn Hub',
                 'description': 'Comprehensive learning center with courses, documentation, and advanced quantum concepts.',
                 'features': ['• Reference materials', '• Advanced algorithms', '• Research papers'],
                 'difficulty': 'All Levels'
@@ -328,13 +328,13 @@ class GameModeSelection:
         subtitle_font_size = max(14, int(self.window_width / 80))
 
         # Shadow title for glow effect
-        shadow_title = tk.Label(title_frame, text="🔬 Infinity Qubit",
+        shadow_title = tk.Label(title_frame, text="Infinity Qubit",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['shadow_title_color'], bg=palette['background'])
         shadow_title.place(x=3, y=3)
 
         # Main title
-        title_label = tk.Label(title_frame, text="🔬 Infinity Qubit",
+        title_label = tk.Label(title_frame, text="Infinity Qubit",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background'])
         title_label.pack()
@@ -391,7 +391,7 @@ class GameModeSelection:
 
         # Add text to exit button
         exit_canvas.create_text(canvas_width//2, canvas_height//2,
-                              text="❌ Exit Game",
+                              text="Exit Game",
                               font=('Arial', max(10, int(self.window_width / 120)), 'bold'),
                               fill=palette['exit_text_color'],
                               tags="exit_text")
@@ -460,22 +460,22 @@ class GameModeSelection:
 
         button_configs = [
             {
-                'title': '📚 Tutorial Mode',
+                'title': 'Tutorial Mode',
                 'command': self.start_tutorial_mode,
                 'mode_key': 'tutorial'
             },
             {
-                'title': '🎮 Puzzle Mode',
+                'title': 'Puzzle Mode',
                 'command': self.start_puzzle_mode,
                 'mode_key': 'puzzle'
             },
             {
-                'title': '🛠️ Sandbox Mode',
+                'title': 'Sandbox Mode',
                 'command': self.start_sandbox_mode,
                 'mode_key': 'sandbox'
             },
             {
-                'title': '🚀 Learn Hub',
+                'title': 'Learn Hub',
                 'command': self.start_learn_hub_mode,
                 'mode_key': 'learn_hub'
             }

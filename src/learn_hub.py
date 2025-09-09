@@ -28,7 +28,7 @@ class LearnHub:
         screen_height = self.root.winfo_screenheight()
 
         # Enable fullscreen
-        self.root.attributes('-fullscreen', True)
+        self.root.overrideredirect(True)
         self.root.geometry(f"{screen_width}x{screen_height}")
         self.root.configure(bg=palette['background_2'])
         self.root.resizable(False, False)  # Fixed size window
@@ -215,7 +215,7 @@ class LearnHub:
 
         # Add text to button
         back_main_canvas.create_text(button_width//2, button_height//2,
-                                   text="🏠 Main Screen",
+                                   text=" Main Screen",
                                    font=('Arial', button_font_size, 'bold'),
                                    fill=palette['main_menu_button_background'],
                                    tags="menu_text")
@@ -253,13 +253,13 @@ class LearnHub:
 
         # Shadow title with relative font size
         title_font_size = max(24, int(self.screen_width * 0.025))
-        shadow_title = tk.Label(title_frame, text="🚀 Quantum Computing Learn Hub",
+        shadow_title = tk.Label(title_frame, text=" Quantum Computing Learn Hub",
                             font=('Arial', title_font_size, 'bold'),
                             fg='#003322', bg=palette['background_3'])
         shadow_title.place(x=3, y=3)
 
         # Main title with gradient-like effect
-        main_title = tk.Label(title_frame, text="🚀 Quantum Computing Learn Hub",
+        main_title = tk.Label(title_frame, text=" Quantum Computing Learn Hub",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_3'])
         main_title.pack(pady=(0, int(self.screen_height * 0.008)))
@@ -267,7 +267,7 @@ class LearnHub:
         # Enhanced subtitle with pulsing effect and relative font size
         subtitle_font_size = max(12, int(self.screen_width * 0.01))
         self.subtitle_label = tk.Label(header_frame,
-                                    text="✨ Explore quantum computing concepts and resources ✨",
+                                    text=" Explore quantum computing concepts and resources ",
                                     font=('Arial', subtitle_font_size, 'italic'),
                                     fg=palette['subtitle_color'], bg=palette['background_3'])
         self.subtitle_label.pack()
@@ -373,7 +373,7 @@ class LearnHub:
 
         # Title with relative font size
         progress_title_font_size = max(12, int(self.screen_width * 0.01))
-        tk.Label(progress_frame, text="📈 Learning Journey",
+        tk.Label(progress_frame, text=" Learning Journey",
                 font=('Arial', progress_title_font_size, 'bold'),
                 fg=palette['learning_journey_title_color'], bg=palette['background_3']).pack()
 
@@ -382,10 +382,10 @@ class LearnHub:
         steps_container.pack(pady=int(self.screen_height * 0.008))
 
         steps = [
-            ("Basics", True, "#00ff88", "🎯"),
-            ("Gates", True, "#4ecdc4", "⚡"),
-            ("Algorithms", False, "#666666", "🧠"),
-            ("Advanced", False, "#333333", "🚀")
+            ("Basics", True, "#00ff88", ""),
+            ("Gates", True, "#4ecdc4", ""),
+            ("Algorithms", False, "#666666", ""),
+            ("Advanced", False, "#333333", "")
         ]
 
         for i, (step, completed, color, icon) in enumerate(steps):
@@ -402,7 +402,7 @@ class LearnHub:
             if completed:
                 canvas.create_oval(2, 2, circle_size-2, circle_size-2, fill=color, outline=color, width=3)
                 canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill=palette['background_3'], outline='white', width=2)
-                canvas.create_text(circle_size//2, circle_size//2, text="✓", fill='white',
+                canvas.create_text(circle_size//2, circle_size//2, text="", fill='white',
                                 font=('Arial', max(10, int(self.screen_width * 0.01)), 'bold'))
             else:
                 canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill='', outline=color, width=2)
@@ -452,7 +452,7 @@ class LearnHub:
     def create_concepts_tab(self):
         """Create the enhanced basic concepts tab"""
         concepts_frame = ttk.Frame(self.notebook)
-        self.notebook.add(concepts_frame, text="📚 Basic Concepts")
+        self.notebook.add(concepts_frame, text=" Basic Concepts")
 
         # Main container with padding - changed to match text area background
         main_container = tk.Frame(concepts_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
@@ -475,63 +475,63 @@ class LearnHub:
 
         # Enhanced content with better formatting
         concepts_content = """
-🔬 QUANTUM COMPUTING FUNDAMENTALS
+ QUANTUM COMPUTING FUNDAMENTALS
 
-🌟 What is Quantum Computing?
+ What is Quantum Computing?
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Quantum computing harnesses the principles of quantum mechanics to process information in
 fundamentally different ways than classical computers. Instead of using bits that are either
 0 or 1, quantum computers use quantum bits (qubits) that can exist in superposition.
 
-🎯 KEY CONCEPTS:
+ KEY CONCEPTS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔹 1. QUBIT (Quantum Bit)
+ 1. QUBIT (Quantum Bit)
    ┌─ The basic unit of quantum information
    ├─ Can be in state |0⟩, |1⟩, or a superposition of both
    └─ Represented as α|0⟩ + β|1⟩ where |α|² + |β|² = 1
 
-🔹 2. SUPERPOSITION
+ 2. SUPERPOSITION
    ┌─ A qubit can exist in multiple states simultaneously
    ├─ Enables quantum computers to process many possibilities at once
    └─ Collapses to a definite state when measured
 
-🔹 3. ENTANGLEMENT
+ 3. ENTANGLEMENT
    ┌─ Quantum particles become correlated in impossible ways
    ├─ Measurement of one particle instantly affects its entangled partner
    └─ Key resource for quantum algorithms and communication
 
-🔹 4. INTERFERENCE
+ 4. INTERFERENCE
    ┌─ Quantum states can interfere constructively or destructively
    ├─ Used in quantum algorithms to amplify correct answers
    └─ Cancels out wrong answers in many quantum computations
 
-🔹 5. MEASUREMENT
+ 5. MEASUREMENT
    ┌─ The act of observing a quantum system
    ├─ Causes the quantum state to collapse to a classical state
    └─ Probabilistic outcome based on quantum amplitudes
 
-🚀 WHY QUANTUM COMPUTING MATTERS:
+ WHY QUANTUM COMPUTING MATTERS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✨ Exponential speedup for certain problems
-✨ Cryptography and security applications
-✨ Drug discovery and molecular simulation
-✨ Optimization problems
-✨ Machine learning and AI
-✨ Financial modeling
+ - Exponential speedup for certain problems
+ - Cryptography and security applications
+ - Drug discovery and molecular simulation
+ - Optimization problems
+ - Machine learning and AI
+ - Financial modeling
 
-🔧 CURRENT CHALLENGES:
+ CURRENT CHALLENGES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ Quantum decoherence (qubits losing their quantum properties)
-⚠️ Error rates in quantum operations
-⚠️ Limited number of qubits in current systems
-⚠️ Need for extremely low temperatures
-⚠️ Quantum error correction
+- Quantum decoherence (qubits losing their quantum properties)
+- Error rates in quantum operations
+- Limited number of qubits in current systems
+- Need for extremely low temperatures
+- Quantum error correction
 
-📈 THE FUTURE:
+ THE FUTURE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Quantum computing represents a paradigm shift that could revolutionize how we solve
-complex problems in science, technology, and beyond. The future is quantum! 🌟
+complex problems in science, technology, and beyond. The future is quantum!
         """
 
         concepts_text.insert(tk.END, concepts_content)
@@ -540,7 +540,7 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
     def create_gates_tab(self):
         """Create the enhanced quantum gates tab with all gates in one horizontal line"""
         gates_frame = ttk.Frame(self.notebook)
-        self.notebook.add(gates_frame, text="⚡ Quantum Gates")
+        self.notebook.add(gates_frame, text=" Quantum Gates")
 
         # Main container - changed to match card background
         main_container = tk.Frame(gates_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
@@ -568,14 +568,14 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
 
         # Enhanced gate definitions with more details
         gates = [
-            ("X Gate (NOT)", "Flips |0⟩ ↔ |1⟩", "Pauli-X rotation", "#ff6b6b", "❌", 2),
-            ("Y Gate", "Rotates around Y-axis", "Pauli-Y rotation", "#4ecdc4", "🔄", 3),
-            ("Z Gate", "Phase flip: |1⟩ → -|1⟩", "Pauli-Z rotation", "#96ceb4", "⚡", 2),
-            ("H Gate (Hadamard)", "Creates superposition", "|0⟩ → (|0⟩+|1⟩)/√2", "#f39c12", "🌟", 4),
-            ("S Gate", "Phase gate: |1⟩ → i|1⟩", "90° Z rotation", "#9b59b6", "📐", 3),
-            ("T Gate", "π/8 gate", "45° Z rotation", "#e74c3c", "🔺", 3),
-            ("CNOT Gate", "Controlled NOT", "Entangles two qubits", "#00ff88", "🔗", 5),
-            ("CZ Gate", "Controlled Z", "Conditional phase flip", "#ff9ff3", "⭐", 4),
+            ("X Gate (NOT)", "Flips |0⟩ ↔ |1⟩", "Pauli-X rotation", "#ff6b6b", "", 2),
+            ("Y Gate", "Rotates around Y-axis", "Pauli-Y rotation", "#4ecdc4", "", 3),
+            ("Z Gate", "Phase flip: |1⟩ → -|1⟩", "Pauli-Z rotation", "#96ceb4", "", 2),
+            ("H Gate (Hadamard)", "Creates superposition", "|0⟩ → (|0⟩+|1⟩)/√2", "#f39c12", "", 4),
+            ("S Gate", "Phase gate: |1⟩ → i|1⟩", "90° Z rotation", "#9b59b6", "", 3),
+            ("T Gate", "π/8 gate", "45° Z rotation", "#e74c3c", "", 3),
+            ("CNOT Gate", "Controlled NOT", "Entangles two qubits", "#00ff88", "", 5),
+            ("CZ Gate", "Controlled Z", "Conditional phase flip", "#ff9ff3", "", 4),
         ]
 
         # Create one single row with all gates
@@ -630,7 +630,7 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
         name_label.pack(pady=(5, 0))
 
         # Difficulty stars - centered
-        stars = "⭐" * difficulty + "☆" * (5 - difficulty)
+        stars = "" * difficulty + "" * (5 - difficulty)
         difficulty_label = tk.Label(header_frame, text=f"{stars}",
                                 font=('Arial', 8),  # Smaller font
                                 fg=palette['difficulty_label_color'], bg=palette['background_3'])
@@ -678,7 +678,7 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
     def create_algorithms_tab(self):
         """Create the enhanced algorithms tab"""
         algorithms_frame = ttk.Frame(self.notebook)
-        self.notebook.add(algorithms_frame, text="🧠 Algorithms")
+        self.notebook.add(algorithms_frame, text=" Algorithms")
 
         # Main container - changed to match text area background
         main_container = tk.Frame(algorithms_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
@@ -701,94 +701,94 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
 
         # Enhanced algorithm content
         algorithms_content = """
-🧠 FAMOUS QUANTUM ALGORITHMS
+ FAMOUS QUANTUM ALGORITHMS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔍 1. SHOR'S ALGORITHM (1994) ⭐⭐⭐⭐⭐
+ 1. SHOR'S ALGORITHM (1994)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎯 Purpose: Integer factorization
-   💥 Impact: Breaks RSA encryption
-   🚀 Speedup: Exponential over classical methods
+    Purpose: Integer factorization
+    Impact: Breaks RSA encryption
+    Speedup: Exponential over classical methods
 
-   🔑 Key Ideas:
+    Key Ideas:
    ┌─ Uses quantum Fourier transform
    ├─ Finds period of modular exponentiation
    └─ Factors large numbers efficiently
 
-   📱 Applications:
+    Applications:
    ┌─ Cryptography and security
    ├─ Breaking current encryption schemes
    └─ Motivating post-quantum cryptography
 
-🔍 2. GROVER'S ALGORITHM (1996) ⭐⭐⭐⭐☆
+ 2. GROVER'S ALGORITHM (1996)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎯 Purpose: Database search
-   💥 Impact: Quadratic speedup for search problems
-   🚀 Speedup: √N instead of N comparisons
+    Purpose: Database search
+    Impact: Quadratic speedup for search problems
+    Speedup: √N instead of N comparisons
 
-   🔑 Key Ideas:
+    Key Ideas:
    ┌─ Amplitude amplification
    ├─ Iteratively increases probability of correct answer
    └─ Uses quantum interference
 
-   📱 Applications:
+    Applications:
    ┌─ Unstructured search
    ├─ Optimization problems
    └─ Machine learning
 
-🔍 3. DEUTSCH-JOZSA ALGORITHM ⭐⭐⭐☆☆
+ 3. DEUTSCH-JOZSA ALGORITHM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎯 Purpose: Determine if function is constant or balanced
-   💥 Impact: First quantum algorithm with exponential speedup
-   🚀 Speedup: 1 query vs N/2 queries classically
+    Purpose: Determine if function is constant or balanced
+    Impact: First quantum algorithm with exponential speedup
+    Speedup: 1 query vs N/2 queries classically
 
-   🔑 Key Ideas:
+    Key Ideas:
    ┌─ Uses quantum parallelism
    ├─ Evaluates function on all inputs simultaneously
    └─ Quantum interference reveals global property
 
-🔍 4. VARIATIONAL QUANTUM EIGENSOLVER (VQE) ⭐⭐⭐⭐☆
+ 4. VARIATIONAL QUANTUM EIGENSOLVER (VQE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎯 Purpose: Find ground state of molecular systems
-   💥 Impact: Near-term quantum chemistry applications
-   🔄 Approach: Hybrid quantum-classical optimization
+    Purpose: Find ground state of molecular systems
+    Impact: Near-term quantum chemistry applications
+    Approach: Hybrid quantum-classical optimization
 
-   🔑 Key Ideas:
+    Key Ideas:
    ┌─ Parametrized quantum circuits
    ├─ Classical optimization loop
    └─ Minimizes energy expectation value
 
-🎯 ALGORITHM CATEGORIES:
+ ALGORITHM CATEGORIES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📈 Algebraic Algorithms:
+ Algebraic Algorithms:
    • Shor's Algorithm (factoring)
    • Hidden Subgroup Problem
    • Discrete logarithm
 
-🔍 Search Algorithms:
+ Search Algorithms:
    • Grover's Algorithm
    • Amplitude amplification
    • Quantum walks
 
-🧮 Simulation Algorithms:
+ Simulation Algorithms:
    • Quantum chemistry simulation
    • Many-body physics
    • Quantum field theory
 
-🎲 Optimization Algorithms:
+ Optimization Algorithms:
    • QAOA
    • VQE
    • Quantum annealing
 
-🔮 FUTURE DIRECTIONS:
+ FUTURE DIRECTIONS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✨ Fault-tolerant quantum algorithms
-✨ Quantum machine learning
-✨ Quantum error correction
-✨ Distributed quantum computing
+ Fault-tolerant quantum algorithms
+ Quantum machine learning
+ Quantum error correction
+ Distributed quantum computing
 
-The quantum future awaits! 🌟🚀
+The quantum future awaits!
         """
 
         algorithms_text.insert(tk.END, algorithms_content)
@@ -797,7 +797,7 @@ The quantum future awaits! 🌟🚀
     def create_resources_tab(self):
         """Create the enhanced resources tab with horizontal layout"""
         resources_frame = ttk.Frame(self.notebook)
-        self.notebook.add(resources_frame, text="🔗 Resources")
+        self.notebook.add(resources_frame, text=" Resources")
 
         # Main container
         main_container = tk.Frame(resources_frame, bg=palette['background_3'])
@@ -820,7 +820,7 @@ The quantum future awaits! 🌟🚀
         scrollbar.pack(side="bottom", fill="x")
 
         # Learning Resources section
-        self.create_section_header_horizontal(scrollable_frame, "📚 Learning Resources", "#00ff88")
+        self.create_section_header_horizontal(scrollable_frame, " Learning Resources", "#00ff88")
 
         # Resources in horizontal layout
         resources_row = tk.Frame(scrollable_frame, bg=palette['background_3'])
@@ -828,15 +828,15 @@ The quantum future awaits! 🌟🚀
 
         resources = [
             ("IBM Quantum Experience", "https://quantum-computing.ibm.com/",
-            "Hands-on quantum programming", "🔬", 4),
+            "Hands-on quantum programming", "", 4),
             ("Microsoft Quantum Development Kit", "https://azure.microsoft.com/en-us/products/quantum/",
-            "Q# programming language", "💻", 3),
+            "Q# programming language", "", 3),
             ("Google Cirq", "https://quantumai.google/cirq",
-            "Python framework for quantum circuits", "🐍", 3),
+            "Python framework for quantum circuits", "", 3),
             ("Qiskit Textbook", "https://qiskit.org/textbook/",
-            "Comprehensive quantum computing textbook", "📖", 5),
+            "Comprehensive quantum computing textbook", "", 5),
             ("Nielsen & Chuang", "https://www.cambridge.org/core/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE",
-            "The quantum computing bible", "📚", 5),
+            "The quantum computing bible", "", 5),
         ]
 
         for title, url, description, icon, rating in resources:
@@ -848,7 +848,7 @@ The quantum future awaits! 🌟🚀
         self.create_separator_horizontal(scrollable_frame)
 
         # Tools section
-        self.create_section_header_horizontal(scrollable_frame, "🛠️ Quantum Computing Tools", "#f39c12")
+        self.create_section_header_horizontal(scrollable_frame, "️ Quantum Computing Tools", "#f39c12")
 
         # Tools in horizontal layout
         tools_row = tk.Frame(scrollable_frame, bg=palette['background_3'])
@@ -856,13 +856,13 @@ The quantum future awaits! 🌟🚀
 
         tools = [
             ("Qiskit", "https://qiskit.org/",
-            "Open-source quantum computing framework", "⚛️", 5),
+            "Open-source quantum computing framework", "️", 5),
             ("Cirq", "https://quantumai.google/cirq",
-            "Google's quantum computing framework", "🔧", 4),
+            "Google's quantum computing framework", "", 4),
             ("PennyLane", "https://pennylane.ai/",
-            "Quantum machine learning library", "🤖", 4),
+            "Quantum machine learning library", "", 4),
             ("Quantum Inspire", "https://www.quantum-inspire.com/",
-            "QuTech's quantum computing platform", "💡", 3),
+            "QuTech's quantum computing platform", "", 3),
         ]
 
         for title, url, description, icon, rating in tools:
@@ -912,7 +912,7 @@ The quantum future awaits! 🌟🚀
         title_label.bind("<Button-1>", lambda e: self.open_url(url))
 
         # Rating stars - centered
-        stars = "⭐" * rating + "☆" * (5 - rating)
+        stars = "" * rating + "" * (5 - rating)
         rating_label = tk.Label(header_frame, text=stars,
                             font=('Arial', 10),
                             fg=palette['rating_label_color'], bg=palette['background_3'])
@@ -1051,7 +1051,7 @@ The quantum future awaits! 🌟🚀
         title_label.bind("<Button-1>", lambda e: self.open_url(url))
 
         # Rating stars
-        stars = "⭐" * rating + "☆" * (5 - rating)
+        stars = "" * rating + "" * (5 - rating)
         rating_label = tk.Label(title_frame, text=f"Rating: {stars}",
                                font=('Arial', 10),
                                fg=palette['rating_label_color'], bg=palette['background_3'])
@@ -1222,7 +1222,7 @@ The quantum future awaits! 🌟🚀
         menu_root.geometry(f"400x300+{x}+{y}")
 
         # Title
-        title_label = tk.Label(menu_root, text="🚀 Infinity Qubit",
+        title_label = tk.Label(menu_root, text=" Infinity Qubit",
                             font=('Arial', 24, 'bold'),
                             fg=palette['title_color'], bg=palette['background'])
         title_label.pack(pady=30)
@@ -1239,7 +1239,7 @@ The quantum future awaits! 🌟🚀
 
         # Learn Hub button
         # Learn button using canvas for macOS compatibility
-        self.create_canvas_dialog_button(button_frame, "📚 Learn Hub",
+        self.create_canvas_dialog_button(button_frame, " Learn Hub",
                                         lambda: self.reopen_learn_hub(menu_root),
                                         200, 45, palette['learn_button_background'],
                                         palette['background_black'], pady=5)
@@ -1251,7 +1251,7 @@ The quantum future awaits! 🌟🚀
         placeholder_label.pack(pady=20)
 
         # Close button using canvas for macOS compatibility
-        self.create_canvas_dialog_button(button_frame, "❌ Exit", menu_root.destroy,
+        self.create_canvas_dialog_button(button_frame, " Exit", menu_root.destroy,
                                         200, 45, palette['close_button_background'],
                                         palette['close_button_text_color'], pady=5)
 

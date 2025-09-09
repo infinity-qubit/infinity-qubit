@@ -122,6 +122,7 @@ class SandboxMode:
         except Exception as e:
             self.show_custom_dialog("Error", f"Could not save circuit: {e}", "error")
 
+
     def load_circuit(self):
         """Show a touch-friendly list of saved circuits."""
         if not os.path.exists(self.SAVE_DIR):
@@ -150,6 +151,13 @@ class SandboxMode:
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         dialog.transient(self.root)
+
+        # Ensure dialog is visible BEFORE grab_set
+        dialog.lift()
+        dialog.update_idletasks()  # Make sure dialog is rendered
+        dialog.deiconify()  # Ensure it's visible
+
+        # NOW set grab and focus after dialog is fully visible
         dialog.grab_set()
         dialog.focus_force()
 
@@ -167,13 +175,13 @@ class SandboxMode:
         title_bar.pack_propagate(False)
 
         # Title
-        title_label = tk.Label(title_bar, text="📂 Load Saved Circuit",
+        title_label = tk.Label(title_bar, text="Load Saved Circuit",
                             font=('Arial', 14, 'bold'),
                             fg=palette['title_color'], bg=palette['background_4'])
         title_label.pack(side=tk.LEFT, padx=15, pady=5)
 
         # Close button
-        close_btn = tk.Button(title_bar, text="✕",
+        close_btn = tk.Button(title_bar, text="",
                             command=dialog.destroy,
                             font=('Arial', 16, 'bold'),
                             bg=palette['background_4'],
@@ -232,7 +240,7 @@ class SandboxMode:
 
                 # Button with file info
                 load_btn = tk.Button(btn_frame,
-                                text=f"📊 {qubits} Qubits Circuit\n📅 {friendly_date}",
+                                text=f"{qubits} Qubits Circuit\n{friendly_date}",
                                 command=lambda f=filename: do_load(f),
                                 font=('Arial', 12),
                                 bg=palette['background_4'],
@@ -269,8 +277,8 @@ class SandboxMode:
 
         title_bar.bind("<Button-1>", start_move)
         title_bar.bind("<B1-Motion>", on_move)
-        title_bar_label.bind("<Button-1>", start_move)
-        title_bar_label.bind("<B1-Motion>", on_move)
+        # title_bar_label.bind("<Button-1>", start_move)
+        # title_bar_label.bind("<B1-Motion>", on_move)
 
         # Mouse wheel scrolling
         def on_mousewheel(event):
@@ -500,7 +508,7 @@ class SandboxMode:
 
         # Title on the left with relative font size
         title_font_size = max(16, int(self.screen_width * 0.015))
-        title_label = tk.Label(nav_frame, text="🛠️ Quantum Circuit Sandbox",
+        title_label = tk.Label(nav_frame, text="️ Quantum Circuit Sandbox",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_3'])
         title_label.pack(side=tk.LEFT)
@@ -536,7 +544,7 @@ class SandboxMode:
 
         # Add text to button
         main_menu_canvas.create_text(button_width//2, button_height//2,
-                                   text="🏠 Main Menu",
+                                   text=" Main Menu",
                                    font=('Arial', button_font_size, 'bold'),
                                    fill=palette['sandbox_mode_button_text_color'],
                                    tags="menu_text")
@@ -601,7 +609,7 @@ class SandboxMode:
 
         # Enhanced title with relative font size
         title_font_size = max(14, int(self.screen_width * 0.012))
-        control_title = tk.Label(control_frame, text="🎛️ Circuit Configuration",
+        control_title = tk.Label(control_frame, text="️ Circuit Configuration",
                                 font=('Arial', title_font_size, 'bold'),
                                 fg=palette['circuit_title_text_color'], bg=palette['background_3'])
         control_title.pack(pady=(int(self.screen_height * 0.012), int(self.screen_height * 0.008)))
@@ -620,7 +628,7 @@ class SandboxMode:
                         ipady=int(self.screen_height * 0.008))
 
         label_font_size = max(11, int(self.screen_width * 0.009))
-        tk.Label(qubit_frame, text="⚛️ Number of Qubits",
+        tk.Label(qubit_frame, text="️ Number of Qubits",
                 font=('Arial', label_font_size, 'bold'),
                 fg=palette['qubit_number_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
 
@@ -642,7 +650,7 @@ class SandboxMode:
                         ipadx=int(self.screen_width * 0.012),
                         ipady=int(self.screen_height * 0.008))
 
-        tk.Label(state_frame, text="🎯 Initial State",
+        tk.Label(state_frame, text=" Initial State",
                 font=('Arial', label_font_size, 'bold'),
                 fg=palette['initial_state_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
 
@@ -673,7 +681,7 @@ class SandboxMode:
 
         # Enhanced title with icon and relative font size
         title_font_size = max(12, int(self.screen_width * 0.01))
-        circuit_title = tk.Label(circuit_frame, text="🔧 Quantum Circuit Designer",
+        circuit_title = tk.Label(circuit_frame, text=" Quantum Circuit Designer",
                                 font=('Arial', title_font_size, 'bold'),
                                 fg=palette['circuit_designer_title_color'], bg=palette['background_3'])
         circuit_title.pack(pady=(int(self.screen_height * 0.01), int(self.screen_height * 0.008)))
@@ -708,7 +716,7 @@ class SandboxMode:
         gate_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
 
         # Gate palette title
-        tk.Label(gate_frame, text="🎨 Gate Palette",
+        tk.Label(gate_frame, text=" Gate Palette",
                 font=('Arial', 14, 'bold'), fg=palette['gate_palette_title_color'], bg=palette['background_3']).pack(pady=(10, 10))
 
         # Create tabbed interface for gates
@@ -742,7 +750,7 @@ class SandboxMode:
     def setup_action_buttons(self, parent):
         """Setup action buttons with enhanced styling in middle section"""
         # Title for action section
-        action_title = tk.Label(parent, text="🎮 Circuit Controls",
+        action_title = tk.Label(parent, text=" Circuit Controls",
                                font=('Arial', 14, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['background_3'])
         action_title.pack(pady=(10, 15))
 
@@ -753,12 +761,12 @@ class SandboxMode:
 
         # Create enhanced buttons with hover effects
         buttons_data = [
-            ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
-            ("🔄 Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
-            ("💾 Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
-            ("📂 Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black']),
-            ("↶ Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
-            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color'])  # New button
+            (" Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
+            (" Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
+            (" Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
+            (" Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black']),
+            (" Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
+            (" 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color'])  # New button
         ]
 
         # Create buttons in a vertical layout for the middle section
@@ -812,7 +820,7 @@ class SandboxMode:
         status_frame = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.SUNKEN, bd=1)
         status_frame.pack(fill=tk.X, pady=(15, 0), padx=5)  # Reduced top padding
 
-        status_title = tk.Label(status_frame, text="📊 Circuit Status",
+        status_title = tk.Label(status_frame, text=" Circuit Status",
                                font=('Arial', 10, 'bold'), fg=palette['circuit_status_title_color'], bg=palette['background_4'])
         status_title.pack(pady=(5, 3))
 
@@ -884,6 +892,7 @@ class SandboxMode:
                 f"Error creating 3D visualization:\n{str(e)}", "error")
             self.play_sound('error', self.play_error_sound_fallback)
 
+
     def show_custom_dialog(self, title, message, dialog_type="info"):
         """Show a custom dialog with the same background as the main window"""
         dialog = tk.Toplevel(self.root)
@@ -901,8 +910,15 @@ class SandboxMode:
         y = (self.screen_height - dialog_height) // 2
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
-        # Make dialog modal
+        # Make dialog modal - AFTER positioning and visibility
         dialog.transient(self.root)
+
+        # Ensure dialog is visible BEFORE grab_set
+        dialog.lift()
+        dialog.update_idletasks()  # Make sure dialog is rendered
+        dialog.deiconify()  # Ensure it's visible
+
+        # NOW set grab and focus after dialog is fully visible
         dialog.grab_set()
         dialog.focus_force()  # Force focus to dialog
 
@@ -928,15 +944,15 @@ class SandboxMode:
 
         # Close button in title bar
         close_btn_font_size = max(8, int(self.screen_width * 0.006))
-        self.create_canvas_dialog_button(title_bar, "✕", dialog.destroy, 30, 25,
-                                       palette['background_4'], palette['title_color'])
+        self.create_canvas_dialog_button(title_bar, "", dialog.destroy, 30, 25,
+                                    palette['background_4'], palette['title_color'])
 
         # Content area
         content_frame = tk.Frame(main_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.01))
 
         # Icon and message
-        icon_map = {"info": "ℹ️", "warning": "⚠️", "error": "❌", "success": "✅"}
+        icon_map = {"info": "ℹ️", "warning": "️", "error": "", "success": ""}
         icon = icon_map.get(dialog_type, "ℹ️")
 
         # Icon and title together
@@ -960,8 +976,8 @@ class SandboxMode:
 
         # OK button using canvas for macOS compatibility
         button_font_size = max(9, int(self.screen_width * 0.007))
-        self.create_canvas_dialog_button(button_frame, "OK", dialog.destroy, 120, 40,
-                                       palette['background_4'], palette['main_menu_button_text_color'])
+        ok_button = self.create_canvas_dialog_button(button_frame, "OK", dialog.destroy, 120, 40,
+                                    palette['background_4'], palette['main_menu_button_text_color'])
 
         # Make title bar draggable (optional)
         def start_move(event):
@@ -980,10 +996,6 @@ class SandboxMode:
         title_bar_label.bind("<Button-1>", start_move)
         title_bar_label.bind("<B1-Motion>", on_move)
 
-        # Focus handling
-        dialog.focus_set()
-        ok_button.focus_set()
-
         # Bind Enter and Escape keys
         dialog.bind('<Return>', lambda e: dialog.destroy())
         dialog.bind('<Escape>', lambda e: dialog.destroy())
@@ -991,12 +1003,13 @@ class SandboxMode:
         # Wait for dialog to close
         dialog.wait_window()
 
+
     def show_3d_visualization(self, state_vector):
         """Show the 3D quantum state visualization in a new window"""
         try:
             # Create a new window for the 3D visualization
             viz_window = tk.Toplevel(self.root)
-            viz_window.title("🌐 3D Quantum State Visualizer")
+            viz_window.title(" 3D Quantum State Visualizer")
             viz_window.configure(bg=palette['background'])
 
             # Make visualization window fullscreen-compatible and always on top
@@ -1010,8 +1023,15 @@ class SandboxMode:
             y = (self.screen_height - window_height) // 2
             viz_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-            # Make window modal and force focus
+            # Make window modal and force focus - AFTER positioning
             viz_window.transient(self.root)
+
+            # Ensure window is visible BEFORE grab_set
+            viz_window.lift()
+            viz_window.update_idletasks()  # Make sure window is rendered
+            viz_window.deiconify()  # Ensure it's visible
+
+            # NOW set grab and focus after window is fully visible
             viz_window.grab_set()
             viz_window.focus_force()
 
@@ -1030,14 +1050,14 @@ class SandboxMode:
 
             # Title in title bar with relative font size
             title_font_size = max(12, int(self.screen_width * 0.01))
-            title_bar_label = tk.Label(title_bar, text="🌐 3D Quantum State Visualizer",
+            title_bar_label = tk.Label(title_bar, text=" 3D Quantum State Visualizer",
                                     font=('Arial', title_font_size, 'bold'),
                                     fg=palette['3D_visualizer_title_color'], bg=palette['background_4'])
             title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.008))
 
             # Close button in title bar using canvas for macOS compatibility
             close_btn_font_size = max(10, int(self.screen_width * 0.008))
-            self.create_canvas_dialog_button(title_bar, "✕ Close", viz_window.destroy, 80, 30,
+            self.create_canvas_dialog_button(title_bar, " Close", viz_window.destroy, 80, 30,
                                            palette['background_4'], palette['title_color'])
 
             # Info panel with relative sizing
@@ -1121,7 +1141,7 @@ class SandboxMode:
 
             save_rect_id = save_canvas.create_rectangle(2, 2, 138, 33,
                                                       fill=palette['save_image_background'], outline=palette['save_image_background'], width=0)
-            save_text_id = save_canvas.create_text(70, 17, text="💾 Save Image",
+            save_text_id = save_canvas.create_text(70, 17, text=" Save Image",
                                                   font=('Arial', button_font_size, 'bold'), fill=palette['background_black'])
 
             save_canvas.bind("<Button-1>", lambda e: self.save_3d_visualization(fig))
@@ -1138,7 +1158,7 @@ class SandboxMode:
 
             refresh_rect_id = refresh_canvas.create_rectangle(2, 2, 118, 33,
                                                             fill=palette['refresh_button_background'], outline=palette['refresh_button_background'], width=0)
-            refresh_text_id = refresh_canvas.create_text(60, 17, text="🔄 Refresh",
+            refresh_text_id = refresh_canvas.create_text(60, 17, text=" Refresh",
                                                         font=('Arial', button_font_size, 'bold'), fill=palette['background_black'])
 
             refresh_canvas.bind("<Button-1>", lambda e: self.refresh_3d_visualization(viz_window, state_vector))
@@ -1155,7 +1175,7 @@ class SandboxMode:
 
             close_rect_id = close_canvas.create_rectangle(2, 2, 118, 33,
                                                         fill=palette['close_button_background'], outline=palette['close_button_background'], width=0)
-            close_text_id = close_canvas.create_text(60, 17, text="❌ Close",
+            close_text_id = close_canvas.create_text(60, 17, text=" Close",
                                                     font=('Arial', button_font_size, 'bold'), fill=palette['close_button_text_color'])
 
             close_canvas.bind("<Button-1>", lambda e: viz_window.destroy())
@@ -1175,7 +1195,7 @@ class SandboxMode:
             state_data = state_vector.data
             entangled = self.is_state_entangled(state_vector) if self.num_qubits > 1 else False
 
-            info_text = f"🔬 State Analysis: "
+            info_text = f" State Analysis: "
             if entangled:
                 info_text += "Entangled state detected! "
             else:
@@ -1279,7 +1299,7 @@ class SandboxMode:
     def setup_results_area(self, parent):
         """Setup the results display area on the right side"""
         # Enhanced title
-        results_title = tk.Label(parent, text="📊 Quantum State Analysis",
+        results_title = tk.Label(parent, text=" Quantum State Analysis",
                                 font=('Arial', 14, 'bold'), fg=palette['state_analysis_title_color'], bg=palette['background_3'])
         results_title.pack(pady=(10, 15))
 
@@ -1306,9 +1326,9 @@ class SandboxMode:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Initial message
-        self.results_text.insert(tk.END, "🌟 Welcome to Quantum Circuit Sandbox!\n\n")
+        self.results_text.insert(tk.END, " Welcome to Quantum Circuit Sandbox!\n\n")
         self.results_text.insert(tk.END, "Build your circuit and click 'Run Circuit' to see the results.\n\n")
-        self.results_text.insert(tk.END, "📝 Instructions:\n")
+        self.results_text.insert(tk.END, " Instructions:\n")
         self.results_text.insert(tk.END, "1. Select gates from the palette\n")
         self.results_text.insert(tk.END, "2. Configure qubits and initial states\n")
         self.results_text.insert(tk.END, "3. Run your circuit to see quantum state analysis\n")
@@ -1327,7 +1347,7 @@ class SandboxMode:
 
         # Relative font size for qubit selection
         qubit_label_font = max(9, int(self.screen_width * 0.008))
-        tk.Label(qubit_frame, text="🎯 Target Qubit:",
+        tk.Label(qubit_frame, text=" Target Qubit:",
                 font=('Arial', qubit_label_font, 'bold'),
                 fg=palette['target_qubit_title_color'], bg=palette['background_4']).place(
                     relx=0.05, rely=0.5, anchor='w')
@@ -1454,7 +1474,7 @@ class SandboxMode:
         cnot_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
         cnot_frame.pack(fill=tk.X, pady=3, ipady=10)
 
-        cnot_title = tk.Label(cnot_frame, text="🔗 CNOT Gate",
+        cnot_title = tk.Label(cnot_frame, text=" CNOT Gate",
                             font=('Arial', 10, 'bold'), fg=palette['CNOT_gate_title_color'], bg=palette['background_4'])
         cnot_title.pack(pady=(3, 5))
 
@@ -1509,7 +1529,7 @@ class SandboxMode:
         cz_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
         cz_frame.pack(fill=tk.X, pady=3, ipady=10)
 
-        cz_title = tk.Label(cz_frame, text="⭐ CZ Gate",
+        cz_title = tk.Label(cz_frame, text=" CZ Gate",
                            font=('Arial', 10, 'bold'), fg=palette['CZ_gate_title_color'], bg=palette['background_4'])
         cz_title.pack(pady=(3, 5))
 
@@ -1565,7 +1585,7 @@ class SandboxMode:
             toffoli_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
             toffoli_frame.pack(fill=tk.X, pady=3, ipady=10)
 
-            toffoli_title = tk.Label(toffoli_frame, text="🎯 Toffoli Gate",
+            toffoli_title = tk.Label(toffoli_frame, text=" Toffoli Gate",
                                    font=('Arial', 10, 'bold'), fg=palette['toffoli_gate_title_color'], bg=palette['background_4'])
             toffoli_title.pack(pady=(3, 5))
 
@@ -1950,7 +1970,7 @@ class SandboxMode:
         # Clear and update results
         self.results_text.configure(state=tk.NORMAL)
         self.results_text.delete(1.0, tk.END)
-        self.results_text.insert(tk.END, "🧹 Circuit cleared. Ready for new gates.\n")
+        self.results_text.insert(tk.END, " Circuit cleared. Ready for new gates.\n")
         self.results_text.insert(tk.END, "Add gates using the Gate Palette and click 'Run Circuit' to see results.\n")
         self.results_text.configure(state=tk.DISABLED)
 
@@ -1975,7 +1995,7 @@ class SandboxMode:
             # No gates to undo
             self.results_text.configure(state=tk.NORMAL)
             self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, "❌ No gates to undo.\n")
+            self.results_text.insert(tk.END, " No gates to undo.\n")
             self.results_text.configure(state=tk.DISABLED)
             self.play_sound('error', self.play_error_sound_fallback)
 
@@ -2235,7 +2255,7 @@ class SandboxMode:
                 return
 
             # Display current circuit info
-            self.results_text.insert(tk.END, f"🚀 Running Quantum Circuit...\n")
+            self.results_text.insert(tk.END, f" Running Quantum Circuit...\n")
             self.results_text.insert(tk.END, f"Qubits: {self.num_qubits}\n")
             self.results_text.insert(tk.END, f"Initial State: {self.initial_state}\n")
             self.results_text.insert(tk.END, f"Gates: {[gate for gate, _ in self.placed_gates]}\n")
@@ -2332,10 +2352,10 @@ class SandboxMode:
         """Display the quantum state results"""
         try:
             # Circuit summary
-            self.results_text.insert(tk.END, f"✅ Circuit Executed Successfully!\n\n")
+            self.results_text.insert(tk.END, f" Circuit Executed Successfully!\n\n")
 
             # State vector
-            self.results_text.insert(tk.END, "📊 Final State Vector:\n")
+            self.results_text.insert(tk.END, " Final State Vector:\n")
             state_data = state_vector.data
 
             for i, amplitude in enumerate(state_data):
@@ -2359,7 +2379,7 @@ class SandboxMode:
             self.results_text.insert(tk.END, "\n")
 
             # Measurement probabilities summary
-            self.results_text.insert(tk.END, "🎯 Measurement Probabilities:\n")
+            self.results_text.insert(tk.END, " Measurement Probabilities:\n")
             total_prob = 0
             for i, amplitude in enumerate(state_data):
                 prob = abs(amplitude) ** 2

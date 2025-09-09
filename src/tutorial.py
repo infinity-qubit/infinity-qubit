@@ -61,7 +61,7 @@ class TutorialWindow:
 
         # Create independent window instead of Toplevel
         self.window = tk.Tk()
-        self.window.title("🎓 Quantum Gates Tutorial")
+        self.window.title("Quantum Gates Tutorial")
 
         # Set fullscreen mode
         screen_width = self.window.winfo_screenwidth()
@@ -261,7 +261,7 @@ When you watch a video, play a game, or open an app, your computer is just worki
         self.create_bit_demo(visual_frame)
 
         # Analogy section
-        analogy_text = """💡 Analogy: Imagine a coin lying flat on a table. If heads = 1 and tails = 0,
+        analogy_text = """Analogy: Imagine a coin lying flat on a table. If heads = 1 and tails = 0,
 then the coin represents a bit — but it can only show one face at a time."""
 
         analogy_label = tk.Label(main_frame, text=analogy_text,
@@ -373,7 +373,7 @@ Instead of being just 0 or just 1, a qubit can be in a combination of 0 and 1 at
         self.create_spinning_coin_demo(animation_frame)
 
         # Analogy
-        analogy_text = """💫 Analogy: Imagine our coin spinning in the air instead of lying flat.
+        analogy_text = """Analogy: Imagine our coin spinning in the air instead of lying flat.
 While spinning, it's kind of both heads and tails until you catch it and look."""
 
         analogy_label = tk.Label(main_frame, text=analogy_text,
@@ -668,7 +668,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         gates_frame = tk.Frame(main_container, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
         gates_frame.place(relx=0, rely=0, relwidth=1, relheight=1)  # Changed to take full space
 
-        gates_title = tk.Label(gates_frame, text="🎨 Interactive Gate Tutorials",
+        gates_title = tk.Label(gates_frame, text="Interactive Gate Tutorials",
                             font=('Arial', max(16, int(self.window_width / 80)), 'bold'),
                             fg=palette['gates_title_color'], bg=palette['main_container_background'])
         gates_title.place(relx=0.5, rely=0.1, anchor='center')
@@ -697,7 +697,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         header_frame.place(relx=0.05, rely=0.02, relwidth=0.9, relheight=0.12)
 
         # Title on the left
-        title_label = tk.Label(header_frame, text="🎓 Quantum Gates Tutorial",
+        title_label = tk.Label(header_frame, text="Quantum Gates Tutorial",
                             font=('Arial', max(20, int(self.window_width / 80)), 'bold'),
                             fg=palette['main_title_color'], bg=palette['main_container_background'])
         title_label.place(relx=0, rely=0.2, anchor='w')
@@ -749,7 +749,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
             # Add text to button
             main_menu_canvas.create_text(button_width//2, button_height//2,
-                                       text="🏠 Main Menu",
+                                       text="Main Menu",
                                        font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                                        fill=palette['main_menu_button_text_color'],
                                        tags="menu_text")
@@ -780,7 +780,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
             close_rect_id = close_canvas.create_rectangle(2, 2, 158, 38,
                                                         fill=palette['background_2'], outline=palette['background_2'], width=0)
-            close_text_id = close_canvas.create_text(80, 20, text="❌ Close Tutorial",
+            close_text_id = close_canvas.create_text(80, 20, text="Close Tutorial",
                                                     font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                                                     fill=palette['close_button_text_color'])
 
@@ -802,7 +802,6 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         help_window.title("Tutorial Help")
         help_window.configure(bg=palette['background'])
         help_window.transient(self.window)
-        help_window.grab_set()
 
         # Make it fullscreen
         screen_width = help_window.winfo_screenwidth()
@@ -810,9 +809,14 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         help_window.overrideredirect(True)  # Remove window decorations for fullscreen
         help_window.geometry(f"{screen_width}x{screen_height}+0+0")
 
-        # Make it always on top
+        # Make it always on top and ensure visibility BEFORE grab_set
         help_window.attributes('-topmost', True)
-        help_window.update_idletasks()
+        help_window.lift()
+        help_window.update_idletasks()  # Make sure window is rendered
+        help_window.deiconify()  # Ensure it's visible
+
+        # NOW set grab after window is fully visible
+        help_window.grab_set()
 
         # Main container with border
         main_frame = tk.Frame(help_window, bg=palette['main_container_background'], relief=tk.RAISED, bd=3)
@@ -833,7 +837,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         back_btn.place(relx=0.02, rely=0.5, anchor='w')
 
         # Title with icon (centered)
-        title_label = tk.Label(header_frame, text="🎓 Quantum Gates Tutorial Help",
+        title_label = tk.Label(header_frame, text="Quantum Gates Tutorial Help",
                             font=('Arial', 24, 'bold'),
                             fg=palette['main_title_color'], bg=palette['background_3'])
         title_label.place(relx=0.5, rely=0.5, anchor='center')
@@ -864,27 +868,27 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         # Help content sections
         help_sections = [
             {
-                'title': '📚 What are Quantum Gates?',
+                'title': 'What are Quantum Gates?',
                 'content': 'Quantum gates are the fundamental building blocks of quantum circuits. Unlike classical logic gates that work with bits (0 or 1), quantum gates operate on qubits that can exist in superposition states.',
                 'color': palette['main_title_color']
             },
             {
-                'title': '🎮 How to Use:',
+                'title': 'How to Use:',
                 'content': '• Click on unlocked gates to open interactive tutorials\n• Complete gates in order: H → X → Y → Z → S → T → CNOT → CZ\n• Each gate tutorial includes circuit building and results\n• Experiment with multiple gates to see cumulative effects',
                 'color': palette['H_color']
             },
             {
-                'title': '🔒 Gate Unlocking:',
+                'title': 'Gate Unlocking:',
                 'content': 'Gates unlock progressively as you complete previous ones. Start with the Hadamard (H) gate to begin your quantum journey!',
                 'color': palette['X_color']
             },
             {
-                'title': '🌟 Tips:',
+                'title': 'Tips:',
                 'content': '• Take your time to understand each gate\'s effect\n• Try different combinations in the circuit builder\n• Read the mathematical examples for deeper understanding\n• Run circuits multiple times to see consistent results',
                 'color': palette['Y_color']
             },
             {
-                'title': '⚡ Quick Reference:',
+                'title': 'Quick Reference:',
                 'content': 'H Gate: Creates superposition\nX Gate: Flips qubit (NOT gate)\nY Gate: Complex rotation with phase\nZ Gate: Phase flip\nS Gate: 90° phase shift\nT Gate: 45° phase shift\nCNOT: Controlled NOT (entanglement)\nCZ: Controlled Z (entanglement)',
                 'color': palette['Z_color']
             }
@@ -926,7 +930,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         button_frame.pack_propagate(False)
 
         # Close button with styling
-        close_btn = tk.Button(button_frame, text="Close Help 🚀",
+        close_btn = tk.Button(button_frame, text="Close Help",
                             command=help_window.destroy,
                             font=('Arial', 14, 'bold'),
                             bg=palette['H_color'], fg=palette['background_3'],
@@ -1042,7 +1046,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             gate_container = tk.Frame(parent, bg=palette['background'], relief=tk.RAISED, bd=2)
             gate_container.place(relx=relx, rely=rely, anchor='center', relwidth=0.15, relheight=0.45)
 
-            locked_btn = tk.Label(gate_container, text="🔒",
+            locked_btn = tk.Label(gate_container, text="Locked",
                                  font=('Arial', max(16, int(self.window_width / 100))),
                                  bg=palette['background'], fg=palette['explanation_text_color'])
             locked_btn.place(relx=0.5, rely=0.35, anchor='center')
@@ -1126,7 +1130,7 @@ class GateTutorial:
         screen_height = parent.winfo_screenheight()
 
         self.window = tk.Toplevel(parent)
-        self.window.title(f"🎓 {gate_info['name']} Tutorial")
+        self.window.title(f" {gate_info['name']} Tutorial")
 
         # Make window fullscreen without title bar
         self.window.overrideredirect(True)
@@ -1257,7 +1261,7 @@ class GateTutorial:
         header_frame.place(relx=0.05, rely=0.02, relwidth=0.9, relheight=0.08)
 
         # Title on the left
-        title_label = tk.Label(header_frame, text=f"🎓 {self.gate_info['name']} Tutorial",
+        title_label = tk.Label(header_frame, text=f"{self.gate_info['name']} Tutorial",
                             font=('Arial', max(18, int(self.window_width / 90)), 'bold'),
                             fg=palette['main_title_color'], bg=palette['main_container_background'])
         title_label.place(relx=0, rely=0.2, anchor='w')
@@ -1270,7 +1274,7 @@ class GateTutorial:
         subtitle_label.place(relx=0, rely=0.7, anchor='w')
 
         # Close button on the right
-        close_btn = tk.Button(header_frame, text="❌ Close",
+        close_btn = tk.Button(header_frame, text="Close",
                              command=self.close_tutorial,
                              font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
                              bg=palette['background_2'], fg=palette['close_button_text_color'],
@@ -1306,7 +1310,7 @@ class GateTutorial:
         desc_frame = tk.Frame(parent, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
         desc_frame.place(relx=0, rely=0, relwidth=1, relheight=0.2)
 
-        desc_title = tk.Label(desc_frame, text="📋 Gate Description",
+        desc_title = tk.Label(desc_frame, text="Gate Description",
                              font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
                              fg=palette['description_title_text_color'], bg=palette['main_container_background'])
         desc_title.place(relx=0.5, rely=0.15, anchor='center')
@@ -1327,7 +1331,7 @@ class GateTutorial:
         circuit_frame = tk.Frame(parent, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
         circuit_frame.place(relx=0, rely=0.25, relwidth=1, relheight=0.3)
 
-        circuit_title = tk.Label(circuit_frame, text="🔧 Interactive Circuit Visualization",
+        circuit_title = tk.Label(circuit_frame, text="Interactive Circuit Visualization",
                                 font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
                                 fg=palette['circuit_title_text_color'], bg=palette['main_container_background'])
         circuit_title.place(relx=0.5, rely=0.1, anchor='center')
@@ -1365,7 +1369,7 @@ class GateTutorial:
 
     def setup_gate_controls(self, parent):
         """Setup gate control buttons using relative positioning"""
-        controls_title = tk.Label(parent, text="🎮 Gate Controls",
+        controls_title = tk.Label(parent, text="Gate Controls",
                                  font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
                                  fg=palette['controls_title_text_color'], bg=palette['main_container_background'])
         controls_title.place(relx=0.5, rely=0.1, anchor='center')
@@ -1433,7 +1437,7 @@ class GateTutorial:
                 bg_color = palette['run_button_background']
                 text_color = palette['background_3']
                 run_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline='#2b3340', width=2, tags="bg")
-                run_canvas.create_text(width//2, height//2, text="🚀 Run Circuit",
+                run_canvas.create_text(width//2, height//2, text="Run Circuit",
                                      font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
                                      fill=text_color, tags="text")
 
@@ -1469,7 +1473,7 @@ class GateTutorial:
                 bg_color = palette['clear_button_background']
                 text_color = palette['clear_button_text_color']
                 clear_canvas.create_rectangle(0, 0, width, height, fill=bg_color, outline='#2b3340', width=2, tags="bg")
-                clear_canvas.create_text(width//2, height//2, text="🔄 Clear Circuit",
+                clear_canvas.create_text(width//2, height//2, text="Clear Circuit",
                                        font=('Arial', max(11, int(self.window_width / 130)), 'bold'),
                                        fill=text_color, tags="text")
 
@@ -1494,7 +1498,7 @@ class GateTutorial:
 
     def setup_results_area(self, parent):
         """Setup results display area using relative positioning"""
-        results_title = tk.Label(parent, text="📊 Quantum State Analysis",
+        results_title = tk.Label(parent, text="Quantum State Analysis",
                                 font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
                                 fg=palette['results_title_text_color'], bg=palette['main_container_background'])
         results_title.place(relx=0.5, rely=0.08, anchor='center')
@@ -1672,7 +1676,7 @@ class GateTutorial:
         if not self.placed_gates:
             self.results_text.configure(state=tk.NORMAL)
             self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, "❌ No gates placed. Add some gates first!\n")
+            self.results_text.insert(tk.END, "No gates placed. Add some gates first!\n")
             self.results_text.configure(state=tk.DISABLED)
             self.play_sound('error')
             return
@@ -1681,7 +1685,7 @@ class GateTutorial:
             # Update results display
             self.results_text.configure(state=tk.NORMAL)
             self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, "🚀 Running quantum circuit...\n\n")
+            self.results_text.insert(tk.END, "Running quantum circuit...\n\n")
             self.results_text.update()
 
             # Determine circuit size
@@ -1727,7 +1731,7 @@ class GateTutorial:
 
         except Exception as e:
             self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, f"❌ Error: {str(e)}\n")
+            self.results_text.insert(tk.END, f"Error: {str(e)}\n")
             self.play_sound('error')
         finally:
             self.results_text.configure(state=tk.DISABLED)
@@ -1776,14 +1780,14 @@ class GateTutorial:
         """Display the quantum state results with enhanced formatting"""
         self.results_text.delete(1.0, tk.END)
 
-        self.results_text.insert(tk.END, f"✅ Circuit Executed Successfully!\n\n")
-        self.results_text.insert(tk.END, f"📋 Circuit Summary:\n")
+        self.results_text.insert(tk.END, f"Circuit Executed Successfully!\n\n")
+        self.results_text.insert(tk.END, f"Circuit Summary:\n")
         self.results_text.insert(tk.END, f"Initial State: {self.gate_info['input_state']}\n")
         self.results_text.insert(tk.END, f"Gates Applied: {' → '.join(self.placed_gates)}\n")
         self.results_text.insert(tk.END, f"Total Gates: {len(self.placed_gates)}\n")
         self.results_text.insert(tk.END, "=" * 50 + "\n\n")
 
-        self.results_text.insert(tk.END, f"📊 Final State Vector:\n")
+        self.results_text.insert(tk.END, f"Final State Vector:\n")
         for i, amplitude in enumerate(state_vector):
             if abs(amplitude) > 0.001:
                 basis_state = f"|{i:0{num_qubits}b}⟩"
@@ -1795,7 +1799,7 @@ class GateTutorial:
                 else:
                     self.results_text.insert(tk.END, f"{basis_state}: {real_part:.4f} + {imag_part:.4f}i\n")
 
-        self.results_text.insert(tk.END, f"\n🎯 Measurement Probabilities:\n")
+        self.results_text.insert(tk.END, f"\nMeasurement Probabilities:\n")
         for i, amplitude in enumerate(state_vector):
             probability = abs(amplitude) ** 2
             if probability > 0.001:
@@ -1803,7 +1807,7 @@ class GateTutorial:
                 self.results_text.insert(tk.END, f"{basis_state}: {probability:.3f} ({probability*100:.1f}%)\n")
 
         # Add educational insight
-        self.results_text.insert(tk.END, f"\n💡 Educational Insight:\n")
+        self.results_text.insert(tk.END, f"\nEducational Insight:\n")
         if self.gate == 'H':
             self.results_text.insert(tk.END, "The Hadamard gate creates superposition - the qubit is now in both |0⟩ and |1⟩ states simultaneously!\n")
         elif self.gate == 'X':
@@ -1818,16 +1822,16 @@ class GateTutorial:
         self.results_text.configure(state=tk.NORMAL)
         self.results_text.delete(1.0, tk.END)
 
-        self.results_text.insert(tk.END, f"🎓 {self.gate_info['name']} Tutorial\n\n")
-        self.results_text.insert(tk.END, f"📋 Description:\n{self.gate_info['description']}\n\n")
-        self.results_text.insert(tk.END, f"📝 Mathematical Example:\n{self.gate_info['example']}\n\n")
+        self.results_text.insert(tk.END, f"{self.gate_info['name']} Tutorial\n\n")
+        self.results_text.insert(tk.END, f"Description:\n{self.gate_info['description']}\n\n")
+        self.results_text.insert(tk.END, f"Mathematical Example:\n{self.gate_info['example']}\n\n")
         self.results_text.insert(tk.END, "=" * 50 + "\n\n")
-        self.results_text.insert(tk.END, "🎮 Instructions:\n")
+        self.results_text.insert(tk.END, "Instructions:\n")
         self.results_text.insert(tk.END, "1. Click 'Add Gate' to place the gate on the circuit\n")
         self.results_text.insert(tk.END, "2. Click 'Run Circuit' to execute and see results\n")
         self.results_text.insert(tk.END, "3. Experiment with multiple gates to see cumulative effects\n")
         self.results_text.insert(tk.END, "4. Use 'Clear Circuit' to start over\n\n")
-        self.results_text.insert(tk.END, "🌟 Ready to explore quantum mechanics!\n")
+        self.results_text.insert(tk.END, "Ready to explore quantum mechanics!\n")
 
         self.results_text.configure(state=tk.DISABLED)
 
