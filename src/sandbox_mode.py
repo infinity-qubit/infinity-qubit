@@ -1,26 +1,27 @@
+#!/usr/bin/env python3
+"""
+Sandbox Mode for Infinity Qubit
+Allows users to experiment with quantum circuits in a freeform manner.
+"""
+
 import os
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
-import tkinter as tk
-from tkinter import ttk, messagebox
-import numpy as np
-from qiskit import QuantumCircuit # type: ignore
-from qiskit.quantum_info import Statevector # type: ignore
-from qiskit.visualization import plot_bloch_multivector, plot_state_qsphere # type: ignore
-import pygame # type: ignore
-
-import matplotlib.pyplot as plt # type: ignore
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # type: ignore
-import sys
-
-# For the save system
 import re
+import sys
 import json
+import pygame
 import datetime
-from tkinter import simpledialog, filedialog
-
+import numpy as np
+import tkinter as tk
+import matplotlib.pyplot as plt
+from qiskit import QuantumCircuit
+from tkinter import ttk, messagebox
+from qiskit.quantum_info import Statevector
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from qiskit.visualization import plot_bloch_multivector, plot_state_qsphere
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -31,8 +32,10 @@ from run import PROJECT_ROOT, get_resource_path
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'sandbox_mode')
 
+
 class SandboxMode:
     SAVE_DIR = os.path.expanduser("resources/saves/infinity_qubit_sandbox_saves")
+
 
     def __init__(self, root):
         self.root = root
@@ -99,6 +102,7 @@ class SandboxMode:
         # Setup UI
         self.setup_ui()
         self.update_circuit_display()
+
 
     def save_circuit(self):
         """Save the current circuit configuration with timestamp."""
@@ -289,11 +293,13 @@ class SandboxMode:
         # Bind Escape to close
         dialog.bind('<Escape>', lambda e: dialog.destroy())
 
+
     def exit_fullscreen(self, event=None):
         """Exit fullscreen mode"""
         self.root.overrideredirect(False)
         self.root.state('normal')
         self.root.geometry("1200x800")
+
 
     def toggle_fullscreen(self, event=None):
         """Toggle fullscreen mode"""
@@ -313,6 +319,7 @@ class SandboxMode:
             # Enter fullscreen
             self.root.attributes('-fullscreen', True)
 
+
     def play_sound(self, sound_name, fallback_func=None):
         """Play a sound file or fallback to programmatic sound"""
         if not self.sound_enabled:
@@ -327,6 +334,7 @@ class SandboxMode:
             print(f"Sound error: {e}")
             if fallback_func:
                 fallback_func()
+
 
     def play_gate_sound_fallback(self):
         """Fallback sound for gate placement"""
@@ -349,6 +357,7 @@ class SandboxMode:
             sound.play()
         except:
             pass
+
 
     def play_success_sound_fallback(self):
         """Fallback sound for success"""
@@ -380,6 +389,7 @@ class SandboxMode:
         except:
             pass
 
+
     def play_error_sound_fallback(self):
         """Fallback sound for errors"""
         try:
@@ -405,6 +415,7 @@ class SandboxMode:
         except:
             pass
 
+
     def play_clear_sound_fallback(self):
         """Fallback sound for clearing"""
         try:
@@ -428,6 +439,7 @@ class SandboxMode:
             sound.play()
         except:
             pass
+
 
     def create_canvas_dialog_button(self, parent, text, command, width, height, bg_color, fg_color, padx=0, pady=0):
         """Create a canvas-based button for macOS compatibility"""
@@ -466,6 +478,7 @@ class SandboxMode:
 
         return btn_canvas
 
+
     def setup_ui(self):
         """Setup the sandbox UI with enhanced styling matching learn hub"""
         # Main container with gradient-like effect
@@ -494,6 +507,7 @@ class SandboxMode:
 
         # Circuit display area
         self.setup_circuit_area(main_container)
+
 
     def create_simple_header(self, parent):
         """Create a simple header without animation to save space"""
@@ -674,6 +688,7 @@ class SandboxMode:
         self.state_combo.pack(pady=int(self.screen_height * 0.004))
         self.state_combo.bind('<<ComboboxSelected>>', self.on_state_change)
 
+
     def setup_circuit_area(self, parent):
         """Setup the circuit visualization area with enhanced styling"""
         circuit_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.RAISED, bd=2)
@@ -705,6 +720,7 @@ class SandboxMode:
 
         # Create bottom section with gate palette and controls
         self.setup_bottom_section(parent)
+
 
     def setup_bottom_section(self, parent):
         """Setup the bottom section with gate palette on left, controls in middle, and results on right"""
@@ -746,6 +762,7 @@ class SandboxMode:
 
         # Results area in right section
         self.setup_results_area(results_frame)
+
 
     def setup_action_buttons(self, parent):
         """Setup action buttons with enhanced styling in middle section"""
@@ -1241,6 +1258,7 @@ class SandboxMode:
             import traceback
             traceback.print_exc()
 
+
     def is_state_entangled(self, state_vector):
         """Simple check for entanglement (for educational purposes)"""
         try:
@@ -1265,6 +1283,7 @@ class SandboxMode:
         except:
             return False
 
+
     def save_3d_visualization(self, fig):
         """Save the 3D visualization as an image"""
         try:
@@ -1285,6 +1304,7 @@ class SandboxMode:
         except Exception as e:
             self.show_custom_dialog("Save Error", f"Error saving visualization:\n{str(e)}", "error")
             self.play_sound('error', self.play_error_sound_fallback)
+
 
     def refresh_3d_visualization(self, viz_window, state_vector):
         """Refresh the 3D visualization"""
@@ -1333,6 +1353,7 @@ class SandboxMode:
         self.results_text.insert(tk.END, "2. Configure qubits and initial states\n")
         self.results_text.insert(tk.END, "3. Run your circuit to see quantum state analysis\n")
         self.results_text.configure(state=tk.DISABLED)
+
 
     def setup_single_gate_controls(self, parent):
         """Setup single-qubit gate controls with centered 2x3 grid layout using relative sizing"""
@@ -1457,6 +1478,7 @@ class SandboxMode:
                                 font=('Arial', desc_font_size),
                                 fg=palette['gate_description_color'], bg=palette['background_4'])
             desc_label.place(relx=0.5, rely=0.87, anchor='center')
+
 
     def setup_multi_gate_controls(self, parent):
         """Setup multi-qubit gate controls with enhanced styling"""
@@ -1636,6 +1658,7 @@ class SandboxMode:
             toffoli_canvas.bind("<Leave>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['toffoli_add_button_background']),
                                                     toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['background_black'])))
             toffoli_canvas.configure(cursor='hand2')
+
 
     def setup_gate_panel(self, parent):
         """Setup the gate selection panel"""
@@ -1838,6 +1861,7 @@ class SandboxMode:
                                                     toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['background_black'])))
             toffoli_canvas.configure(cursor='hand2')
 
+
     def add_single_gate(self, gate):
         """Add a single-qubit gate to the selected qubit"""
         target_qubit = self.target_qubit_var.get()
@@ -1850,6 +1874,7 @@ class SandboxMode:
         self.placed_gates.append((gate, [target_qubit]))
         self.update_circuit_display()
         self.play_sound('gate_place', self.play_gate_sound_fallback)
+
 
     def add_cnot_gate(self):
         """Add a CNOT gate"""
@@ -1875,6 +1900,7 @@ class SandboxMode:
         self.update_circuit_display()
         self.play_sound('gate_place', self.play_gate_sound_fallback)
 
+
     def add_cz_gate(self):
         """Add a CZ gate"""
         if self.num_qubits < 2:
@@ -1898,6 +1924,7 @@ class SandboxMode:
         self.placed_gates.append(('CZ', [control, target]))
         self.update_circuit_display()
         self.play_sound('gate_place', self.play_gate_sound_fallback)
+
 
     def add_toffoli_gate(self):
         """Add a Toffoli gate"""
@@ -1923,6 +1950,7 @@ class SandboxMode:
         self.placed_gates.append(('Toffoli', [c1, c2, target]))
         self.update_circuit_display()
         self.play_sound('gate_place', self.play_gate_sound_fallback)
+
 
     def add_gate(self, gate):
         """Add a gate to the circuit"""
@@ -1962,6 +1990,7 @@ class SandboxMode:
             except:
                 pass
 
+
     def clear_circuit(self):
         """Clear all gates from the circuit"""
         self.placed_gates = []
@@ -1999,6 +2028,7 @@ class SandboxMode:
             self.results_text.configure(state=tk.DISABLED)
             self.play_sound('error', self.play_error_sound_fallback)
 
+
     def on_qubit_change(self):
         """Handle change in number of qubits"""
         self.num_qubits = self.qubit_var.get()
@@ -2025,6 +2055,7 @@ class SandboxMode:
         self.update_qubit_selections()
 
         self.update_circuit_display()
+
 
     def update_qubit_selections(self):
         """Update all qubit selection dropdowns when number of qubits changes"""
@@ -2077,11 +2108,13 @@ class SandboxMode:
         # Handle Toffoli visibility for 3+ qubits
         self.update_toffoli_visibility()
 
+
     def update_toffoli_visibility(self):
         """Show/hide Toffoli controls based on number of qubits"""
         # This is a simplified approach - in a production app you might want
         # to rebuild the entire gate panel, but this preserves the existing widgets
         pass
+
 
     def update_state_combobox(self, states):
         """Update the state combobox with new values"""
@@ -2091,10 +2124,12 @@ class SandboxMode:
         if hasattr(self, 'state_combo'):
             self.state_combo['values'] = states
 
+
     def on_state_change(self, event=None):
         """Handle change in initial state"""
         self.initial_state = self.state_var.get()
         self.update_circuit_display()
+
 
     def update_circuit_display(self):
         """Update the circuit visualization with enhanced graphics"""
@@ -2143,6 +2178,7 @@ class SandboxMode:
             self.gates_count_label.configure(text=f"Gates: {len(self.placed_gates)}")
         if hasattr(self, 'qubits_info_label'):
             self.qubits_info_label.configure(text=f"Qubits: {self.num_qubits}")
+
 
     def draw_enhanced_gates(self, wire_start, qubit_spacing):
         """Draw gates with enhanced 3D styling"""
@@ -2238,6 +2274,7 @@ class SandboxMode:
                                                        x + 8, target_y + 8,
                                                        fill='#ffffff', outline='#cccccc', width=2)
 
+
     def run_circuit(self):
         """Execute the quantum circuit and display results"""
         try:
@@ -2316,6 +2353,7 @@ class SandboxMode:
         finally:
             self.results_text.configure(state=tk.DISABLED)
 
+
     def set_initial_state(self, qc):
         """Set the initial state of the quantum circuit"""
         state = self.initial_state
@@ -2347,6 +2385,7 @@ class SandboxMode:
                 for i, bit in enumerate(reversed(binary_str)):
                     if bit == '1' and i < self.num_qubits:
                         qc.x(i)
+
 
     def display_results(self, state_vector):
         """Display the quantum state results"""
@@ -2393,11 +2432,13 @@ class SandboxMode:
         except Exception as e:
             self.results_text.insert(tk.END, f"Error displaying results: {str(e)}\n")
 
+
 def main():
     """For testing the sandbox independently"""
     root = tk.Tk()
     app = SandboxMode(root)
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()

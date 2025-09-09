@@ -4,12 +4,10 @@ Learn Hub for Infinity Qubit
 Educational resources and quantum computing concepts hub.
 """
 
+import sys
+import webbrowser
 import tkinter as tk
 from tkinter import ttk, scrolledtext
-import webbrowser
-import math
-import random
-import sys
 
 sys.path.append('..')
 from run import PROJECT_ROOT, get_resource_path
@@ -17,6 +15,7 @@ from q_utils import get_colors_from_file, extract_color_palette
 
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'learn_hub')
+
 
 class LearnHub:
     def __init__(self, root):
@@ -61,9 +60,11 @@ class LearnHub:
         self.root.lift()
         self.root.focus_force()
 
+
     def exit_fullscreen(self, event=None):
         """Exit the learn hub"""
         self.back_to_menu()
+
 
     def create_canvas_dialog_button(self, parent, text, command, width, height, bg_color, fg_color, padx=0, pady=0):
         """Create a canvas-based button for macOS compatibility"""
@@ -102,6 +103,7 @@ class LearnHub:
 
         return btn_canvas
 
+
     def toggle_fullscreen(self, event=None):
         """Toggle fullscreen mode"""
         # Toggle between windowed and fullscreen mode
@@ -120,6 +122,7 @@ class LearnHub:
             # Enter fullscreen
             self.root.attributes('-fullscreen', True)
 
+
     def start_animations(self):
         """Start background animations"""
         self.animation_running = True
@@ -127,6 +130,7 @@ class LearnHub:
         self.animation_id = self.root.after(500, self.animate_circuit)
         # Start subtitle animation
         self.root.after(1000, self.animate_subtitle)
+
 
     def on_window_resize(self, event):
         """Handle window resize events"""
@@ -141,6 +145,7 @@ class LearnHub:
 
             # Resume animation after a short delay
             self.animation_id = self.root.after(1000, self.animate_circuit)
+
 
     def create_learn_hub_ui(self):
         """Create the enhanced learn hub interface"""
@@ -180,6 +185,7 @@ class LearnHub:
 
         # Enhanced footer
         # self.create_enhanced_footer(content_frame)
+
 
     def create_animated_header(self, parent):
         """Create an animated quantum-themed header"""
@@ -275,6 +281,7 @@ class LearnHub:
         # Learning progress indicator
         self.create_learning_progress(header_frame)
 
+
     def draw_quantum_circuit(self):
         """Draw an animated quantum circuit - called only when needed"""
         if not hasattr(self, 'circuit_canvas') or not self.circuit_canvas.winfo_exists():
@@ -324,6 +331,7 @@ class LearnHub:
             # Canvas might be destroyed, ignore the error
             pass
 
+
     def draw_enhanced_gate(self, gate_info):
         """Draw enhanced quantum gates with 3D effect"""
         try:
@@ -365,6 +373,7 @@ class LearnHub:
         except tk.TclError:
             # Canvas might be destroyed, ignore the error
             pass
+
 
     def create_learning_progress(self, parent):
         """Create a visual learning progress indicator"""
@@ -420,6 +429,7 @@ class LearnHub:
                 line_canvas.pack(side=tk.LEFT)
                 line_canvas.create_line(0, 2, line_width, 2, fill='#555555', width=2)
 
+
     def style_notebook(self):
         """Apply enhanced styling to the notebook"""
         style = ttk.Style()
@@ -448,6 +458,7 @@ class LearnHub:
 
         # Center the tabs by configuring tab positioning
         style.configure('TNotebook', tabposition='n')
+
 
     def create_concepts_tab(self):
         """Create the enhanced basic concepts tab"""
@@ -537,6 +548,7 @@ complex problems in science, technology, and beyond. The future is quantum!
         concepts_text.insert(tk.END, concepts_content)
         concepts_text.config(state=tk.DISABLED)
 
+
     def create_gates_tab(self):
         """Create the enhanced quantum gates tab with all gates in one horizontal line"""
         gates_frame = ttk.Frame(self.notebook)
@@ -598,6 +610,7 @@ complex problems in science, technology, and beyond. The future is quantum!
         # For Linux
         canvas.bind("<Button-4>", lambda e: canvas.xview_scroll(-1, "units"))
         canvas.bind("<Button-5>", lambda e: canvas.xview_scroll(1, "units"))
+
 
     def create_enhanced_gate_card_horizontal(self, parent, name, description, formula, color, icon, difficulty):
         """Create enhanced cards for quantum gates with horizontal layout and hover effects"""
@@ -674,6 +687,7 @@ complex problems in science, technology, and beyond. The future is quantum!
         for widget in [content_frame, header_frame, icon_label, name_label, difficulty_label, desc_label, formula_label]:
             widget.bind("<Enter>", on_enter)
             widget.bind("<Leave>", on_leave)
+
 
     def create_algorithms_tab(self):
         """Create the enhanced algorithms tab"""
@@ -794,6 +808,7 @@ The quantum future awaits!
         algorithms_text.insert(tk.END, algorithms_content)
         algorithms_text.config(state=tk.DISABLED)
 
+
     def create_resources_tab(self):
         """Create the enhanced resources tab with horizontal layout"""
         resources_frame = ttk.Frame(self.notebook)
@@ -878,6 +893,7 @@ The quantum future awaits!
         # For Linux
         canvas.bind("<Button-4>", lambda e: canvas.xview_scroll(-1, "units"))
         canvas.bind("<Button-5>", lambda e: canvas.xview_scroll(1, "units"))
+
 
     def create_enhanced_resource_card_horizontal(self, parent, title, url, description, icon, rating):
         """Create enhanced resource cards with horizontal layout and hover effects"""
@@ -975,6 +991,7 @@ The quantum future awaits!
             widget.bind("<Enter>", on_enter)
             widget.bind("<Leave>", on_leave)
 
+
     def create_separator_horizontal(self, parent):
         """Create a horizontal separator for horizontal layout"""
         separator_frame = tk.Frame(parent, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
@@ -985,6 +1002,7 @@ The quantum future awaits!
         for i, color in enumerate(colors):
             line = tk.Frame(separator_frame, bg=color, height=2)
             line.pack(fill=tk.X, pady=1)
+
 
     def create_section_header_horizontal(self, parent, title, color):
         """Create an enhanced section header for horizontal layout"""
@@ -1001,6 +1019,7 @@ The quantum future awaits!
         underline = tk.Frame(header_frame, bg=color, height=2)
         underline.pack(fill=tk.X, pady=(5, 0))
 
+
     def create_section_header(self, parent, title, color):
         """Create an enhanced section header"""
         header_frame = tk.Frame(parent, bg=palette['background'])
@@ -1015,6 +1034,7 @@ The quantum future awaits!
         # Underline
         underline = tk.Frame(header_frame, bg=color, height=2)
         underline.pack(fill=tk.X, pady=(5, 0))
+
 
     def create_enhanced_resource_card(self, parent, title, url, description, icon, rating):
         """Create enhanced resource cards with ratings and hover effects"""
@@ -1110,6 +1130,7 @@ The quantum future awaits!
         card_frame.bind("<Enter>", on_enter)
         card_frame.bind("<Leave>", on_leave)
 
+
     def create_separator(self, parent):
         """Create an animated separator"""
         separator_frame = tk.Frame(parent, bg=palette['background'])
@@ -1120,6 +1141,7 @@ The quantum future awaits!
         for i, color in enumerate(colors):
             line = tk.Frame(separator_frame, bg=color, height=1)
             line.pack(fill=tk.X, pady=1)
+
 
     def animate_circuit(self):
         """Animate the quantum circuit with subtle effects"""
@@ -1138,6 +1160,7 @@ The quantum future awaits!
             # Widget might be destroyed, stop animation
             self.animation_running = False
 
+
     def animate_subtitle(self):
         """Animate subtitle with pulsing effect"""
         if not self.animation_running or not hasattr(self, 'subtitle_label'):
@@ -1154,6 +1177,7 @@ The quantum future awaits!
         except (tk.TclError, AttributeError):
             # Widget might be destroyed or not exist, ignore
             pass
+
 
     def open_url(self, url):
         """Open URL in default browser"""
@@ -1257,12 +1281,14 @@ The quantum future awaits!
 
         menu_root.mainloop()
 
+
     def reopen_learn_hub(self, menu_root):
         """Reopen the Learn Hub"""
         menu_root.destroy()
         new_root = tk.Tk()
         LearnHub(new_root)
         new_root.mainloop()
+
 
     def close_window(self):
         """Close the learn hub window"""
@@ -1277,11 +1303,13 @@ The quantum future awaits!
 
         self.root.destroy()
 
+
 def main():
     """For testing the learn hub independently"""
     root = tk.Tk()
     app = LearnHub(root)
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()

@@ -5,10 +5,8 @@ Displays loading animation before showing game mode selection.
 """
 
 import sys
-import os
 import tkinter as tk
 from tkinter import ttk
-import sys
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -18,6 +16,7 @@ from run import PROJECT_ROOT, get_resource_path
 # Get color palette
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'splash_screen')
+
 
 class SplashScreen:
     def __init__(self, fullscreen=True):
@@ -80,6 +79,7 @@ class SplashScreen:
         # Start timer to close splash screen (increased to allow pre-loading)
         self.splash.after(2000, self.close_splash)
 
+
     def pre_load_game_mode_selection(self):
         """Pre-load the game mode selection window while splash is visible"""
         try:
@@ -92,6 +92,7 @@ class SplashScreen:
         except Exception as e:
             print(f"Error pre-loading game mode selection: {e}")
             self.game_mode_selection = None
+
 
     def create_splash_content(self):
         """Create the content for the splash screen"""
@@ -173,6 +174,7 @@ class SplashScreen:
                     lightcolor=palette['background'],
                     darkcolor=palette['background'])
 
+
     def create_quantum_animation(self, canvas_width=380, canvas_height=90):
         """Create animated quantum circuit elements with scalable dimensions"""
         circuit_canvas = tk.Canvas(self.animation_frame, width=canvas_width, height=canvas_height,
@@ -203,6 +205,7 @@ class SplashScreen:
         self.gate_labels = ['H', 'X', 'Z']
 
         self.draw_animated_gates()
+
 
     def draw_animated_gates(self):
         """Draw the animated quantum gates"""
@@ -276,6 +279,7 @@ class SplashScreen:
 
         move_gates()
 
+
     def animate_loading(self):
         """Animate the loading elements"""
         # Start progress bar animation
@@ -286,6 +290,7 @@ class SplashScreen:
 
         # Animate quantum gates
         self.animate_gates()
+
 
     def animate_text(self):
         """Animate the loading text"""
@@ -360,17 +365,18 @@ class SplashScreen:
         selection_window = GameModeSelection()
         selection_window.run()
 
+
     def run(self):
         """Run the splash screen"""
         self.splash.mainloop()
+
 
 def show_splash_screen(fullscreen=True):
     """Show the splash screen before the game mode selection"""
     splash = SplashScreen(fullscreen)
     splash.run()
 
+
 if __name__ == "__main__":
-    # Test in fullscreen
+    # Show in fullscreen
     show_splash_screen(fullscreen=True)
-    # Or test in windowed mode
-    # show_splash_screen(fullscreen=False)

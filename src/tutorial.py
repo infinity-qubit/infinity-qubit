@@ -1,21 +1,22 @@
+#!/usr/bin/env python3
+"""
+Tutorial Mode for Infinity Qubit
+Allows users to learn about quantum computing concepts.
+"""
+
 import os
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
-import tkinter as tk
-from tkinter import ttk, messagebox
-import json
-import numpy as np
-from qiskit import QuantumCircuit
-from qiskit_aer import Aer
-from qiskit.quantum_info import Statevector
-import math
-from PIL import Image, ImageTk
-import pygame
 import sys
 import json
+import pygame
 import datetime
+import tkinter as tk
+from qiskit_aer import Aer
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import Statevector
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -26,8 +27,10 @@ from run import PROJECT_ROOT, get_resource_path
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'tutorial_mode')
 
+
 class TutorialWindow:
     SAVE_FILE = os.path.expanduser("resources/saves/infinity_qubit_tutorial_save.json")
+
 
     def __init__(self, parent, return_callback=None):
         self.parent = parent
@@ -189,12 +192,14 @@ class TutorialWindow:
         except Exception as e:
             print(f"❌ Could not save tutorial progress: {e}")
 
+
     def next_intro_step(self):
         """Move to next intro step"""
         self.play_sound('button_click')
         self.user_progress['current_step'] += 1
         self.save_progress()  # Save after step change
         self.show_intro_step()
+
 
     def prev_intro_step(self):
         """Move to previous intro step"""
@@ -203,12 +208,14 @@ class TutorialWindow:
         self.save_progress()  # Save after step change
         self.show_intro_step()
 
+
     def start_gates_tutorial(self):
         """Start the gates tutorial"""
         self.play_sound('success')
         self.user_progress['current_step'] = 2
         self.save_progress()  # Save after starting gates
         self.setup_ui()
+
 
     def on_gate_completed(self, gate):
         """Handle gate completion"""
@@ -217,12 +224,14 @@ class TutorialWindow:
             self.unlock_next_gate()
             self.save_progress()  # Save after completing a gate
 
+
     def show_intro_step(self):
         """Show the current intro step"""
         if self.user_progress['current_step'] == 0:
             self.show_bit_explanation()
         elif self.user_progress['current_step'] == 1:
             self.show_qubit_explanation()
+
 
     def show_bit_explanation(self):
         """Step 1 - What's a bit?"""
@@ -288,6 +297,7 @@ then the coin represents a bit — but it can only show one face at a time."""
                                               next_canvas.itemconfig(next_text_id, fill=palette['background_3'])))
         next_canvas.configure(cursor='hand2')
 
+
     def create_bit_demo(self, parent):
         """Create interactive bit demonstration"""
         demo_title = tk.Label(parent, text="Interactive Bit Demo",
@@ -328,6 +338,7 @@ then the coin represents a bit — but it can only show one face at a time."""
                                  fg=palette['explanation_text_color'], bg=palette['background_2'])
         self.bit_label.place(relx=0.5, rely=0.8, anchor='center')
 
+
     def flip_bit(self):
         """Flip the bit state"""
         self.bit_state = 1 - self.bit_state
@@ -335,6 +346,7 @@ then the coin represents a bit — but it can only show one face at a time."""
                                   bg=palette['X_color'] if self.bit_state else palette['H_color'])
         self.bit_label.configure(text=f"State: {'ON' if self.bit_state else 'OFF'}")
         self.play_sound('button_click')
+
 
     def show_qubit_explanation(self):
         """Step 2 - Enter the qubit"""
@@ -419,6 +431,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
                                               next_canvas.itemconfig(next_text_id, fill=palette['background_3'])))
         next_canvas.configure(cursor='hand2')
 
+
     def create_spinning_coin_demo(self, parent):
         """Create spinning coin animation demonstration"""
         demo_title = tk.Label(parent, text="Interactive Qubit Demo",
@@ -482,6 +495,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
                                 fg=palette['explanation_text_color'], bg=palette['background_2'])
         self.coin_label.place(relx=0.5, rely=0.85, anchor='center')
 
+
     def draw_coin(self):
         """Draw the coin on canvas"""
         self.coin_canvas.delete("all")
@@ -501,6 +515,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             self.coin_canvas.create_text(75, 75, text=self.coin_state,
                                         font=('Arial', 32, 'bold'), fill=palette['background_3'])
 
+
     def spin_coin(self):
         """Start spinning animation (superposition)"""
         if not self.coin_spinning:
@@ -508,6 +523,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             self.coin_label.configure(text="State: Superposition (|0⟩ + |1⟩)")
             self.animate_spin()
             self.play_sound('button_click')
+
 
     def measure_coin(self):
         """Stop spinning and collapse to definite state"""
@@ -525,6 +541,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             self.draw_coin()
             self.play_sound('success')
 
+
     def animate_spin(self):
         """Animate the spinning coin"""
         if self.coin_spinning:
@@ -532,11 +549,13 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             # Continue animation
             self.animation_id = self.window.after(200, self.animate_spin)
 
+
     def next_intro_step(self):
         """Move to next intro step"""
         self.play_sound('button_click')
         self.user_progress['current_step'] += 1
         self.show_intro_step()
+
 
     def prev_intro_step(self):
         """Move to previous intro step"""
@@ -544,11 +563,13 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         self.user_progress['current_step'] -= 1
         self.show_intro_step()
 
+
     def start_gates_tutorial(self):
         """Start the gates tutorial"""
         self.play_sound('success')
         self.user_progress['current_step'] = 2
         self.setup_ui()
+
 
     def create_canvas_dialog_button(self, parent, text, command, width, height, bg_color, fg_color, padx=0, pady=0):
         """Create a canvas-based button for macOS compatibility"""
@@ -587,6 +608,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
         return btn_canvas
 
+
     def init_sound_system(self):
         """Initialize the sound system (same as puzzle_mode)"""
         try:
@@ -597,6 +619,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         except pygame.error:
             print("Warning: Could not initialize sound system")
             self.sound_enabled = False
+
 
     def load_sounds(self):
         """Load sound effects for the tutorial mode (same as puzzle_mode)"""
@@ -627,6 +650,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             print(f"Warning: Could not load sounds: {e}")
             self.sound_enabled = False
             self.sounds = {}
+
 
     def play_sound(self, sound_name):
         """Play a sound effect (same as puzzle_mode)"""
@@ -1039,6 +1063,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         else:
             self.window.destroy()
 
+
     def create_enhanced_gate_button(self, parent, gate, relx, rely):
         """Create enhanced gate button - only if unlocked"""
         if gate not in self.user_progress['unlocked_gates']:
@@ -1090,11 +1115,13 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
         btn.bind("<Enter>", on_enter)
         btn.bind("<Leave>", on_leave)
 
+
     def open_gate_tutorial_with_progress(self, gate):
         """Open gate tutorial with progress tracking"""
         self.play_sound('button_click')
         tutorial = GateTutorial(self.window, gate, self.gate_info[gate],
                             completion_callback=lambda: self.on_gate_completed(gate))
+
 
     def on_gate_completed(self, gate):
         """Handle gate completion"""
@@ -1102,6 +1129,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             self.user_progress['completed_gates'].append(gate)
             self.unlock_next_gate()
             self.save_progress()
+
 
     def unlock_next_gate(self):
         """Unlock the next gate in sequence"""
@@ -1172,6 +1200,7 @@ class GateTutorial:
             print("Warning: Could not initialize sound system")
             self.sound_enabled = False
 
+
     def load_sounds(self):
         """Load sound effects for the gate tutorial"""
         try:
@@ -1200,6 +1229,7 @@ class GateTutorial:
             self.sound_enabled = False
             self.sounds = {}
 
+
     def play_sound(self, sound_name):
         """Play a sound effect"""
         if not self.sound_enabled:
@@ -1210,6 +1240,7 @@ class GateTutorial:
                 self.sounds[sound_name].play()
         except Exception as e:
             print(f"Warning: Could not play sound {sound_name}: {e}")
+
 
     def center_window(self):
         """Center the window on the screen"""
@@ -1224,6 +1255,7 @@ class GateTutorial:
         y = (screen_height - self.window_height) // 2
 
         self.window.geometry(f"{self.window_width}x{self.window_height}+{x}+{y}")
+
 
     def setup_ui(self):
         """Setup the gate tutorial interface with fullscreen layout using relative positioning"""
@@ -1254,6 +1286,7 @@ class GateTutorial:
 
         # Bottom section with controls and results
         self.setup_bottom_section(main_container)
+
 
     def create_header(self, parent):
         """Create header using relative positioning"""
@@ -1326,6 +1359,7 @@ class GateTutorial:
                                 fg=self.gate_info['color'], bg=palette['main_container_background'])
         example_label.place(relx=0.5, rely=0.8, anchor='center')
 
+
     def setup_circuit_section(self, parent):
         """Setup circuit visualization section using relative positioning"""
         circuit_frame = tk.Frame(parent, bg=palette['main_container_background'], relief=tk.RAISED, bd=2)
@@ -1350,6 +1384,7 @@ class GateTutorial:
         self.canvas_width = canvas_width
         self.canvas_height = canvas_height
 
+
     def setup_bottom_section(self, parent):
         """Setup bottom section with controls and results using relative positioning"""
         bottom_frame = tk.Frame(parent, bg=palette['main_container_background'])
@@ -1366,6 +1401,7 @@ class GateTutorial:
         results_frame.place(relx=0.52, rely=0, relwidth=0.48, relheight=1)
 
         self.setup_results_area(results_frame)
+
 
     def setup_gate_controls(self, parent):
         """Setup gate control buttons using relative positioning"""
@@ -1496,6 +1532,7 @@ class GateTutorial:
         clear_canvas.bind("<Enter>", on_clear_enter)
         clear_canvas.bind("<Leave>", on_clear_leave)
 
+
     def setup_results_area(self, parent):
         """Setup results display area using relative positioning"""
         results_title = tk.Label(parent, text="Quantum State Analysis",
@@ -1530,6 +1567,7 @@ class GateTutorial:
         self.draw_circuit()
         self.display_initial_info()
 
+
     def add_gate(self):
         """Add the tutorial gate to the circuit"""
         if len(self.placed_gates) < 5:  # Limit gates
@@ -1537,12 +1575,14 @@ class GateTutorial:
             self.draw_circuit()
             self.play_sound('gate_place')
 
+
     def clear_circuit(self):
         """Clear all gates"""
         self.placed_gates = []
         self.draw_circuit()
         self.display_initial_info()
         self.play_sound('clear')
+
 
     def draw_circuit(self):
         """Draw the quantum circuit with enhanced styling"""
@@ -1588,6 +1628,7 @@ class GateTutorial:
 
         # Draw enhanced gates
         self.draw_enhanced_gates(wire_start, qubit_spacing, num_qubits)
+
 
     def draw_enhanced_gates(self, wire_start, qubit_spacing, num_qubits):
         """Draw gates with enhanced 3D styling"""
@@ -1666,10 +1707,12 @@ class GateTutorial:
                 self.canvas.create_text(x, y_pos, text=gate,
                                        fill=palette['background_3'], font=('Arial', 16, 'bold'))
 
+
     def mark_completed(self):
         """Mark this gate tutorial as completed"""
         if self.completion_callback:
             self.completion_callback()
+
 
     def run_circuit(self):
         """Run the quantum circuit and show results"""
@@ -1817,6 +1860,7 @@ class GateTutorial:
         else:
             self.results_text.insert(tk.END, f"The {self.gate} gate applied a specific quantum transformation to the state!\n")
 
+
     def display_initial_info(self):
         """Display initial information with enhanced formatting"""
         self.results_text.configure(state=tk.NORMAL)
@@ -1834,6 +1878,7 @@ class GateTutorial:
         self.results_text.insert(tk.END, "Ready to explore quantum mechanics!\n")
 
         self.results_text.configure(state=tk.DISABLED)
+
 
 def show_tutorial(parent, return_callback=None):
     """Show the tutorial window"""

@@ -1,17 +1,21 @@
+#!/usr/bin/env python3
+"""
+Puzzle Mode for Infinity Qubit
+Allows users to solve puzzles related to quantum circuits.
+"""
+
 import os
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
-import tkinter as tk
-from tkinter import ttk, messagebox
+import sys
 import json
+import pygame
 import numpy as np
+import tkinter as tk
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
-import pygame
-from PIL import Image, ImageTk
-import sys
 
 sys.path.append('..')
 from run import PROJECT_ROOT, get_resource_path
@@ -21,8 +25,10 @@ from q_utils import get_colors_from_file, extract_color_palette
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'puzzle_mode')
 
+
 class PuzzleMode:
     SAVE_FILE = os.path.expanduser("resources/saves/infinity_qubit_puzzle_save.json")
+
 
     def __init__(self, root):
         self.root = root
@@ -72,6 +78,7 @@ class PuzzleMode:
             # Redraw the circuit with loaded gates
             self.draw_circuit()
 
+
     def save_progress(self):
         """Save current progress to a file."""
         data = {
@@ -85,6 +92,7 @@ class PuzzleMode:
             print("✅ Progress saved.")
         except Exception as e:
             print(f"❌ Could not save progress: {e}")
+
 
     def load_progress(self):
         """Load progress from file if it exists."""
@@ -164,6 +172,7 @@ class PuzzleMode:
 
         return canvas
 
+
     def load_puzzle_levels(self):
         """Load puzzle levels from JSON file"""
         try:
@@ -180,6 +189,7 @@ class PuzzleMode:
         except Exception as e:
             print(f"❌ Error loading puzzle levels: {e}")
             return self.create_puzzle_levels()
+
 
     def create_puzzle_levels(self):
         """Fallback method to create default puzzle levels if JSON loading fails"""
@@ -238,6 +248,7 @@ class PuzzleMode:
             self.sound_enabled = False
             self.sounds = {}
 
+
     def play_sound(self, sound_name):
         """Play a sound effect"""
         if not self.sound_enabled:
@@ -250,6 +261,7 @@ class PuzzleMode:
                 print(f"⚠️ Sound '{sound_name}' not available")
         except Exception as e:
             print(f"Warning: Could not play sound {sound_name}: {e}")
+
 
     def setup_ui(self):
         """Setup the user interface with relative positioning"""
@@ -283,6 +295,7 @@ class PuzzleMode:
 
         # Set up window close protocol
         self.root.protocol("WM_DELETE_WINDOW", self.on_window_close)
+
 
     def create_header(self, parent):
         """Create header with title and navigation using relative positioning"""
@@ -344,6 +357,7 @@ class PuzzleMode:
         main_menu_canvas.bind("<Enter>", on_menu_enter)
         main_menu_canvas.bind("<Leave>", on_menu_leave)
 
+
     def setup_level_info_panel(self, parent):
         """Setup the level information panel using relative positioning"""
         info_frame = tk.Frame(parent, bg=palette['background_2'], relief=tk.RAISED, bd=2)
@@ -398,6 +412,7 @@ class PuzzleMode:
                                         fg=palette['max_gates_counter_color'], bg=palette['background_3'])
         self.gates_limit_label.place(relx=0.5, rely=0.65, anchor='center')
 
+
     def setup_circuit_area(self, parent):
         """Setup the circuit visualization area using relative positioning"""
         circuit_frame = tk.Frame(parent, bg=palette['background_2'], relief=tk.RAISED, bd=2)
@@ -422,6 +437,7 @@ class PuzzleMode:
 
         self.canvas_width = canvas_width
         self.canvas_height = canvas_height
+
 
     def setup_bottom_section(self, parent):
         """Setup the bottom section with gate palette, controls, and state analysis using relative positioning"""
@@ -451,6 +467,7 @@ class PuzzleMode:
         results_frame.place(relx=0.7, rely=0, relwidth=0.3, relheight=1)
 
         self.setup_state_analysis(results_frame)
+
 
     def setup_puzzle_controls(self, parent):
         """Setup puzzle control buttons using relative positioning"""
@@ -532,6 +549,7 @@ class PuzzleMode:
                                         font=('Arial', max(9, int(self.window_width / 180))),
                                         fg=palette['used_gates_counter_color'], bg=palette['background_3'])
         self.gates_used_label.place(relx=0.7, rely=0.7, anchor='center')
+
 
     def setup_state_analysis(self, parent):
         """Setup quantum state analysis area using relative positioning"""
@@ -628,6 +646,7 @@ class PuzzleMode:
         # Show initial gate set
         self.display_current_gates()
 
+
     def create_canvas_gate_button(self, parent, gate, color, description, relx, rely, relwidth, relheight):
         """Helper method to create a canvas-based gate button with proper closures"""
         # Container for the gate button using relative positioning
@@ -702,6 +721,7 @@ class PuzzleMode:
         desc_label.place(relx=0.5, rely=0.85, anchor='center')
 
         return btn_container, btn_canvas
+
 
     def display_current_gates(self):
         """Display the current set of gates (single or multi-qubit)"""
@@ -838,6 +858,7 @@ class PuzzleMode:
                 self.create_canvas_gate_button(gates_main_container, gate, color, description,
                                              relx, rely, 0.28, 0.2)
 
+
     def toggle_gate_view(self):
         """Toggle between single-qubit and multi-qubit gate views"""
         if self.current_gate_view == 'single':
@@ -850,6 +871,7 @@ class PuzzleMode:
             self.toggle_canvas.itemconfig("text", text="Show Multi-Qubit Gates")
 
         self.display_current_gates()
+
 
     def add_gate(self, gate):
         """Add a gate to the circuit"""
@@ -981,6 +1003,7 @@ class PuzzleMode:
                 gate_info = {'gate': gate, 'qubits': [target]}
                 self.placed_gates.append(gate_info)
 
+
     def add_two_qubit_gate(self, gate):
         """Add a two-qubit gate with control and target selection"""
         level = self.levels[self.current_level]
@@ -1002,6 +1025,7 @@ class PuzzleMode:
 
         gate_info = {'gate': gate, 'qubits': [control, target]}
         self.placed_gates.append(gate_info)
+
 
     def add_toffoli_gate(self, gate):
         """Add a Toffoli gate with two controls and one target"""
@@ -1158,6 +1182,7 @@ class PuzzleMode:
         dialog.wait_window()
         return result[0]
 
+
     def clear_circuit(self):
         """Clear all gates from the circuit"""
         self.placed_gates = []
@@ -1215,6 +1240,7 @@ class PuzzleMode:
 
         except Exception as e:
             self.show_error_dialog(f"Error running circuit: {str(e)}")
+
 
     def show_info_dialog(self, title, message):
         """Show a styled info dialog without decorations"""
@@ -1294,6 +1320,7 @@ class PuzzleMode:
             qc.h(0)
         # Add more initial states as needed for your JSON levels
         # |0⟩, |00⟩, |000⟩, |0000⟩ are default, no preparation needed
+
 
     def check_solution(self, state_vector, level):
         """Check if the current state matches the target state"""
@@ -1510,6 +1537,7 @@ class PuzzleMode:
             print(f"Warning: Unknown target state '{target_state}' for {level['qubits']} qubits")
             return False
 
+
     def display_circuit_results(self, state_vector, level):
         """Display the results of running the circuit"""
         self.state_display.config(state=tk.NORMAL)
@@ -1532,6 +1560,7 @@ class PuzzleMode:
         self.state_display.insert(tk.END, "Puzzle not solved yet. Try adjusting your circuit!\n")
 
         self.state_display.config(state=tk.DISABLED)
+
 
     def level_complete(self):
         """Handle level completion with styled dialog"""
@@ -1669,6 +1698,7 @@ class PuzzleMode:
         else:
             self.game_complete()
 
+
     def get_performance_message(self, gates_used, max_gates):
         """Get a performance message based on gate efficiency"""
         if gates_used <= max_gates * 0.5:
@@ -1679,6 +1709,7 @@ class PuzzleMode:
             return "GOOD! You solved it!"
         else:
             return "COMPLETED! Keep practicing!"
+
 
     def game_complete(self):
         """Handle game completion with styled dialog without decorations"""
@@ -1952,6 +1983,7 @@ Thank you for playing Infinity Qubit!"""
         # Display initial state information
         self.display_states(level)
 
+
     def display_states(self, level):
         """Display level state information"""
         self.state_display.config(state=tk.NORMAL)
@@ -1975,6 +2007,7 @@ Thank you for playing Infinity Qubit!"""
 
         # Update status
         self.update_circuit_status()
+
 
     def update_circuit_status(self):
         """Update circuit status display"""
@@ -2199,6 +2232,7 @@ Thank you for playing Infinity Qubit!"""
         # Update status
         self.update_circuit_status()
 
+
     def draw_enhanced_gates(self, wire_start, qubit_spacing, num_qubits):
         """Draw gates with enhanced 3D styling"""
         gate_x_start = wire_start + 100
@@ -2230,6 +2264,7 @@ Thank you for playing Infinity Qubit!"""
             else:
                 self.draw_single_qubit_gate_enhanced(x, qubit_spacing, gate, qubits[0], color)
 
+
     def draw_single_qubit_gate_enhanced(self, x, qubit_spacing, gate, target_qubit, color):
         """Draw enhanced single qubit gate"""
         y_pos = (target_qubit + 1) * qubit_spacing + 20
@@ -2252,6 +2287,7 @@ Thank you for playing Infinity Qubit!"""
         # Gate symbol
         self.circuit_canvas.create_text(x, y_pos, text=gate,
                                        fill=palette['gate_symbol_color'], font=('Arial', 12, 'bold'))
+
 
     def draw_two_qubit_gate_enhanced(self, x, qubit_spacing, gate, qubits, color):
         """Draw enhanced two-qubit gate"""
@@ -2297,6 +2333,7 @@ Thank you for playing Infinity Qubit!"""
             self.circuit_canvas.create_oval(x - 8, target_y - 8,
                                            x + 8, target_y + 8,
                                            fill='#ffffff', outline='#cccccc', width=2)
+
 
     def draw_toffoli_gate_enhanced(self, x, qubit_spacing, qubits, color):
         """Draw enhanced Toffoli gate"""

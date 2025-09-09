@@ -9,15 +9,10 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
-import pygame
 import sys
+import pygame
 import tkinter as tk
 import tkinter.messagebox as messagebox
-import tkinter.ttk as ttk
-from PIL import Image, ImageTk
-import threading
-import time
-import cv2
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -119,6 +114,7 @@ class GameModeSelection:
                                     bg=palette['background'], highlightthickness=0)
             simple_canvas.place(x=0, y=0)
             return simple_canvas
+
 
     def update_info_display(self, mode_key):
         """Update the info display with selected mode information"""
@@ -300,6 +296,7 @@ class GameModeSelection:
             except:
                 pass
 
+
     def create_selection_ui(self):
         """Create the game mode selection interface with glassmorphism effect using relative positioning"""
         # Main container with semi-transparent background using relative positioning
@@ -417,6 +414,7 @@ class GameModeSelection:
                                 font=('Arial', max(8, int(self.window_width / 150))),
                                 fg=palette['version_text_color'], bg=palette['background'])
         version_label.pack(side=tk.LEFT)
+
 
     def update_glass_background(self, canvas):
         """Update glassmorphism background when canvas is resized"""
@@ -616,6 +614,7 @@ class GameModeSelection:
                 'selected_font_size': selected_font_size
             }
 
+
     def select_mode(self, mode_key, command):
         """Select a game mode and update the info display"""
         self.play_sound()
@@ -664,6 +663,7 @@ class GameModeSelection:
         self.selected_command = command
         self.update_info_display(mode_key)
 
+
     def execute_command(self, command):
         """Execute button command with sound effect"""
         self.play_sound()
@@ -674,31 +674,11 @@ class GameModeSelection:
             command()
         self.root.after(100, execute_delayed)
 
+
     def on_glass_configure(self, event):
         """Handle glass canvas configure event"""
         self.update_glass_background(event.widget)
 
-    def on_escape_key(self, event):
-        """Handle escape key press"""
-        self.on_closing()
-
-    def on_f11_key(self, event):
-        """Handle F11 key press - toggle fullscreen"""
-        # Toggle between windowed and fullscreen mode
-        if self.root.attributes('-fullscreen'):
-            # Exit fullscreen
-            self.root.attributes('-fullscreen', False)
-            # Reset to optimal window size and center
-            screen_width = self.root.winfo_screenwidth()
-            screen_height = self.root.winfo_screenheight()
-            target_width = int(screen_width * 0.85)
-            target_height = int(screen_height * 0.85)
-            x = (screen_width - target_width) // 2
-            y = (screen_height - target_height) // 2
-            self.root.geometry(f"{target_width}x{target_height}+{x}+{y}")
-        else:
-            # Enter fullscreen
-            self.root.attributes('-fullscreen', True)
 
     def create_info_display(self):
         """Create the initial info display area"""
@@ -714,6 +694,7 @@ class GameModeSelection:
                             bg=palette['background'],
                             justify=tk.CENTER)
         welcome_label.place(relx=0.5, rely=0.5, anchor='center')
+
 
     def start_tutorial_mode(self):
         """Start the tutorial mode"""
@@ -734,16 +715,13 @@ class GameModeSelection:
             messagebox.showerror("Error", f"Failed to start tutorial: {e}")
             self.root.deiconify()
 
+
     def return_to_main_menu(self):
         """Return to the main menu from tutorial"""
         self.root.deiconify()
         self.root.lift()
         self.root.focus_set()
-        # Restart video if available
-        if self.video_cap and not self.video_running:
-            self.video_running = True
-            self.video_thread = threading.Thread(target=self.play_video, daemon=True)
-            self.video_thread.start()
+
 
     def start_puzzle_mode(self):
         """Start the puzzle mode"""
@@ -844,10 +822,12 @@ class GameModeSelection:
         """Run the game mode selection window"""
         self.root.mainloop()
 
+
 def main():
     """For testing the game mode selection independently"""
     app = GameModeSelection()
     app.run()
+
 
 if __name__ == "__main__":
     main()
