@@ -2028,9 +2028,9 @@ Thank you for playing Infinity Qubit!"""
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
 
-        # Calculate center position BEFORE creating the geometry
-        dialog_width = 400
-        dialog_height = 280
+        # Make dialog MUCH bigger for touch screens
+        dialog_width = 600  # Increased from ~400
+        dialog_height = 400  # Increased from ~280
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
         x = (screen_width - dialog_width) // 2
@@ -2049,30 +2049,29 @@ Thank you for playing Infinity Qubit!"""
         dialog.grab_set()
         dialog.focus_set()
 
-        # Initialize result variable
         result = [None]
 
         # Main container with border
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
 
-        # Title
+        # Title - bigger text for touch screens
         title_label = tk.Label(main_frame, text="Return to Main Menu",
-                            font=('Arial', 16, 'bold'),
+                            font=('Arial', 20, 'bold'),  # Increased from 16
                             fg=palette['title_color'], bg=palette['background_2'])
-        title_label.pack(pady=(15, 10))
+        title_label.pack(pady=(20, 15))  # More padding
 
-        # Message
+        # Message - bigger text and more padding
         message_label = tk.Label(main_frame,
                             text="Are you sure you want to return to the main menu?\nYour progress will be saved.",
-                            font=('Arial', 12),
+                            font=('Arial', 16),  # Increased from 12
                             fg=palette['subtitle_color'], bg=palette['background_2'],
                             justify=tk.CENTER)
-        message_label.pack(pady=10)
+        message_label.pack(pady=20)  # More padding
 
         # Button frame
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
-        button_frame.pack(pady=(10, 5))
+        button_frame.pack(pady=(20, 10))  # More top padding
 
         def confirm_return():
             result[0] = True
@@ -2082,34 +2081,33 @@ Thank you for playing Infinity Qubit!"""
             result[0] = False
             dialog.destroy()
 
-        # Yes button - canvas-based
+        # Make buttons MUCH bigger for touch screens
         yes_canvas = self.create_canvas_dialog_button(
-            button_frame, "Yes, Return",
+            button_frame, "✓ Yes, Return",
             confirm_return,
             palette['next_level_button_background'],
             palette['next_level_button_text_color'],
-            width=120, height=40, font_size=12
+            width=180, height=60, font_size=16  # Much bigger: was 120x40, font 12
         )
-        yes_canvas.pack(side=tk.LEFT, padx=10)
+        yes_canvas.pack(side=tk.LEFT, padx=20)  # More spacing
 
-        # No button - canvas-based
         no_canvas = self.create_canvas_dialog_button(
-            button_frame, "No, Stay",
+            button_frame, "✗ No, Stay",
             cancel_return,
             palette['close_button_background'],
             palette['close_button_hover_text_color'],
-            width=120, height=40, font_size=12
+            width=180, height=60, font_size=16  # Much bigger: was 120x40, font 12
         )
-        no_canvas.pack(side=tk.LEFT, padx=10)
+        no_canvas.pack(side=tk.LEFT, padx=20)  # More spacing
 
-        # --- Reset Progress Button in its own frame ---
+        # Reset Progress Button - also bigger
         reset_frame = tk.Frame(main_frame, bg=palette['background_2'])
-        reset_frame.pack(pady=(15, 5))
+        reset_frame.pack(pady=(25, 15))  # More padding
 
         reset_label = tk.Label(reset_frame, text="Or reset your progress:",
-                            font=('Arial', 10, 'italic'),
+                            font=('Arial', 14, 'italic'),  # Bigger text
                             fg=palette['subtitle_color'], bg=palette['background_2'])
-        reset_label.pack(pady=(0, 5))
+        reset_label.pack(pady=(0, 10))  # More padding
 
         def reset_progress():
             if os.path.exists(self.SAVE_FILE):
@@ -2121,13 +2119,13 @@ Thank you for playing Infinity Qubit!"""
             dialog.destroy()
             self.root.after(100, lambda: self.load_level(0))
 
-        # Reset button - canvas-based
+        # Reset button - much bigger
         reset_canvas = self.create_canvas_dialog_button(
-            reset_frame, " Reset Progress",
+            reset_frame, "🔄 Reset Progress",
             reset_progress,
             palette['clear_button_background'],
             palette['clear_button_text_color'],
-            width=160, height=40, font_size=12
+            width=220, height=60, font_size=16  # Much bigger: was 160x40, font 12
         )
         reset_canvas.pack()
 
