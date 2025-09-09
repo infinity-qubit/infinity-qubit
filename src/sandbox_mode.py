@@ -69,11 +69,10 @@ class SandboxMode:
             self.sounds = {}
             try:
                 # Gate sounds
-                self.sounds['gate_place'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
-                self.sounds['success'] = pygame.mixer.Sound(get_resource_path("resources/sounds/run_circuit.wav"))
-                self.sounds['error'] = pygame.mixer.Sound(get_resource_path("resources/sounds/error.wav"))
+                self.sounds['gate_place'] = pygame.mixer.Sound(get_resource_path("resources/sounds/add_gate.wav"))
+                self.sounds['success'] = pygame.mixer.Sound(get_resource_path("resources/sounds/correct.wav"))
+                self.sounds['error'] = pygame.mixer.Sound(get_resource_path("resources/sounds/wrong.wav"))
                 self.sounds['click'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
-                self.sounds['circuit_run'] = pygame.mixer.Sound(get_resource_path("resources/sounds/click.wav"))
                 self.sounds['clear'] = pygame.mixer.Sound(get_resource_path("resources/sounds/clear.wav"))
 
                 # Set volumes
@@ -122,21 +121,28 @@ class SandboxMode:
         try:
             with open(filename, "w") as f:
                 json.dump(data, f)
+            self.play_sound('click')
             self.show_custom_dialog("Success", f"Circuit saved!", "success")
         except Exception as e:
+            self.play_sound('error', self.play_error_sound_fallback)
             self.show_custom_dialog("Error", f"Could not save circuit: {e}", "error")
 
 
     def load_circuit(self):
         """Show a touch-friendly list of saved circuits."""
         if not os.path.exists(self.SAVE_DIR):
+            self.play_sound('error', self.play_error_sound_fallback)
             self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
             return
 
         files = [f for f in os.listdir(self.SAVE_DIR) if f.endswith(".json")]
         if not files:
+            self.play_sound('error', self.play_error_sound_fallback)
             self.show_custom_dialog("No Saves", "No saved circuits found.", "info")
             return
+
+        # Play click sound
+        self.play_sound('click')
 
         # Create dialog
         dialog = tk.Toplevel(self.root)
@@ -229,20 +235,15 @@ class SandboxMode:
 
         # Create touch-friendly buttons for each save file
         for filename in files:
-            # Extract info from filename
             match = re.match(r"circuit_(\d+)qubits_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.json", filename)
             if match:
                 qubits, timestamp = match.groups()
-                # Convert timestamp to readable format
                 datetime_obj = datetime.datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S")
                 friendly_date = datetime_obj.strftime("%b %d, %Y %I:%M %p")
-
-                # Create button frame with border
                 btn_frame = tk.Frame(scrollable_frame, bg=palette['background_4'],
                                 relief=tk.RAISED, bd=2)
                 btn_frame.pack(fill=tk.X, padx=10, pady=5)
 
-                # Button with file info
                 load_btn = tk.Button(btn_frame,
                                 text=f"{qubits} Qubits Circuit\n{friendly_date}",
                                 command=lambda f=filename: do_load(f),
@@ -254,7 +255,6 @@ class SandboxMode:
                                 cursor='hand2')
                 load_btn.pack(fill=tk.X)
 
-                # Add hover effect
                 def on_enter(e):
                     e.widget.configure(bg=palette['button_hover_background'])
                 def on_leave(e):
@@ -281,8 +281,6 @@ class SandboxMode:
 
         title_bar.bind("<Button-1>", start_move)
         title_bar.bind("<B1-Motion>", on_move)
-        # title_bar_label.bind("<Button-1>", start_move)
-        # title_bar_label.bind("<B1-Motion>", on_move)
 
         # Mouse wheel scrolling
         def on_mousewheel(event):
@@ -778,12 +776,12 @@ class SandboxMode:
 
         # Create enhanced buttons with hover effects
         buttons_data = [
-            (" Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
-            (" Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
-            (" Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
-            (" Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black']),
-            (" Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
-            (" 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color'])  # New button
+            ("Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
+            ("Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
+            ("Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
+            ("Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black']),
+            ("3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color']),
+            ("Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black'])
         ]
 
         # Create buttons in a vertical layout for the middle section
@@ -2281,9 +2279,6 @@ class SandboxMode:
             # Clear previous results first
             self.results_text.configure(state=tk.NORMAL)
             self.results_text.delete(1.0, tk.END)
-
-            # Play sound first for immediate feedback
-            self.play_sound('circuit_run', self.play_success_sound_fallback)
 
             # Check if there are any gates to run
             if not self.placed_gates:

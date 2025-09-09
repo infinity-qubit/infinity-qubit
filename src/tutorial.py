@@ -169,9 +169,6 @@ class TutorialWindow:
         self.window.lift()
         self.window.focus_force()
 
-        # Play welcome sound
-        self.play_sound('clear')
-
     def save_progress(self):
         """Save tutorial progress to file."""
         try:
@@ -211,7 +208,6 @@ class TutorialWindow:
 
     def start_gates_tutorial(self):
         """Start the gates tutorial"""
-        self.play_sound('success')
         self.user_progress['current_step'] = 2
         self.save_progress()  # Save after starting gates
         self.setup_ui()
@@ -566,7 +562,6 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
     def start_gates_tutorial(self):
         """Start the gates tutorial"""
-        self.play_sound('success')
         self.user_progress['current_step'] = 2
         self.setup_ui()
 
@@ -627,12 +622,7 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             # Define sound file paths
             sound_files = {
                 'button_click': get_resource_path('resources/sounds/click.wav'),
-                'gate_place': get_resource_path('resources/sounds/click.wav'),
-                'success': get_resource_path('resources/sounds/success.wav'),
-                'error': get_resource_path('resources/sounds/error.wav'),
-                'clear': get_resource_path('resources/sounds/clear.wav'),
-                'tutorial_open': get_resource_path('resources/sounds/clear.wav'),
-                'gate_hover': None
+                'success': get_resource_path('resources/sounds/correct.wav'),
             }
 
             # Load sounds into pygame
@@ -735,6 +725,32 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
         # Navigation buttons on the right
         if self.return_callback:
+            # Add Help/Info button - styled like Load Circuit dialog
+            help_btn = tk.Button(header_frame, text="? Help",
+                            command=self.show_help,
+                            font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
+                            bg=palette['background_3'], fg=palette['main_title_color'],  # Dark bg, green text
+                            padx=12, pady=6,
+                            cursor='hand2',
+                            relief=tk.RAISED,
+                            bd=2)
+            help_btn.place(relx=0.88, rely=0.5, anchor='e')  # Positioned closer to main menu
+
+            main_menu_btn = tk.Button(header_frame, text="🏠 Main Menu",
+                                    command=self.return_to_main_menu,
+                                    font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
+                                    bg=palette['background_2'], fg=palette['main_menu_button_text_color'],
+                                    padx=15, pady=8,
+                                    cursor='hand2',
+                                    relief=tk.FLAT,
+                                    borderwidth=1)
+            main_menu_btn.place(relx=1, rely=0.5, anchor='e')
+
+            # Add hover effects for both buttons
+            def on_help_enter(event):
+                help_btn.configure(bg=palette['main_title_color'], fg=palette['background_3'])
+            def on_help_leave(event):
+                help_btn.configure(bg=palette['background_3'], fg=palette['main_title_color'])
             # Add Help/Info button using canvas for macOS compatibility
             help_canvas = tk.Canvas(header_frame, width=80, height=35,
                                    bg=palette['background_3'], highlightthickness=0, relief=tk.FLAT, bd=0)
@@ -787,16 +803,34 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
                 main_menu_canvas.itemconfig("menu_text", fill=palette['background_3'])
                 main_menu_canvas.configure(cursor="hand2")
 
-            def on_menu_leave(event):
-                main_menu_canvas.itemconfig("menu_bg", fill=palette['background_2'])
-                main_menu_canvas.itemconfig("menu_text", fill=palette['main_menu_button_text_color'])
-                main_menu_canvas.configure(cursor="")
+            def on_nav_enter(event):
+                main_menu_btn.configure(bg=palette['main_menu_button_text_color'], fg=palette['background_3'])
+            def on_nav_leave(event):
+                main_menu_btn.configure(bg=palette['background_2'], fg=palette['main_menu_button_text_color'])
 
-            main_menu_canvas.bind("<Button-1>", on_menu_click)
-            main_menu_canvas.bind("<Enter>", on_menu_enter)
-            main_menu_canvas.bind("<Leave>", on_menu_leave)
-
+            help_btn.bind("<Enter>", on_help_enter)
+            help_btn.bind("<Leave>", on_help_leave)
+            main_menu_btn.bind("<Enter>", on_nav_enter)
+            main_menu_btn.bind("<Leave>", on_nav_leave)
         else:
+            close_btn = tk.Button(header_frame, text="❌ Close Tutorial",
+                                command=self.window.destroy,
+                                font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
+                                bg=palette['background_2'], fg=palette['close_button_text_color'],
+                                padx=15, pady=8,
+                                cursor='hand2',
+                                relief=tk.FLAT,
+                                borderwidth=1)
+            close_btn.place(relx=1, rely=0.5, anchor='e')
+
+            # Add hover effect
+            def on_close_enter(event):
+                close_btn.configure(bg=palette['close_button_text_color'], fg=palette['close_button_hover_text_color'])
+            def on_close_leave(event):
+                close_btn.configure(bg=palette['background_2'], fg=palette['close_button_text_color'])
+
+            close_btn.bind("<Enter>", on_close_enter)
+            close_btn.bind("<Leave>", on_close_leave)
             # Close Tutorial button using canvas for macOS compatibility
             close_canvas = tk.Canvas(header_frame, width=160, height=40,
                                    bg=palette['background_2'], highlightthickness=0, relief=tk.FLAT, bd=0)
@@ -1107,7 +1141,6 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
 
         def on_enter(event):
             btn.configure(bg=palette['gate_button_active_background'], fg=palette['background_3'])
-            self.play_sound('gate_hover')
 
         def on_leave(event):
             btn.configure(bg=original_bg, fg=palette['background_3'])
@@ -1179,9 +1212,6 @@ class GateTutorial:
 
         self.setup_ui()
 
-        # Play welcome sound
-        self.play_sound('clear')
-
 
     def init_sound_system(self):
         """Initialize the sound system (same as TutorialWindow)"""
@@ -1207,12 +1237,10 @@ class GateTutorial:
             # Define sound file paths
             sound_files = {
                 'button_click': get_resource_path('resources/sounds/click.wav'),
-                'gate_place': get_resource_path('resources/sounds/click.wav'),
-                'success': get_resource_path('resources/sounds/success.wav'),
-                'error': get_resource_path('resources/sounds/error.wav'),
+                'gate_place': get_resource_path('resources/sounds/add_gate.wav'),
+                'success': get_resource_path('resources/sounds/correct.wav'),
+                'error': get_resource_path('resources/sounds/wrong.wav'),
                 'clear': get_resource_path('resources/sounds/clear.wav'),
-                'tutorial_open': get_resource_path('resources/sounds/success.wav'),
-                'circuit_run': get_resource_path('resources/sounds/success.wav')
             }
 
             # Load sounds into pygame
@@ -1768,7 +1796,6 @@ class GateTutorial:
 
             # Display results
             self.display_results(final_state.data, num_qubits)
-            self.play_sound('circuit_run')
 
             self.mark_completed()
 
@@ -1829,6 +1856,7 @@ class GateTutorial:
         self.results_text.insert(tk.END, f"Gates Applied: {' → '.join(self.placed_gates)}\n")
         self.results_text.insert(tk.END, f"Total Gates: {len(self.placed_gates)}\n")
         self.results_text.insert(tk.END, "=" * 50 + "\n\n")
+        self.play_sound('success')
 
         self.results_text.insert(tk.END, f"Final State Vector:\n")
         for i, amplitude in enumerate(state_vector):

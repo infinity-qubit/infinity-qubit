@@ -283,23 +283,18 @@ class GameModeSelection:
 
 
     def play_sound(self, sound_type="click"):
-        """Play a simple click sound"""
+        """Play sound effect for button interactions"""
         if self.sound_enabled:
             try:
-                import numpy as np
-
-                # Create a simple click sound
-                duration = 0.1
-                sample_rate = 22050
-                frequency = 440
-                frames = int(duration * sample_rate)
-                arr = np.sin(2 * np.pi * frequency * np.linspace(0, duration, frames))
-                arr = (arr * 16383).astype(np.int16)
-                sound = pygame.sndarray.make_sound(arr)
-                sound.set_volume(0.3)
-                sound.play()
-            except:
-                pass
+                import pygame
+                if not pygame.mixer.get_init():
+                    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+                
+                click_sound = pygame.mixer.Sound(str(get_resource_path('resources/sounds/click.wav')))
+                click_sound.play()
+            except Exception as e:
+                print(f"Could not play sound: {e}")
+                self.sound_enabled = False
 
 
     def create_selection_ui(self):
