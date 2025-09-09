@@ -1591,7 +1591,7 @@ class PuzzleMode:
         dialog = tk.Toplevel(self.root)
         dialog.title("Level Complete!")
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog_dimensions = (700, 600)
+        dialog_dimensions = (1050, 900)  # 50% bigger (was 700x600)
         dialog.geometry(f"{dialog_dimensions[0]}x{dialog_dimensions[1]}")
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
@@ -1661,18 +1661,17 @@ class PuzzleMode:
             btn_container, "Next Level",
             lambda: [dialog.destroy(), self.proceed_to_next_level()],
             palette['next_level_button_background'], palette['next_level_button_text_color'],
-            width=200, height=50, font_size=16
+            width=300, height=75, font_size=24  # 50% bigger (was 200x50, font 16)
         )
-        next_canvas.pack(side=tk.LEFT, padx=20)
+        next_canvas.pack(side=tk.LEFT, padx=30)
 
-        # Close button - canvas-based
         close_canvas = self.create_canvas_dialog_button(
             btn_container, "Close",
             dialog.destroy,
             palette['close_button_background'], palette['close_button_hover_text_color'],
-            width=140, height=50, font_size=16
+            width=210, height=75, font_size=24  # 50% bigger (was 140x50, font 16)
         )
-        close_canvas.pack(side=tk.LEFT, padx=20)
+        close_canvas.pack(side=tk.LEFT, padx=30)
 
         # Hide next level button if this is the last level
         if self.current_level + 1 >= len(self.levels):
@@ -2028,9 +2027,9 @@ Thank you for playing Infinity Qubit!"""
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
 
-        # Make dialog MUCH bigger for touch screens
-        dialog_width = 600  # Increased from ~400
-        dialog_height = 400  # Increased from ~280
+        # Make dialog 50% bigger than previous size
+        dialog_width = 900  # 50% bigger
+        dialog_height = 600  # 50% bigger
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
         x = (screen_width - dialog_width) // 2
@@ -2081,28 +2080,33 @@ Thank you for playing Infinity Qubit!"""
             result[0] = False
             dialog.destroy()
 
-        # Make buttons MUCH bigger for touch screens
+        # Make buttons even bigger for the larger dialog
         yes_canvas = self.create_canvas_dialog_button(
             button_frame, "✓ Yes, Return",
             confirm_return,
             palette['next_level_button_background'],
             palette['next_level_button_text_color'],
-            width=180, height=60, font_size=16  # Much bigger: was 120x40, font 12
+            width=270, height=90, font_size=24  # 50% bigger buttons
         )
-        yes_canvas.pack(side=tk.LEFT, padx=20)  # More spacing
+        yes_canvas.pack(side=tk.LEFT, padx=30)
 
         no_canvas = self.create_canvas_dialog_button(
             button_frame, "✗ No, Stay",
             cancel_return,
             palette['close_button_background'],
             palette['close_button_hover_text_color'],
-            width=180, height=60, font_size=16  # Much bigger: was 120x40, font 12
+            width=270, height=90, font_size=24  # 50% bigger buttons
         )
-        no_canvas.pack(side=tk.LEFT, padx=20)  # More spacing
+        no_canvas.pack(side=tk.LEFT, padx=30)
 
-        # Reset Progress Button - also bigger
+        # Reset Progress Button in its own frame - MOVED MUCH LOWER
         reset_frame = tk.Frame(main_frame, bg=palette['background_2'])
-        reset_frame.pack(pady=(25, 15))  # More padding
+        reset_frame.pack(pady=(60, 15))  # INCREASED from 25 to 60 for more space
+
+        # Add extra spacing with empty labels (like 3-4 "enters")
+        tk.Label(reset_frame, text="", bg=palette['background_2']).pack()
+        tk.Label(reset_frame, text="", bg=palette['background_2']).pack()
+        tk.Label(reset_frame, text="", bg=palette['background_2']).pack()
 
         reset_label = tk.Label(reset_frame, text="Or reset your progress:",
                             font=('Arial', 14, 'italic'),  # Bigger text
@@ -2119,13 +2123,13 @@ Thank you for playing Infinity Qubit!"""
             dialog.destroy()
             self.root.after(100, lambda: self.load_level(0))
 
-        # Reset button - much bigger
+        # Reset button - 50% bigger
         reset_canvas = self.create_canvas_dialog_button(
             reset_frame, "🔄 Reset Progress",
             reset_progress,
             palette['clear_button_background'],
             palette['clear_button_text_color'],
-            width=220, height=60, font_size=16  # Much bigger: was 160x40, font 12
+            width=330, height=90, font_size=24  # 50% bigger
         )
         reset_canvas.pack()
 
