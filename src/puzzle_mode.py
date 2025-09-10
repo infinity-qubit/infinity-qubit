@@ -473,18 +473,18 @@ class PuzzleMode:
         """Setup puzzle control buttons using relative positioning"""
         # Title
         control_title = tk.Label(parent, text="Puzzle Controls",
-                               font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
-                               fg=palette['controls_title_text_color'], bg=palette['background_2'])
+                            font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
+                            fg=palette['controls_title_text_color'], bg=palette['background_2'])
         control_title.place(relx=0.5, rely=0.08, anchor='center')
 
         # Create buttons container
         control_frame = tk.Frame(parent, bg=palette['background_2'])
         control_frame.place(relx=0.1, rely=0.18, relwidth=0.8, relheight=0.80)
 
-        # Control buttons
+        # Control buttons - FIXED Clear Circuit colors
         buttons_data = [
             ("Run Circuit", self.run_circuit, palette['run_button_background'], palette['run_button_text_color']),
-            ("Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
+            ("Clear Circuit", self.clear_circuit, palette['puzzle_mode_button_color'], palette['puzzle_mode_button_text_color']),  # FIXED: Use puzzle button colors instead of clear_button colors
             ("Hint", self.show_hint, palette['hint_button_background'], palette['hint_button_text_color']),
             ("Skip Level", self.skip_level, palette['skip_button_background'], palette['skip_button_text_color'])
         ]
@@ -507,7 +507,7 @@ class PuzzleMode:
             rect_id = btn_canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
                                                 fill=bg_color, outline=bg_color, width=0)
             text_id = btn_canvas.create_text(canvas_width//2, canvas_height//2, text=text,
-                                           font=('Arial', font_size, 'bold'), fill=fg_color)
+                                        font=('Arial', font_size, 'bold'), fill=fg_color)
 
             # Add click handler with proper closure
             def create_click_handler(cmd):
@@ -2123,8 +2123,8 @@ Thank you for playing Infinity Qubit!"""
         reset_canvas = self.create_canvas_dialog_button(
             reset_frame, "Reset Progress",
             reset_progress,
-            palette['clear_button_background'],
-            palette['clear_button_text_color'],
+            palette['reset_button_background'],
+            palette['reset_button_text_color'],
             width=330, height=90, font_size=24  # 50% bigger
         )
         reset_canvas.pack()

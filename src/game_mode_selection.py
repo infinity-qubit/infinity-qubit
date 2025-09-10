@@ -171,7 +171,7 @@ class GameModeSelection:
         difficulty_label = tk.Label(self.info_frame,
                                 text=f"Difficulty: {info['difficulty']}",
                                 font=('Arial', max(10, int(self.window_width / 120)), 'italic'),
-                                fg=palette['subtitle_color_2'],
+                                fg=palette['subtitle_color'],
                                 bg=palette['background'])
         difficulty_label.place(relx=0.5, rely=0.18, anchor='n')
 
@@ -217,7 +217,7 @@ class GameModeSelection:
         start_canvas.create_text(start_canvas_width//2, start_canvas_height//2,
                                text=f"Start {info['title'].split(' ', 1)[1]}",
                                font=('Arial', max(12, int(self.window_width / 100)), 'bold'),
-                               fill=palette['black'],
+                               fill=palette['background'],
                                tags="start_text")
 
         # Bind click events for start button
@@ -289,7 +289,7 @@ class GameModeSelection:
                 import pygame
                 if not pygame.mixer.get_init():
                     pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
-                
+
                 click_sound = pygame.mixer.Sound(str(get_resource_path('resources/sounds/click.wav')))
                 click_sound.play()
             except Exception as e:
@@ -327,7 +327,7 @@ class GameModeSelection:
         # Shadow title for glow effect
         shadow_title = tk.Label(title_frame, text="Infinity Qubit",
                             font=('Arial', title_font_size, 'bold'),
-                            fg=palette['shadow_title_color'], bg=palette['background'])
+                            fg=palette['title_color'], bg=palette['background'])
         shadow_title.place(x=3, y=3)
 
         # Main title
@@ -339,7 +339,7 @@ class GameModeSelection:
         # Enhanced subtitle with animation - positioned below title
         self.subtitle_label = tk.Label(content_frame, text="Choose Your Quantum Adventure",
                                     font=('Arial', subtitle_font_size, 'italic'),
-                                    fg=palette['subtitle_color_1'], bg=palette['background'])
+                                    fg=palette['subtitle_color'], bg=palette['background'])
         self.subtitle_label.place(relx=0.5, rely=0.15, anchor='n')
 
         # Animate subtitle
@@ -433,8 +433,7 @@ class GameModeSelection:
         if self.pre_loading:
             return
 
-        colors = [palette['subtitle_color_1'], palette['subtitle_color_2'], palette['subtitle_color_3'],
-                 palette['subtitle_color_4'], palette['subtitle_color_5']]
+        colors = palette['subtitle_color']
         color_index = [0]
 
         def cycle_color():
@@ -690,7 +689,7 @@ class GameModeSelection:
         welcome_label = tk.Label(self.info_frame,
                             text="Select a game mode\nto see details",
                             font=('Arial', max(14, int(self.window_width / 80)), 'italic'),
-                            fg=palette['subtitle_color_1'],
+                            fg=palette['subtitle_color'],
                             bg=palette['background'],
                             justify=tk.CENTER)
         welcome_label.place(relx=0.5, rely=0.5, anchor='center')

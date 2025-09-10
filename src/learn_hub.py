@@ -206,38 +206,40 @@ class LearnHub:
         button_height = max(35, int(self.screen_height * 0.03))
 
         back_main_canvas = tk.Canvas(nav_frame,
-                                   width=button_width,
-                                   height=button_height,
-                                   bg=palette['background_2'],
-                                   highlightthickness=0,
-                                   bd=0)
+                               width=button_width,
+                               height=button_height,
+                               bg=palette['learn_hub_button_color'],  # FIXED: Use learn_hub_button_color instead of background_2
+                               highlightthickness=0,
+                               bd=0)
+
         back_main_canvas.pack(side=tk.RIGHT)
 
-        # Draw button background
+        # Draw button background with proper colors
         back_main_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
-                                        fill=palette['background_4'],
+                                        fill=palette['learn_hub_button_color'],  # FIXED: Use learn_hub_button_color
                                         outline="#2b3340", width=1,
                                         tags="menu_bg")
 
-        # Add text to button
+        # Add text to button with proper contrast
         back_main_canvas.create_text(button_width//2, button_height//2,
-                                   text=" Main Screen",
-                                   font=('Arial', button_font_size, 'bold'),
-                                   fill=palette['main_menu_button_background'],
-                                   tags="menu_text")
+                                text=" Main Screen",
+                                font=('Arial', button_font_size, 'bold'),
+                                fill=palette['learn_hub_button_text_color'],  # FIXED: Use learn_hub_button_text_color
+                                tags="menu_text")
 
         # Bind click events
         def on_menu_click(event):
             self.back_to_menu()
 
+        # FIXED: Hover effects with proper colors
         def on_menu_enter(event):
-            back_main_canvas.itemconfig("menu_bg", fill=palette['main_menu_button_background'])
-            back_main_canvas.itemconfig("menu_text", fill=palette['background_black'])
+            back_main_canvas.itemconfig("menu_bg", fill=palette['learn_hub_button_hover_color'])  # FIXED: Use hover color
+            back_main_canvas.itemconfig("menu_text", fill=palette['learn_hub_button_text_color'])  # Keep text color consistent
             back_main_canvas.configure(cursor="hand2")
 
         def on_menu_leave(event):
-            back_main_canvas.itemconfig("menu_bg", fill=palette['background_4'])
-            back_main_canvas.itemconfig("menu_text", fill=palette['main_menu_button_background'])
+            back_main_canvas.itemconfig("menu_bg", fill=palette['learn_hub_button_color'])  # FIXED: Back to normal color
+            back_main_canvas.itemconfig("menu_text", fill=palette['learn_hub_button_text_color'])  # Keep text color consistent
             back_main_canvas.configure(cursor="")
 
         back_main_canvas.bind("<Button-1>", on_menu_click)
@@ -437,24 +439,26 @@ class LearnHub:
 
         # Enhanced notebook styling - Updated for gray background
         style.configure('TNotebook',
-                    background=palette['background_3'],  # Changed from #1a1a1a to #2a2a2a
+                    background=palette['background_3'],
                     borderwidth=0,
                     tabmargins=[2, 5, 2, 0])
 
         style.configure('TNotebook.Tab',
-                    background=palette['background_4'],  # Slightly darker for contrast
-                    foreground='#ffffff',
+                    background=palette['background_4'],
+                    foreground='#ffffff',  # Default text color - white
                     padding=[25, 15],
                     borderwidth=0,
                     font=('Arial', 11, 'bold'))
 
+        # FIXED: Text colors for tab states
         style.map('TNotebook.Tab',
-                background=[('selected', palette['tnotebook_selected_background']),
-                            ('active', palette['tnotebook_active_background'])],
-                foreground=[('selected', palette['background_black']),
-                            ('active', palette['tnotebook_active_foreground'])])
+                background=[('selected', palette['background_3']),  # Selected tab background
+                            ('active', palette['background_4'])],    # Hover background
+                foreground=[('selected', '#ffb86b'),               # FIXED: Orange text when selected
+                            ('active', '#ffffff'),                  # White text when hovering
+                            ('!active', '#ffffff')])               # White text when not active
 
-        style.configure('TFrame', background=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
+        style.configure('TFrame', background=palette['background_3'])
 
         # Center the tabs by configuring tab positioning
         style.configure('TNotebook', tabposition='n')
