@@ -439,42 +439,70 @@ class SandboxMode:
             pass
 
 
-    def create_canvas_dialog_button(self, parent, text, command, width, height, bg_color, fg_color, padx=0, pady=0):
-        """Create a canvas-based button for macOS compatibility"""
-        # Create frame for proper packing
-        btn_frame = tk.Frame(parent, bg=parent.cget('bg'))
-        btn_frame.pack(padx=padx, pady=pady)
-
+    def create_canvas_dialog_button(self, parent, text, command, bg_color, text_color,
+                               width=120, height=40, font_size=12, font_weight='bold'):
+        """Create a canvas-based button for dialogs and popup windows"""
         # Create canvas for the button
-        btn_canvas = tk.Canvas(btn_frame, width=width, height=height,
-                              bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
-        btn_canvas.pack()
+        canvas = tk.Canvas(parent, width=width, height=height,
+                        highlightthickness=0, bd=0,
+                        bg=parent['bg'] if hasattr(parent, 'cget') and parent.cget('bg') else palette['background_2'])
 
-        # Create button rectangle and text
-        rect_id = btn_canvas.create_rectangle(2, 2, width-2, height-2,
-                                            fill=bg_color, outline=bg_color, width=0)
-        text_id = btn_canvas.create_text(width//2, height//2, text=text,
-                                       font=('Arial', 12, 'bold'), fill=fg_color)
+        # Draw button background and text with proper closure
+        def create_draw_function(canvas, bg, txt, txt_color, w, h, fs, fw):
+            def draw_button(event=None):
+                canvas.delete("all")
+                canvas_width = canvas.winfo_width()
+                canvas_height = canvas.winfo_height()
+                if canvas_width > 1 and canvas_height > 1:
+                    canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                        fill=bg, outline="#2b3340", width=1, tags="bg")
+                    canvas.create_text(canvas_width//2, canvas_height//2, text=txt,
+                                    font=('Arial', fs, fw), fill=txt_color, tags="text")
+            return draw_button
 
-        # Add click handler
+        draw_function = create_draw_function(canvas, bg_color, text, text_color, width, height, font_size, font_weight)
+
+        # Bind configure event and initial draw
+        canvas.bind('<Configure>', draw_function)
+        canvas.after(10, draw_function)
+
+        # Click handler
         def on_click(event):
             command()
 
-        # Add hover effects
-        def on_enter(event):
-            btn_canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
-            btn_canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
+        # Hover effects with proper closure
+        def create_hover_functions(canvas, bg, hover_bg):
+            def on_enter(event):
+                canvas.delete("bg")
+                canvas_width = canvas.winfo_width()
+                canvas_height = canvas.winfo_height()
+                if canvas_width > 1 and canvas_height > 1:
+                    canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                        fill=hover_bg, outline="#2b3340", width=1, tags="bg")
+                canvas.configure(cursor='hand2')
+                canvas.tag_lower("bg")
 
-        def on_leave(event):
-            btn_canvas.itemconfig(rect_id, fill=bg_color)
-            btn_canvas.itemconfig(text_id, fill=fg_color)
+            def on_leave(event):
+                canvas.delete("bg")
+                canvas_width = canvas.winfo_width()
+                canvas_height = canvas.winfo_height()
+                if canvas_width > 1 and canvas_height > 1:
+                    canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
+                                        fill=bg, outline="#2b3340", width=1, tags="bg")
+                canvas.configure(cursor='')
+                canvas.tag_lower("bg")
 
-        btn_canvas.bind("<Button-1>", on_click)
-        btn_canvas.bind("<Enter>", on_enter)
-        btn_canvas.bind("<Leave>", on_leave)
-        btn_canvas.configure(cursor='hand2')
+            return on_enter, on_leave
 
-        return btn_canvas
+        hover_color = palette.get('button_hover_background', '#ffd08f')
+        on_enter, on_leave = create_hover_functions(canvas, bg_color, hover_color)
+
+        # Bind events
+        canvas.bind("<Button-1>", on_click)
+        canvas.bind("<Enter>", on_enter)
+        canvas.bind("<Leave>", on_leave)
+
+        return canvas
 
 
     def setup_ui(self):
@@ -581,37 +609,105 @@ class SandboxMode:
 
 
     def return_to_main_menu(self):
-        """Return to the main menu"""
+        """Return to the main menu with confirmation dialog"""
         self.play_sound('click')
 
-        try:
-            # Create main menu FIRST
-            from game_mode_selection import GameModeSelection
-            selection_window = GameModeSelection()
+        # Create custom confirmation dialog without decorations
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Return to Main Menu")
+        dialog.overrideredirect(True)
+        dialog.configure(bg=palette['background'])
+        dialog.transient(self.root)
 
-            # Make sure new window is visible
-            selection_window.root.update()
-            selection_window.root.lift()
-            selection_window.root.focus_force()
+        # Make dialog bigger for touch screens
+        dialog_width = 900
+        dialog_height = 400  # Reduced height since no save section needed
+        screen_width = dialog.winfo_screenwidth()
+        screen_height = dialog.winfo_screenheight()
+        x = (screen_width - dialog_width) // 2
+        y = (screen_height - dialog_height) // 2
 
-            # THEN destroy current window
-            self.root.destroy()
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
-            # Start the main menu mainloop
-            selection_window.run()
+        # Ensure dialog is visible
+        dialog.lift()
+        dialog.attributes("-topmost", True)
+        dialog.update_idletasks()
+        dialog.deiconify()
+        dialog.grab_set()
+        dialog.focus_set()
 
-        except ImportError as e:
-            print(f"Error importing game mode selection: {e}")
-            # Fallback - destroy current window
-            self.root.destroy()
+        result = [None]
+
+        # Main container with border
+        main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+
+        # Title
+        title_label = tk.Label(main_frame, text="Return to Main Menu",
+                            font=('Arial', 20, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_2'])
+        title_label.pack(pady=(20, 15))
+
+        # Message
+        message_label = tk.Label(main_frame,
+                            text="Are you sure you want to return to the main menu?\nYour current circuit will be lost unless saved.",
+                            font=('Arial', 16),
+                            fg=palette['subtitle_color'], bg=palette['background_2'],
+                            justify=tk.CENTER)
+        message_label.pack(pady=20)
+
+        # Button frame
+        button_frame = tk.Frame(main_frame, bg=palette['background_2'])
+        button_frame.pack(pady=(20, 10))
+
+        def confirm_return():
+            result[0] = True
+            dialog.destroy()
+
+        def cancel_return():
+            result[0] = False
+            dialog.destroy()
+
+        # FIXED: Buttons with correct parameters
+        yes_canvas = self.create_canvas_dialog_button(
+            button_frame, "✓ Yes, Return", confirm_return,
+            palette.get('return_to_gamemode_button_background', '#ff6b6b'),
+            palette.get('return_to_gamemode_button_text_color', '#ffffff'),
+            width=270, height=90, font_size=24
+        )
+        yes_canvas.pack(side=tk.LEFT, padx=30)
+
+        no_canvas = self.create_canvas_dialog_button(
+            button_frame, "✗ No, Stay", cancel_return,
+            palette.get('close_gamemode_button_background', '#00cc66'),
+            palette.get('close_gamemode_button_text_color', '#ffffff'),
+            width=270, height=90, font_size=24
+        )
+        no_canvas.pack(side=tk.LEFT, padx=30)
+
+        # Handle ESC key to cancel
+        dialog.bind('<Escape>', lambda e: cancel_return())
+
+        # Wait for dialog to close and get result
+        dialog.wait_window()
+
+        # Process result
+        if result[0]:
             try:
-                import main
-                main.main()
-            except ImportError:
-                print("Could not return to main menu. Please restart the application.")
-        except Exception as e:
-            print(f"Error returning to main menu: {e}")
-            self.root.destroy()
+                from game_mode_selection import GameModeSelection
+                selection_window = GameModeSelection()
+                selection_window.root.update()
+                selection_window.root.lift()
+                selection_window.root.focus_force()
+                self.root.destroy()
+                selection_window.run()
+            except ImportError as e:
+                print(f"Error importing game mode selection: {e}")
+                self.root.destroy()
+            except Exception as e:
+                print(f"Error returning to main menu: {e}")
+                self.root.destroy()
 
 
     def setup_control_panel(self, parent):
@@ -930,22 +1026,20 @@ class SandboxMode:
 
         # Ensure dialog is visible BEFORE grab_set
         dialog.lift()
-        dialog.update_idletasks()  # Make sure dialog is rendered
-        dialog.deiconify()  # Ensure it's visible
-
-        # NOW set grab and focus after dialog is fully visible
+        dialog.update_idletasks()
+        dialog.deiconify()
         dialog.grab_set()
-        dialog.focus_force()  # Force focus to dialog
+        dialog.focus_force()
 
-        # Add a border since overrideredirect removes window decorations
-        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        # Add border frame
+        border_frame = tk.Frame(dialog, bg=palette.get('main_menu_button_text_color', '#2c1f12'), bd=2, relief=tk.RAISED)
         border_frame.pack(fill=tk.BOTH, expand=True)
 
         # Main frame inside border
         main_frame = tk.Frame(border_frame, bg=palette['background_3'], relief=tk.FLAT, bd=0)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
 
-        # Add title bar since we removed window decorations
+        # Add title bar
         title_bar = tk.Frame(main_frame, bg=palette['background_4'], height=int(self.screen_height * 0.03))
         title_bar.pack(fill=tk.X)
         title_bar.pack_propagate(False)
@@ -957,17 +1051,20 @@ class SandboxMode:
                                 fg=palette['title_color'], bg=palette['background_4'])
         title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008), pady=int(self.screen_height * 0.005))
 
-        # Close button in title bar
-        close_btn_font_size = max(8, int(self.screen_width * 0.006))
-        self.create_canvas_dialog_button(title_bar, "", dialog.destroy, 30, 25,
-                                    palette['background_4'], palette['title_color'])
+        # FIXED: Close button with correct parameters
+        close_btn = self.create_canvas_dialog_button(
+            title_bar, "✕", dialog.destroy,
+            palette['background_4'], palette['title_color'],
+            width=25, height=20, font_size=12
+        )
+        close_btn.pack(side=tk.RIGHT, padx=5)
 
         # Content area
         content_frame = tk.Frame(main_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.01))
 
         # Icon and message
-        icon_map = {"info": "ℹ️", "warning": "️", "error": "", "success": ""}
+        icon_map = {"info": "ℹ️", "warning": "⚠️", "error": "❌", "success": "✅"}
         icon = icon_map.get(dialog_type, "ℹ️")
 
         # Icon and title together
@@ -989,12 +1086,15 @@ class SandboxMode:
         button_frame = tk.Frame(content_frame, bg=palette['background_3'])
         button_frame.pack(pady=(int(self.screen_height * 0.015), int(self.screen_height * 0.01)))
 
-        # OK button using canvas for macOS compatibility
-        button_font_size = max(9, int(self.screen_width * 0.007))
-        ok_button = self.create_canvas_dialog_button(button_frame, "OK", dialog.destroy, 120, 40,
-                                    palette['background_4'], palette['main_menu_button_text_color'])
+        # OK button with correct parameters
+        ok_button = self.create_canvas_dialog_button(
+            button_frame, "OK", dialog.destroy,
+            palette['background_4'], palette.get('main_menu_button_text_color', '#2c1f12'),
+            width=80, height=30, font_size=10
+        )
+        ok_button.pack()
 
-        # Make title bar draggable (optional)
+        # Make title bar draggable
         def start_move(event):
             dialog.x = event.x
             dialog.y = event.y
@@ -1011,7 +1111,7 @@ class SandboxMode:
         title_bar_label.bind("<Button-1>", start_move)
         title_bar_label.bind("<B1-Motion>", on_move)
 
-        # Bind Enter and Escape keys
+        # Bind keys
         dialog.bind('<Return>', lambda e: dialog.destroy())
         dialog.bind('<Escape>', lambda e: dialog.destroy())
 
@@ -1070,10 +1170,13 @@ class SandboxMode:
                                     fg=palette['3D_visualizer_title_color'], bg=palette['background_4'])
             title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.008))
 
-            # Close button in title bar using canvas for macOS compatibility
-            close_btn_font_size = max(10, int(self.screen_width * 0.008))
-            self.create_canvas_dialog_button(title_bar, " Close", viz_window.destroy, 80, 30,
-                                           palette['background_4'], palette['title_color'])
+            # FIXED: Close button with correct parameter order
+            close_btn = self.create_canvas_dialog_button(
+                title_bar, " Close", viz_window.destroy,
+                palette['background_4'], palette['title_color'],
+                width=80, height=30, font_size=10
+            )
+            close_btn.pack(side=tk.RIGHT, padx=5)
 
             # Info panel with relative sizing
             info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
@@ -1149,56 +1252,29 @@ class SandboxMode:
             button_padx = int(self.screen_width * 0.012)
             button_pady = int(self.screen_height * 0.008)
 
-            # Save button using canvas for macOS compatibility
-            save_canvas = tk.Canvas(controls_frame, width=140, height=35,
-                                  bg=palette['save_image_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            # FIXED: Save button with correct parameter order
+            save_canvas = self.create_canvas_dialog_button(
+                controls_frame, " Save Image", lambda: self.save_3d_visualization(fig),
+                palette['save_image_background'], palette['background_black'],
+                width=140, height=35, font_size=button_font_size
+            )
             save_canvas.pack(side=tk.LEFT, padx=int(window_width * 0.008))
 
-            save_rect_id = save_canvas.create_rectangle(2, 2, 138, 33,
-                                                      fill=palette['save_image_background'], outline=palette['save_image_background'], width=0)
-            save_text_id = save_canvas.create_text(70, 17, text=" Save Image",
-                                                  font=('Arial', button_font_size, 'bold'), fill=palette['background_black'])
-
-            save_canvas.bind("<Button-1>", lambda e: self.save_3d_visualization(fig))
-            save_canvas.bind("<Enter>", lambda e: (save_canvas.itemconfig(save_rect_id, fill=palette['button_hover_background']),
-                                                  save_canvas.itemconfig(save_text_id, fill=palette['button_hover_text_color'])))
-            save_canvas.bind("<Leave>", lambda e: (save_canvas.itemconfig(save_rect_id, fill=palette['save_image_background']),
-                                                  save_canvas.itemconfig(save_text_id, fill=palette['background_black'])))
-            save_canvas.configure(cursor='hand2')
-
-            # Refresh button using canvas for macOS compatibility
-            refresh_canvas = tk.Canvas(controls_frame, width=120, height=35,
-                                     bg=palette['refresh_button_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            # FIXED: Refresh button with correct parameter order
+            refresh_canvas = self.create_canvas_dialog_button(
+                controls_frame, " Refresh", lambda: self.refresh_3d_visualization(viz_window, state_vector),
+                palette['refresh_button_background'], palette['background_black'],
+                width=120, height=35, font_size=button_font_size
+            )
             refresh_canvas.pack(side=tk.LEFT, padx=int(window_width * 0.008))
 
-            refresh_rect_id = refresh_canvas.create_rectangle(2, 2, 118, 33,
-                                                            fill=palette['refresh_button_background'], outline=palette['refresh_button_background'], width=0)
-            refresh_text_id = refresh_canvas.create_text(60, 17, text=" Refresh",
-                                                        font=('Arial', button_font_size, 'bold'), fill=palette['background_black'])
-
-            refresh_canvas.bind("<Button-1>", lambda e: self.refresh_3d_visualization(viz_window, state_vector))
-            refresh_canvas.bind("<Enter>", lambda e: (refresh_canvas.itemconfig(refresh_rect_id, fill=palette['button_hover_background']),
-                                                    refresh_canvas.itemconfig(refresh_text_id, fill=palette['button_hover_text_color'])))
-            refresh_canvas.bind("<Leave>", lambda e: (refresh_canvas.itemconfig(refresh_rect_id, fill=palette['refresh_button_background']),
-                                                    refresh_canvas.itemconfig(refresh_text_id, fill=palette['background_black'])))
-            refresh_canvas.configure(cursor='hand2')
-
-            # Close button using canvas for macOS compatibility
-            close_canvas = tk.Canvas(controls_frame, width=120, height=35,
-                                   bg=palette['close_button_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            # FIXED: Close button with correct parameter order
+            close_canvas = self.create_canvas_dialog_button(
+                controls_frame, " Close", viz_window.destroy,
+                palette['close_button_background'], palette['close_button_text_color'],
+                width=120, height=35, font_size=button_font_size
+            )
             close_canvas.pack(side=tk.RIGHT, padx=int(window_width * 0.008))
-
-            close_rect_id = close_canvas.create_rectangle(2, 2, 118, 33,
-                                                        fill=palette['close_button_background'], outline=palette['close_button_background'], width=0)
-            close_text_id = close_canvas.create_text(60, 17, text=" Close",
-                                                    font=('Arial', button_font_size, 'bold'), fill=palette['close_button_text_color'])
-
-            close_canvas.bind("<Button-1>", lambda e: viz_window.destroy())
-            close_canvas.bind("<Enter>", lambda e: (close_canvas.itemconfig(close_rect_id, fill=palette['button_hover_background']),
-                                                   close_canvas.itemconfig(close_text_id, fill=palette['button_hover_text_color'])))
-            close_canvas.bind("<Leave>", lambda e: (close_canvas.itemconfig(close_rect_id, fill=palette['close_button_background']),
-                                                   close_canvas.itemconfig(close_text_id, fill=palette['close_button_text_color'])))
-            close_canvas.configure(cursor='hand2')
 
             # State information panel with relative sizing
             state_info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
@@ -2182,11 +2258,6 @@ class SandboxMode:
         """Draw gates with enhanced 3D styling"""
         gate_x_start = wire_start + 100
         gate_spacing = 100
-
-        gate_colors = {
-            'H': '#ff6b6b', 'X': '#4ecdc4', 'Y': '#45b7d1', 'Z': '#96ceb4',
-            'S': '#feca57', 'T': '#ff9ff3', 'CNOT': '#ffeaa7', 'CZ': '#a29bfe'
-        }
 
         gate_colors = {
             'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'],

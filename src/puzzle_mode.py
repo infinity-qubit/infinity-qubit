@@ -977,8 +977,8 @@ class PuzzleMode:
         ok_canvas = self.create_canvas_dialog_button(
             button_frame, "Got it!",
             dialog.destroy,
-            palette['next_level_button_background'],
-            palette['next_level_button_text_color'],
+            palette['return_to_gamemode_button_background'],
+            palette['return_to_gamemode_button_text_color'],
             width=120, height=40, font_size=12
         )
         ok_canvas.pack(side=tk.LEFT, padx=10)
@@ -1114,8 +1114,8 @@ class PuzzleMode:
         ok_canvas = self.create_canvas_dialog_button(
             main_frame, "OK",
             dialog.destroy,
-            palette['next_level_button_background'],
-            palette['next_level_button_text_color'],
+            palette['return_to_gamemode_button_background'],
+            palette['return_to_gamemode_button_text_color'],
             width=120, height=40, font_size=12
         )
         ok_canvas.pack(pady=(10, 15))
@@ -1292,8 +1292,8 @@ class PuzzleMode:
         ok_canvas = self.create_canvas_dialog_button(
             main_frame, "OK",
             dialog.destroy,
-            palette['next_level_button_background'],
-            palette['next_level_button_text_color'],
+            palette['return_to_gamemode_button_background'],
+            palette['return_to_gamemode_button_text_color'],
             width=120, height=40, font_size=12
         )
         ok_canvas.pack(pady=(10, 15))
@@ -1626,10 +1626,6 @@ class PuzzleMode:
                                 font=('Arial', 28), fg='#ffd700', bg=palette['background_2'])
         celebration_label.pack()
 
-        title_label = tk.Label(header_frame, text="LEVEL COMPLETE!",
-                            font=('Arial', 24, 'bold'), fg=palette['level_complete_title_color'], bg=palette['background_2'])
-        title_label.pack(pady=(10, 0))
-
         # Content frame
         content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
@@ -1644,7 +1640,7 @@ class PuzzleMode:
     {self.get_performance_message(len(self.placed_gates), max_gates)}"""
 
         info_label = tk.Label(content_frame, text=info_text,
-                            font=('Arial', 16), fg=palette['level_complete_info_label_text_color'], bg=palette['background_3'],
+                            font=('Arial', 35), fg=palette['level_complete_info_label_text_color'], bg=palette['background_3'],
                             justify=tk.CENTER)
         info_label.pack(expand=True, pady=30)
 
@@ -1660,7 +1656,7 @@ class PuzzleMode:
         next_canvas = self.create_canvas_dialog_button(
             btn_container, "Next Level",
             lambda: [dialog.destroy(), self.proceed_to_next_level()],
-            palette['next_level_button_background'], palette['next_level_button_text_color'],
+            palette['return_to_gamemode_button_background'], palette['return_to_gamemode_button_text_color'],
             width=300, height=75, font_size=24  # 50% bigger (was 200x50, font 16)
         )
         next_canvas.pack(side=tk.LEFT, padx=30)
@@ -1668,7 +1664,7 @@ class PuzzleMode:
         close_canvas = self.create_canvas_dialog_button(
             btn_container, "Close",
             dialog.destroy,
-            palette['close_button_background'], palette['close_button_hover_text_color'],
+            palette['close_gamemode_button_background'], palette['close_gamemode_button_hover_text_color'],
             width=210, height=75, font_size=24  # 50% bigger (was 140x50, font 16)
         )
         close_canvas.pack(side=tk.LEFT, padx=30)
@@ -1836,8 +1832,8 @@ Thank you for playing Infinity Qubit!"""
         close_canvas = self.create_canvas_dialog_button(
             main_frame, "Got it!",
             dialog.destroy,
-            palette['next_level_button_background'],
-            palette['next_level_button_text_color'],
+            palette['return_to_gamemode_button_background'],
+            palette['return_to_gamemode_button_text_color'],
             width=120, height=40, font_size=12
         )
         close_canvas.pack(pady=(10, 15))
@@ -1910,8 +1906,8 @@ Thank you for playing Infinity Qubit!"""
         yes_canvas = self.create_canvas_dialog_button(
             button_frame, "Yes, Skip",
             confirm_skip,
-            palette['skip_button_background'],
-            palette['skip_button_text_color'],
+            palette['return_to_gamemode_button_background'],
+            palette['return_to_gamemode_button_text_color'],
             width=120, height=40, font_size=12
         )
         yes_canvas.pack(side=tk.LEFT, padx=10)
@@ -1920,8 +1916,8 @@ Thank you for playing Infinity Qubit!"""
         no_canvas = self.create_canvas_dialog_button(
             button_frame, "No, Continue",
             cancel_skip,
-            palette['close_button_background'],
-            palette['close_button_hover_text_color'],
+            palette['close_gamemode_button_background'],
+            palette['close_gamemode_button_hover_text_color'],
             width=140, height=40, font_size=12
         )
         no_canvas.pack(side=tk.LEFT, padx=10)
@@ -2084,8 +2080,8 @@ Thank you for playing Infinity Qubit!"""
         yes_canvas = self.create_canvas_dialog_button(
             button_frame, "✓ Yes, Return",
             confirm_return,
-            palette['next_level_button_background'],
-            palette['next_level_button_text_color'],
+            palette['return_to_gamemode_button_background'],
+            palette['return_to_gamemode_button_text_color'],
             width=270, height=90, font_size=24  # 50% bigger buttons
         )
         yes_canvas.pack(side=tk.LEFT, padx=30)
@@ -2093,15 +2089,15 @@ Thank you for playing Infinity Qubit!"""
         no_canvas = self.create_canvas_dialog_button(
             button_frame, "✗ No, Stay",
             cancel_return,
-            palette['close_button_background'],
-            palette['close_button_hover_text_color'],
+            palette['close_gamemode_button_background'],
+            palette['close_gamemode_button_hover_text_color'],
             width=270, height=90, font_size=24  # 50% bigger buttons
         )
         no_canvas.pack(side=tk.LEFT, padx=30)
 
         # Reset Progress Button in its own frame - MOVED MUCH LOWER
         reset_frame = tk.Frame(main_frame, bg=palette['background_2'])
-        reset_frame.pack(pady=(60, 15))  # INCREASED from 25 to 60 for more space
+        reset_frame.pack(pady=(25, 15))  # INCREASED from 25 to 60 for more space
 
         # Add extra spacing with empty labels (like 3-4 "enters")
         tk.Label(reset_frame, text="", bg=palette['background_2']).pack()
@@ -2125,7 +2121,7 @@ Thank you for playing Infinity Qubit!"""
 
         # Reset button - 50% bigger
         reset_canvas = self.create_canvas_dialog_button(
-            reset_frame, "🔄 Reset Progress",
+            reset_frame, "Reset Progress",
             reset_progress,
             palette['clear_button_background'],
             palette['clear_button_text_color'],
