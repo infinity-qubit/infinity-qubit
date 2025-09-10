@@ -609,7 +609,7 @@ class SandboxMode:
         controls_container.pack(padx=int(self.screen_width * 0.015),
                             pady=(0, int(self.screen_height * 0.012)))
 
-        # Qubit controls - left side with relative sizing
+        # Qubit controls - left side with relative sizing and touch-friendly buttons
         qubit_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
         qubit_frame.pack(side=tk.LEFT, fill=tk.Y,
                         padx=(0, int(self.screen_width * 0.012)),
@@ -620,17 +620,126 @@ class SandboxMode:
         label_font_size = max(11, int(self.screen_width * 0.009))
         tk.Label(qubit_frame, text="⚛️ Number of Qubits",
                 font=('Arial', label_font_size, 'bold'),
-                fg=palette['qubit_number_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
+                fg=palette['qubit_number_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.008)))
 
-        self.qubit_var = tk.IntVar(value=1)
-        spinbox_font_size = max(11, int(self.screen_width * 0.009))
-        qubit_spinbox = tk.Spinbox(qubit_frame, from_=1, to=4, textvariable=self.qubit_var,
-                                command=self.on_qubit_change,
-                                font=('Arial', spinbox_font_size),
-                                width=int(self.screen_width * 0.006),
-                                bg=palette['background'], fg=palette['qubit_spinbox_color'],
-                                insertbackground=palette['qubit_spinbox_color'])
-        qubit_spinbox.pack(pady=int(self.screen_height * 0.004))
+        # Touch-friendly qubit counter container using relative positioning
+        qubit_counter_container = tk.Frame(qubit_frame, bg=palette['background_4'])
+        qubit_counter_container.pack(pady=int(self.screen_height * 0.004), fill=tk.X)
+
+        # Set a minimum height for the counter container
+        qubit_counter_container.configure(height=50)
+        qubit_counter_container.pack_propagate(False)
+
+        # Decrement button using relative positioning
+        decrement_frame = tk.Frame(qubit_counter_container, bg=palette['background_4'])
+        decrement_frame.place(relx=0, rely=0, relwidth=0.30, relheight=1)
+
+        decrement_canvas = tk.Canvas(decrement_frame, bg=palette['background'], highlightthickness=0, bd=0)
+        decrement_canvas.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+        # Draw decrement button after canvas is configured
+        def draw_decrement_button(event=None):
+            decrement_canvas.delete("all")
+            width = decrement_canvas.winfo_width()
+            height = decrement_canvas.winfo_height()
+            if width > 1 and height > 1:
+                # Button background
+                decrement_canvas.create_rectangle(2, 2, width-2, height-2,
+                                            fill=palette['background'], 
+                                            outline=palette['qubit_spinbox_color'], width=2, tags="bg")
+                # Button text - font size relative to canvas size
+                font_size = max(10, int(min(width, height) * 0.4))
+                decrement_canvas.create_text(width//2, height//2, text="−",
+                                        font=('Arial', font_size, 'bold'), 
+                                        fill=palette['qubit_spinbox_color'], tags="text")
+
+        decrement_canvas.bind('<Configure>', draw_decrement_button)
+        decrement_canvas.after(10, draw_decrement_button)
+
+        # Qubit number display using relative positioning
+        display_frame = tk.Frame(qubit_counter_container, bg=palette['background_4'])
+        display_frame.place(relx=0.3, rely=0, relwidth=0.4, relheight=1)
+
+        self.qubit_display_label = tk.Label(display_frame, 
+                                        text=str(self.num_qubits),
+                                        font=('Arial', 16, 'bold'),
+                                        fg=palette['qubit_spinbox_color'], 
+                                        bg=palette['background_4'],
+                                        relief=tk.SUNKEN, bd=2)
+        self.qubit_display_label.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+        # Increment button using relative positioning
+        increment_frame = tk.Frame(qubit_counter_container, bg=palette['background_4'])
+        increment_frame.place(relx=0.7, rely=0, relwidth=0.30, relheight=1)
+
+        increment_canvas = tk.Canvas(increment_frame, bg=palette['background'], highlightthickness=0, bd=0)
+        increment_canvas.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+        # Draw increment button after canvas is configured
+        def draw_increment_button(event=None):
+            increment_canvas.delete("all")
+            width = increment_canvas.winfo_width()
+            height = increment_canvas.winfo_height()
+            if width > 1 and height > 1:
+                # Button background
+                increment_canvas.create_rectangle(2, 2, width-2, height-2,
+                                            fill=palette['background'], 
+                                            outline=palette['qubit_spinbox_color'], width=2, tags="bg")
+                # Button text - font size relative to canvas size
+                font_size = max(10, int(min(width, height) * 0.4))
+                increment_canvas.create_text(width//2, height//2, text="+",
+                                        font=('Arial', font_size, 'bold'), 
+                                        fill=palette['qubit_spinbox_color'], tags="text")
+
+        increment_canvas.bind('<Configure>', draw_increment_button)
+        increment_canvas.after(10, draw_increment_button)
+
+        # Button click handlers
+        def decrement_qubits(event):
+            if self.num_qubits > 1:
+                self.num_qubits -= 1
+                self.update_qubit_display()
+                self.on_qubit_change_touch()
+                self.play_sound('click')
+
+        def increment_qubits(event):
+            if self.num_qubits < 4:
+                self.num_qubits += 1
+                self.update_qubit_display()
+                self.on_qubit_change_touch()
+                self.play_sound('click')
+
+        # Bind click events
+        decrement_canvas.bind("<Button-1>", decrement_qubits)
+        increment_canvas.bind("<Button-1>", increment_qubits)
+
+        # Hover effects for decrement button
+        def dec_on_enter(event):
+            decrement_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            decrement_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            decrement_canvas.configure(cursor='hand2')
+
+        def dec_on_leave(event):
+            decrement_canvas.itemconfig("bg", fill=palette['background'])
+            decrement_canvas.itemconfig("text", fill=palette['qubit_spinbox_color'])
+            decrement_canvas.configure(cursor='')
+
+        decrement_canvas.bind("<Enter>", dec_on_enter)
+        decrement_canvas.bind("<Leave>", dec_on_leave)
+
+        # Hover effects for increment button
+        def inc_on_enter(event):
+            increment_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            increment_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            increment_canvas.configure(cursor='hand2')
+
+        def inc_on_leave(event):
+            increment_canvas.itemconfig("bg", fill=palette['background'])
+            increment_canvas.itemconfig("text", fill=palette['qubit_spinbox_color'])
+            increment_canvas.configure(cursor='')
+
+        increment_canvas.bind("<Enter>", inc_on_enter)
+        increment_canvas.bind("<Leave>", inc_on_leave)
 
         # Initial state selection - right side with relative sizing
         state_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
@@ -664,6 +773,14 @@ class SandboxMode:
         self.state_combo.pack(pady=int(self.screen_height * 0.004))
         self.state_combo.bind('<<ComboboxSelected>>', self.on_state_change)
 
+
+    def update_qubit_display(self):
+        """Update the qubit counter display"""
+        if hasattr(self, 'qubit_display_label'):
+            self.qubit_display_label.configure(text=str(self.num_qubits))
+
+
+
     def setup_circuit_area(self, parent):
         """Setup the circuit visualization area with enhanced styling"""
         circuit_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.RAISED, bd=2)
@@ -695,6 +812,34 @@ class SandboxMode:
 
         # Create bottom section with gate palette and controls
         self.setup_bottom_section(parent)
+
+
+    def on_qubit_change_touch(self):
+        """Handle change in number of qubits for touch interface"""
+        self.placed_gates = []  # Clear gates when changing qubit count
+
+        # Update available initial states based on qubit count
+        if self.num_qubits == 1:
+            states = ["|0⟩", "|1⟩", "|+⟩", "|-⟩"]
+        elif self.num_qubits == 2:
+            states = ["|00⟩", "|01⟩", "|10⟩", "|11⟩", "|++⟩"]
+        elif self.num_qubits == 3:
+            states = ["|000⟩", "|001⟩", "|010⟩", "|011⟩", "|100⟩", "|101⟩", "|110⟩", "|111⟩"]
+        elif self.num_qubits == 4:
+            states = ["|0000⟩", "|0001⟩", "|0010⟩", "|0011⟩", "|0100⟩", "|0101⟩", "|0110⟩", "|0111⟩",
+                "|1000⟩", "|1001⟩", "|1010⟩", "|1011⟩", "|1100⟩", "|1101⟩", "|1110⟩", "|1111⟩"]
+        else:
+            states = ["|" + "0" * self.num_qubits + "⟩"]
+
+        self.update_state_combobox(states)
+        self.state_var.set(states[0])
+        self.initial_state = states[0]
+
+        # Update the qubit selection dropdowns
+        self.update_qubit_selections()
+
+        self.update_circuit_display()
+
 
     def setup_bottom_section(self, parent):
         """Setup the bottom section with gate palette on left, controls in middle, and results on right"""
