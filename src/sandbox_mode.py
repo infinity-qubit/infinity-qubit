@@ -1336,8 +1336,13 @@ class SandboxMode:
 
         # Make dialog modal
         dialog.transient(self.root)
-        dialog.grab_set()
-        dialog.focus_force()  # Force focus to dialog
+        try:
+            dialog.grab_set()
+            dialog.focus_force()
+        except tk.TclError:
+            # Window not ready yet, try again after a short delay
+            self.root.after(50, lambda: dialog.grab_set() if dialog.winfo_exists() else None)
+            dialog.focus_force()
 
         # Add a border since overrideredirect removes window decorations
         border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
@@ -1748,7 +1753,7 @@ class SandboxMode:
         self.results_text.configure(state=tk.DISABLED)
 
     def setup_single_gate_controls(self, parent):
-        """Setup single-qubit gate controls with centered 2x3 grid layout using relative sizing"""
+        """Setup single-qubit gate controls with canvas-based qubit selector and responsive design"""
         # Create a frame that works with ttk parent
         container = tk.Frame(parent)
         container.configure(bg=palette['background_3'])
@@ -1766,11 +1771,53 @@ class SandboxMode:
                     relx=0.05, rely=0.5, anchor='w')
 
         self.target_qubit_var = tk.IntVar(value=0)
-        combo_font = max(8, int(self.screen_width * 0.007))
-        self.target_qubit_combo = ttk.Combobox(qubit_frame, textvariable=self.target_qubit_var,
-                                            values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', combo_font), width=max(3, int(self.screen_width * 0.004)))
-        self.target_qubit_combo.place(relx=0.3, rely=0.5, anchor='w')
+        
+        # Create canvas-based button to replace combobox
+        button_font = max(8, int(self.screen_width * 0.007))
+        self.target_qubit_canvas = tk.Canvas(qubit_frame, bg=palette['background'], 
+                                        highlightthickness=2, highlightcolor=palette['combobox_color'],
+                                        bd=0)
+        self.target_qubit_canvas.place(relx=0.3, rely=0.5, relwidth=0.15, relheight=0.8, anchor='w')
+
+        def draw_qubit_button():
+            self.target_qubit_canvas.delete("all")
+            self.target_qubit_canvas.update_idletasks()
+            width = self.target_qubit_canvas.winfo_width()
+            height = self.target_qubit_canvas.winfo_height()
+            if width > 1 and height > 1:
+                # Draw button background
+                self.target_qubit_canvas.create_rectangle(2, 2, width-2, height-2,
+                                                        fill=palette['background'], 
+                                                        outline=palette['combobox_color'], width=2, tags="bg")
+                # Display current target qubit
+                font_size = max(10, int(min(width, height) * 0.3))
+                self.target_qubit_canvas.create_text(width//2, height//2, 
+                                                text=f"q{self.target_qubit_var.get()}",
+                                                font=('Arial', font_size, 'bold'), 
+                                                fill=palette['combobox_color'], tags="text")
+
+        self.target_qubit_canvas.bind('<Configure>', lambda e: draw_qubit_button())
+        self.target_qubit_canvas.after(10, draw_qubit_button)
+
+        # Click handler for qubit selection
+        def open_qubit_dialog(event):
+            self.show_qubit_selection_dialog()
+
+        self.target_qubit_canvas.bind("<Button-1>", open_qubit_dialog)
+
+        # Hover effects for qubit button
+        def qubit_on_enter(event):
+            self.target_qubit_canvas.configure(bg=palette['button_hover_background'])
+            self.target_qubit_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            self.target_qubit_canvas.configure(cursor='hand2')
+
+        def qubit_on_leave(event):
+            self.target_qubit_canvas.configure(bg=palette['background'])
+            self.target_qubit_canvas.itemconfig("text", fill=palette['combobox_color'])
+            self.target_qubit_canvas.configure(cursor='')
+
+        self.target_qubit_canvas.bind("<Enter>", qubit_on_enter)
+        self.target_qubit_canvas.bind("<Leave>", qubit_on_leave)
 
         # Gate buttons section title
         title_font_size = max(10, int(self.screen_width * 0.009))
@@ -1829,8 +1876,8 @@ class SandboxMode:
                 if width > 1 and height > 1:  # Only draw if we have valid dimensions
                     canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
                     canvas.create_text(width//2, height//2, text=gate_text,
-                                     font=('Arial', button_font_size, 'bold'),
-                                     fill=palette['background_black'], tags="text")
+                                    font=('Arial', button_font_size, 'bold'),
+                                    fill=palette['background_black'], tags="text")
 
             # Bind configure event to redraw when size changes
             btn_canvas.bind('<Configure>', draw_button)
@@ -1870,6 +1917,237 @@ class SandboxMode:
                                 font=('Arial', desc_font_size),
                                 fg=palette['gate_description_color'], bg=palette['background_4'])
             desc_label.place(relx=0.5, rely=0.87, anchor='center')
+
+
+    def show_qubit_selection_dialog(self):
+        """Show a touch-friendly qubit selection dialog"""
+        self.play_sound('click')
+
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Select Target Qubit")
+        dialog.configure(bg=palette['background'])
+
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+
+        # Calculate responsive size
+        dialog_width = int(self.screen_width * 0.4)
+        dialog_height = int(self.screen_height * 0.5)
+        x = (self.screen_width - dialog_width) // 2
+        y = (self.screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        dialog.transient(self.root)
+        try:
+            dialog.grab_set()
+            dialog.focus_force()
+        except tk.TclError:
+            # Window not ready yet, try again after a short delay
+            self.root.after(50, lambda: dialog.grab_set() if dialog.winfo_exists() else None)
+            dialog.focus_force()
+
+        # Border frame
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        # Main frame
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
+        main_frame.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
+
+        # Title bar
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'])
+        title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.15)
+
+        # Title
+        title_font_size = max(12, int(self.screen_width * 0.01))
+        title_label = tk.Label(title_bar, text="🎯 Select Target Qubit",
+                            font=('Arial', title_font_size, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_4'])
+        title_label.place(relx=0.05, rely=0.5, anchor='w')
+
+        # Close button
+        close_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0)
+        close_canvas.place(relx=0.9, rely=0.5, relwidth=0.08, relheight=0.6, anchor='center')
+
+        def draw_close_button():
+            close_canvas.delete("all")
+            close_canvas.update_idletasks()
+            width = close_canvas.winfo_width()
+            height = close_canvas.winfo_height()
+            if width > 1 and height > 1:
+                close_canvas.create_rectangle(2, 2, width-2, height-2,
+                                            fill=palette['background_4'], 
+                                            outline=palette['title_color'], width=1, tags="bg")
+                close_canvas.create_text(width//2, height//2, text="✕",
+                                    font=('Arial', int(min(width, height) * 0.4), 'bold'), 
+                                    fill=palette['title_color'], tags="text")
+
+        close_canvas.bind('<Configure>', lambda e: draw_close_button())
+        close_canvas.after(10, draw_close_button)
+        close_canvas.bind("<Button-1>", lambda e: dialog.destroy())
+
+        # Hover effects for close button
+        def close_on_enter(event):
+            close_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            close_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            close_canvas.configure(cursor='hand2')
+
+        def close_on_leave(event):
+            close_canvas.itemconfig("bg", fill=palette['background_4'])
+            close_canvas.itemconfig("text", fill=palette['title_color'])
+            close_canvas.configure(cursor='')
+
+        close_canvas.bind("<Enter>", close_on_enter)
+        close_canvas.bind("<Leave>", close_on_leave)
+
+        # Content area
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
+        content_frame.place(relx=0, rely=0.15, relwidth=1, relheight=0.85)
+
+        # Create grid of qubit buttons
+        self.create_qubit_selection_grid(content_frame, dialog)
+
+        # Make title bar draggable
+        def start_move(event):
+            dialog.x = event.x_root - dialog.winfo_x()
+            dialog.y = event.y_root - dialog.winfo_y()
+
+        def on_move(event):
+            x = event.x_root - dialog.x
+            y = event.y_root - dialog.y
+            dialog.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_label.bind("<Button-1>", start_move)
+        title_label.bind("<B1-Motion>", on_move)
+
+        # Bind Escape to close
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
+
+
+    def create_qubit_selection_grid(self, parent, dialog):
+        """Create a responsive grid of qubit selection buttons"""
+        # Calculate grid dimensions based on number of qubits
+        if self.num_qubits <= 2:
+            cols = 2
+            rows = 1
+        elif self.num_qubits <= 4:
+            cols = 2
+            rows = 2
+        else:
+            cols = 3
+            rows = (self.num_qubits + cols - 1) // cols
+
+        # Create instruction label
+        instruction_font = max(10, int(self.screen_width * 0.008))
+        instruction_label = tk.Label(parent, text=f"Select target qubit (0 to {self.num_qubits-1}):",
+                                font=('Arial', instruction_font),
+                                fg=palette['subtitle_color'], bg=palette['background_3'])
+        instruction_label.place(relx=0.5, rely=0.1, anchor='center')
+
+        # Create grid of buttons
+        button_font_size = max(12, int(self.screen_width * 0.01))
+        
+        for qubit in range(self.num_qubits):
+            row = qubit // cols
+            col = qubit % cols
+
+            # Calculate button position using relative coordinates
+            button_relx = (col + 0.5) / cols
+            button_rely = 0.3 + (row + 0.5) / rows * 0.6  # Start at 30% down, use 60% of remaining space
+            button_relwidth = 0.8 / cols
+            button_relheight = min(0.4 / rows, 0.15)  # Limit height to prevent oversized buttons
+
+            # Create button frame
+            btn_frame = tk.Frame(parent, bg=palette['background_4'], relief=tk.RAISED, bd=2)
+            btn_frame.place(relx=button_relx, rely=button_rely, 
+                        relwidth=button_relwidth, relheight=button_relheight, anchor='center')
+
+            # Create canvas button
+            btn_canvas = tk.Canvas(btn_frame, bg=palette['background'], highlightthickness=0, bd=0)
+            btn_canvas.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+            def draw_qubit_button(event=None, canvas=btn_canvas, qubit_num=qubit):
+                canvas.delete("all")
+                canvas.update_idletasks()
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    # Highlight current selection
+                    if qubit_num == self.target_qubit_var.get():
+                        bg_color = palette['button_hover_background']
+                        text_color = palette['button_hover_text_color']
+                    else:
+                        bg_color = palette['background']
+                        text_color = palette['combobox_color']
+                    
+                    canvas.create_rectangle(2, 2, width-2, height-2,
+                                        fill=bg_color, 
+                                        outline=palette['combobox_color'], width=2, tags="bg")
+                    
+                    # Qubit text
+                    qubit_font_size = max(10, int(min(width, height) * 0.3))
+                    canvas.create_text(width//2, height//2, text=f"q{qubit_num}",
+                                    font=('Arial', qubit_font_size, 'bold'), 
+                                    fill=text_color, tags="text")
+
+            btn_canvas.bind('<Configure>', draw_qubit_button)
+            btn_canvas.after(10, draw_qubit_button)
+
+            # Click handler
+            def create_qubit_handler(selected_qubit):
+                def on_qubit_select(event):
+                    self.target_qubit_var.set(selected_qubit)
+                    # Update the target qubit canvas display
+                    self.update_target_qubit_display()
+                    self.play_sound('click')
+                    dialog.destroy()
+                return on_qubit_select
+
+            btn_canvas.bind("<Button-1>", create_qubit_handler(qubit))
+
+            # Hover effects
+            def create_hover_handlers(canvas, qubit_num):
+                def on_enter(event):
+                    if qubit_num != self.target_qubit_var.get():
+                        canvas.itemconfig("bg", fill=palette['button_hover_background'])
+                        canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+                    canvas.configure(cursor='hand2')
+
+                def on_leave(event):
+                    if qubit_num != self.target_qubit_var.get():
+                        canvas.itemconfig("bg", fill=palette['background'])
+                        canvas.itemconfig("text", fill=palette['combobox_color'])
+                    canvas.configure(cursor='')
+
+                return on_enter, on_leave
+
+            on_enter, on_leave = create_hover_handlers(btn_canvas, qubit)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
+
+
+    def update_target_qubit_display(self):
+        """Update the target qubit canvas display"""
+        if hasattr(self, 'target_qubit_canvas'):
+            # Trigger a redraw of the target qubit button
+            self.target_qubit_canvas.delete("all")
+            self.target_qubit_canvas.update_idletasks()
+            width = self.target_qubit_canvas.winfo_width()
+            height = self.target_qubit_canvas.winfo_height()
+            if width > 1 and height > 1:
+                self.target_qubit_canvas.create_rectangle(2, 2, width-2, height-2,
+                                                        fill=palette['background'], 
+                                                        outline=palette['combobox_color'], width=2, tags="bg")
+                font_size = max(10, int(min(width, height) * 0.3))
+                self.target_qubit_canvas.create_text(width//2, height//2, 
+                                                text=f"q{self.target_qubit_var.get()}",
+                                                font=('Arial', font_size, 'bold'), 
+                                                fill=palette['combobox_color'], tags="text")
+
 
     def setup_multi_gate_controls(self, parent):
         """Setup multi-qubit gate controls with enhanced styling"""
