@@ -1271,7 +1271,7 @@ class SandboxMode:
             # FIXED: Close button with correct parameter order
             close_canvas = self.create_canvas_dialog_button(
                 controls_frame, " Close", viz_window.destroy,
-                palette['close_button_background'], palette['close_button_text_color'],
+                palette['close_gamemode_button_background'], palette['close_gamemode_button_text_color'],
                 width=120, height=35, font_size=button_font_size
             )
             close_canvas.pack(side=tk.RIGHT, padx=int(window_width * 0.008))

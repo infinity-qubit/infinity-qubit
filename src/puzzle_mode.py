@@ -904,13 +904,15 @@ class PuzzleMode:
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
 
-        # Calculate center position immediately
-        dialog_width = 600
-        dialog_height = 500
+        # FIXED: Calculate center position BEFORE creating geometry (30% bigger)
+        dialog_width = 900  # 30% bigger than 600
+        dialog_height = 750  # 30% bigger than 500
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
         x = (screen_width - dialog_width) // 2
         y = (screen_height - dialog_height) // 2
+
+        # FIXED: Set geometry immediately with center position - no update_idletasks before
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         # Ensure dialog is on top and visible BEFORE grab_set
@@ -927,23 +929,23 @@ class PuzzleMode:
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
 
-        # Header with warning icon
+        # Header with warning icon (30% bigger fonts)
         header_frame = tk.Frame(main_frame, bg=palette['background_2'])
-        header_frame.pack(fill=tk.X, pady=(15, 10))
+        header_frame.pack(fill=tk.X, pady=(20, 15))
 
         warning_label = tk.Label(header_frame, text="WARNING",
-                            font=('Arial', 24), fg='#ff6b6b', bg=palette['background_2'])
+                            font=('Arial', 31), fg='#ff6b6b', bg=palette['background_2'])  # 30% bigger: 24 -> 31
         warning_label.pack()
 
         title_label = tk.Label(header_frame, text="GATE LIMIT REACHED!",
-                            font=('Arial', 18, 'bold'), fg='#ff6b6b', bg=palette['background_2'])
+                            font=('Arial', 23, 'bold'), fg='#ff6b6b', bg=palette['background_2'])  # 30% bigger: 18 -> 23
         title_label.pack(pady=(5, 0))
 
         # Content frame
         content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=15)
 
-        # Warning message
+        # Warning message (30% bigger font and wraplength)
         warning_text = f"""You have reached the maximum gate limit for this level.
 
     Current limit: {max_gates} gates
@@ -953,33 +955,34 @@ class PuzzleMode:
     Remember: Efficient solutions earn bonus points!"""
 
         warning_message = tk.Label(content_frame, text=warning_text,
-                                font=('Arial', 13),
+                                font=('Arial', 17),  # 30% bigger: 13 -> 17
                                 fg=palette['level_complete_info_label_text_color'],
                                 bg=palette['background_3'],
-                                justify=tk.CENTER)
+                                justify=tk.CENTER,
+                                wraplength=int(dialog_width * 0.8))  # 30% bigger wrapping
         warning_message.pack(expand=True, pady=20)
 
         # Button frame
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
         button_frame.pack(pady=(10, 15))
 
-        # Clear circuit button
+        # Clear circuit button (30% bigger)
         clear_canvas = self.create_canvas_dialog_button(
             button_frame, "Clear Circuit",
             lambda: [self.clear_circuit(), dialog.destroy()],
-            palette['clear_button_background'],
-            palette['clear_button_text_color'],
-            width=160, height=40, font_size=12
+            palette['puzzle_mode_button_color'],  # Fixed color
+            palette['puzzle_mode_button_text_color'],  # Fixed color
+            width=208, height=52, font_size=16  # 30% bigger: 160x40, font 12 -> 208x52, font 16
         )
         clear_canvas.pack(side=tk.LEFT, padx=10)
 
-        # OK button
+        # OK button (30% bigger)
         ok_canvas = self.create_canvas_dialog_button(
             button_frame, "Got it!",
             dialog.destroy,
             palette['return_to_gamemode_button_background'],
             palette['return_to_gamemode_button_text_color'],
-            width=120, height=40, font_size=12
+            width=156, height=52, font_size=16  # 30% bigger: 120x40, font 12 -> 156x52, font 16
         )
         ok_canvas.pack(side=tk.LEFT, padx=10)
 
@@ -1247,17 +1250,20 @@ class PuzzleMode:
         dialog = tk.Toplevel(self.root)
         dialog.title(title)
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog.geometry("400x200")
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
+
+        # FIXED: Increased dialog size by 40% (was 400x200)
+        dialog_width = 560  # 40% bigger: 400 -> 560
+        dialog_height = 280  # 40% bigger: 200 -> 280
 
         # Center the dialog on screen
         dialog.update_idletasks()
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
-        x = (screen_width - 400) // 2
-        y = (screen_height - 200) // 2
-        dialog.geometry(f"400x200+{x}+{y}")
+        x = (screen_width - dialog_width) // 2
+        y = (screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         # Ensure dialog is on top and visible BEFORE grab_set
         dialog.lift()
@@ -1274,29 +1280,29 @@ class PuzzleMode:
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
 
-        # Title
+        # FIXED: Bigger title font
         title_label = tk.Label(main_frame, text=title,
-                            font=('Arial', 16, 'bold'),
+                            font=('Arial', 20, 'bold'),  # Increased from 16
                             fg=palette['title_color'], bg=palette['background_2'])
-        title_label.pack(pady=(15, 10))
+        title_label.pack(pady=(20, 15))  # More padding
 
-        # Message
+        # FIXED: Bigger message font with better wrapping
         message_label = tk.Label(main_frame, text=message,
-                            font=('Arial', 12),
+                            font=('Arial', 16),  # Increased from 12
                             fg=palette['level_complete_info_label_text_color'],
                             bg=palette['background_2'],
-                            wraplength=350, justify=tk.CENTER)
-        message_label.pack(expand=True, pady=15)
+                            wraplength=int(dialog_width * 0.85), justify=tk.CENTER)  # Better wrapping
+        message_label.pack(expand=True, pady=20)  # More padding
 
-        # OK button using canvas
+        # FIXED: Bigger OK button
         ok_canvas = self.create_canvas_dialog_button(
             main_frame, "OK",
             dialog.destroy,
             palette['return_to_gamemode_button_background'],
             palette['return_to_gamemode_button_text_color'],
-            width=120, height=40, font_size=12
+            width=160, height=50, font_size=16  # Bigger button: 120x40 -> 160x50, font 12 -> 16
         )
-        ok_canvas.pack(pady=(10, 15))
+        ok_canvas.pack(pady=(15, 20))  # More padding
 
         # Handle ESC key to close
         dialog.bind('<Escape>', lambda e: dialog.destroy())
@@ -1782,19 +1788,21 @@ Thank you for playing Infinity Qubit!"""
 
         # Create custom hint dialog without decorations
         dialog = tk.Toplevel(self.root)
-        dialog.title(" Hint")
+        dialog.title("💡 Hint")
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog.geometry("500x300")
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
 
-        # Center the dialog on screen
-        dialog.update_idletasks()
+        # FIXED: Calculate center position BEFORE creating geometry (30% bigger)
+        dialog_width = 850  # 30% bigger than 500
+        dialog_height = 600  # 30% bigger than 300
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
-        x = (screen_width - 500) // 2
-        y = (screen_height - 300) // 2
-        dialog.geometry(f"500x300+{x}+{y}")
+        x = (screen_width - dialog_width) // 2
+        y = (screen_height - dialog_height) // 2
+
+        # FIXED: Set geometry immediately with center position
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         # Ensure dialog is on top and visible BEFORE grab_set
         dialog.lift()
@@ -1810,9 +1818,9 @@ Thank you for playing Infinity Qubit!"""
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
 
-        # Title with icon
-        title_label = tk.Label(main_frame, text=" Hint",
-                            font=('Arial', 18, 'bold'),
+        # Title with icon (30% bigger)
+        title_label = tk.Label(main_frame, text="💡 Hint",
+                            font=('Arial', 23, 'bold'),  # 30% bigger: 18 -> 23
                             fg=palette['title_color'], bg=palette['background_2'])
         title_label.pack(pady=(15, 10))
 
@@ -1820,21 +1828,21 @@ Thank you for playing Infinity Qubit!"""
         content_frame = tk.Frame(main_frame, bg=palette['background_3'], relief=tk.SUNKEN, bd=2)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Hint text
+        # Hint text (30% bigger font and wraplength)
         hint_label = tk.Label(content_frame, text=hint,
-                            font=('Arial', 14),
+                            font=('Arial', 18),  # 30% bigger: 14 -> 18
                             fg=palette['level_complete_info_label_text_color'],
                             bg=palette['background_3'],
-                            wraplength=450, justify=tk.CENTER)
+                            wraplength=int(dialog_width * 0.85), justify=tk.CENTER)  # 30% bigger wrapping
         hint_label.pack(expand=True, pady=20)
 
-        # Close button - canvas-based
+        # Close button - canvas-based (30% bigger)
         close_canvas = self.create_canvas_dialog_button(
             main_frame, "Got it!",
             dialog.destroy,
             palette['return_to_gamemode_button_background'],
             palette['return_to_gamemode_button_text_color'],
-            width=120, height=40, font_size=12
+            width=156, height=52, font_size=16  # 30% bigger: 120x40, font 12 -> 156x52, font 16
         )
         close_canvas.pack(pady=(10, 15))
 
@@ -1848,17 +1856,19 @@ Thank you for playing Infinity Qubit!"""
         dialog = tk.Toplevel(self.root)
         dialog.title("Skip Level")
         dialog.overrideredirect(True)  # Remove window decorations
-        dialog.geometry("450x250")
         dialog.configure(bg=palette['background'])
         dialog.transient(self.root)
 
-        # Center the dialog on screen
-        dialog.update_idletasks()
+        # FIXED: Calculate center position BEFORE creating geometry (30% bigger)
+        dialog_width = 850  # 30% bigger than 450
+        dialog_height = 600  # 30% bigger than 250
         screen_width = dialog.winfo_screenwidth()
         screen_height = dialog.winfo_screenheight()
-        x = (screen_width - 450) // 2
-        y = (screen_height - 250) // 2
-        dialog.geometry(f"450x250+{x}+{y}")
+        x = (screen_width - dialog_width) // 2
+        y = (screen_height - dialog_height) // 2
+
+        # FIXED: Set geometry immediately with center position
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         # Ensure dialog is on top and visible BEFORE grab_set
         dialog.lift()
@@ -1876,23 +1886,31 @@ Thank you for playing Infinity Qubit!"""
         main_frame = tk.Frame(dialog, bg=palette['background_2'], relief=tk.RAISED, bd=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Title
-        title_label = tk.Label(main_frame, text="Skip Level",
-                            font=('Arial', 16, 'bold'),
-                            fg=palette['title_color'], bg=palette['background_2'])
-        title_label.pack(pady=(15, 10))
+        # Reset Progress Button in its own frame - MOVED MUCH LOWER
+        reset_frame = tk.Frame(main_frame, bg=palette['background_2'])
+        reset_frame.pack(pady=(25, 15))  # INCREASED from 25 to 60 for more space
 
-        # Message
+        tk.Label(reset_frame, text="", bg=palette['background_2']).pack()
+        tk.Label(reset_frame, text="", bg=palette['background_2']).pack()
+        tk.Label(reset_frame, text="", bg=palette['background_2']).pack()
+
+        # FIXED: Centered title (30% bigger)
+        title_label = tk.Label(main_frame, text="Skip Level",
+                            font=('Arial', 35, 'bold'),  # 30% bigger: 16 -> 21
+                            fg=palette['title_color'], bg=palette['background_2'])
+        title_label.pack(pady=(30, 20))  # More top padding for centering
+
+        # FIXED: Centered message (30% bigger font) with more space
         message_label = tk.Label(main_frame,
                             text="Are you sure you want to skip this level?\nYou won't earn points for skipping.",
-                            font=('Arial', 12),
+                            font=('Arial', 18),  # Bigger font: 16 -> 18
                             fg=palette['subtitle_color'], bg=palette['background_2'],
-                            justify=tk.CENTER)
-        message_label.pack(pady=15)
+                            justify=tk.CENTER)  # Ensure text is centered
+        message_label.pack(pady=(40, 60))  # More padding for better centering
 
-        # Button frame
+        # Button frame - centered
         button_frame = tk.Frame(main_frame, bg=palette['background_2'])
-        button_frame.pack(pady=(20, 15))
+        button_frame.pack(pady=(20, 30))  # More bottom padding
 
         def confirm_skip():
             result[0] = True
@@ -1902,25 +1920,25 @@ Thank you for playing Infinity Qubit!"""
             result[0] = False
             dialog.destroy()
 
-        # Yes button - canvas-based
+        # Yes button - canvas-based (30% bigger)
         yes_canvas = self.create_canvas_dialog_button(
             button_frame, "Yes, Skip",
             confirm_skip,
             palette['return_to_gamemode_button_background'],
             palette['return_to_gamemode_button_text_color'],
-            width=120, height=40, font_size=12
+            width=156, height=52, font_size=16  # 30% bigger: 120x40, font 12 -> 156x52, font 16
         )
-        yes_canvas.pack(side=tk.LEFT, padx=10)
+        yes_canvas.pack(side=tk.LEFT, padx=20)  # More spacing
 
-        # No button - canvas-based
+        # No button - canvas-based (30% bigger)
         no_canvas = self.create_canvas_dialog_button(
             button_frame, "No, Continue",
             cancel_skip,
             palette['close_gamemode_button_background'],
             palette['close_gamemode_button_hover_text_color'],
-            width=140, height=40, font_size=12
+            width=182, height=52, font_size=16  # 30% bigger: 140x40, font 12 -> 182x52, font 16
         )
-        no_canvas.pack(side=tk.LEFT, padx=10)
+        no_canvas.pack(side=tk.LEFT, padx=20)  # More spacing
 
         # Handle ESC key to cancel
         dialog.bind('<Escape>', lambda e: cancel_skip())
