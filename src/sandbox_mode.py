@@ -1736,9 +1736,10 @@ class SandboxMode:
 
     def setup_results_area(self, parent):
         """Setup the results display area on the right side"""
-        # Enhanced title
+        # Enhanced title with responsive font size
+        title_font_size = max(14, int(self.screen_width * 0.012))
         results_title = tk.Label(parent, text="📊 Quantum State Analysis",
-                                font=('Arial', 14, 'bold'), fg=palette['state_analysis_title_color'], bg=palette['background_3'])
+                                font=('Arial', title_font_size, 'bold'), fg=palette['state_analysis_title_color'], bg=palette['background_3'])
         results_title.pack(pady=(10, 15))
 
         # Results container with styling
@@ -1749,28 +1750,44 @@ class SandboxMode:
         text_frame = tk.Frame(results_container, bg=palette['background'])
         text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
+        # Calculate responsive font size for results text
+        results_font_size = max(10, int(self.screen_width * 0.008))  # Increased from 9
+        
         self.results_text = tk.Text(text_frame, width=40,  # Fixed width for right panel
-                                   font=('Consolas', 9), bg=palette['background_2'], fg=palette['results_text_color'],
-                                   relief=tk.FLAT, bd=0, insertbackground=palette['results_background'],
-                                   selectbackground=palette['results_select_background'], selectforeground=palette['background_black'],
-                                   wrap=tk.WORD)
+                                font=('Consolas', results_font_size), bg=palette['background_2'], fg=palette['results_text_color'],
+                                relief=tk.FLAT, bd=0, insertbackground=palette['results_background'],
+                                selectbackground=palette['results_select_background'], selectforeground=palette['background_black'],
+                                wrap=tk.WORD)
 
-        # Add scrollbar
+        # Add scrollbar with responsive width
+        scrollbar_width = max(15, int(self.screen_width * 0.01))
         scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.results_text.yview,
-                                bg=palette['background_4'], troughcolor=palette['background'], activebackground=palette['scrollbar_active_background'])
+                                bg=palette['background_4'], troughcolor=palette['background'], 
+                                activebackground=palette['scrollbar_active_background'],
+                                width=scrollbar_width)
         self.results_text.configure(yscrollcommand=scrollbar.set)
 
         self.results_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Initial message
-        self.results_text.insert(tk.END, "🌟 Welcome to Quantum Circuit Sandbox!\n\n")
-        self.results_text.insert(tk.END, "Build your circuit and click 'Run Circuit' to see the results.\n\n")
-        self.results_text.insert(tk.END, "📝 Instructions:\n")
-        self.results_text.insert(tk.END, "1. Select gates from the palette\n")
-        self.results_text.insert(tk.END, "2. Configure qubits and initial states\n")
-        self.results_text.insert(tk.END, "3. Run your circuit to see quantum state analysis\n")
+        # Initial message with responsive formatting
+        welcome_font_size = max(12, int(self.screen_width * 0.009))
+        instruction_font_size = max(10, int(self.screen_width * 0.008))
+        
+        # Configure text tags for different font sizes
+        self.results_text.tag_configure("welcome", font=('Consolas', welcome_font_size, 'bold'))
+        self.results_text.tag_configure("instruction", font=('Consolas', instruction_font_size))
+        self.results_text.tag_configure("normal", font=('Consolas', results_font_size))
+
+        # Insert initial message with tags
+        self.results_text.insert(tk.END, "🌟 Welcome to Quantum Circuit Sandbox!\n\n", "welcome")
+        self.results_text.insert(tk.END, "Build your circuit and click 'Run Circuit' to see the results.\n\n", "instruction")
+        self.results_text.insert(tk.END, "📝 Instructions:\n", "instruction")
+        self.results_text.insert(tk.END, "1. Select gates from the palette\n", "normal")
+        self.results_text.insert(tk.END, "2. Configure qubits and initial states\n", "normal")
+        self.results_text.insert(tk.END, "3. Run your circuit to see quantum state analysis\n", "normal")
         self.results_text.configure(state=tk.DISABLED)
+
 
     def setup_single_gate_controls(self, parent):
         """Setup single-qubit gate controls with canvas-based qubit selector and responsive design"""
