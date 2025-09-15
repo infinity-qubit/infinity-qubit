@@ -271,7 +271,7 @@ then the coin represents a bit — but it can only show one face at a time."""
 
         analogy_label = tk.Label(main_frame, text=analogy_text,
                                 font=('Arial', max(12, int(self.window_width / 120)), 'italic'),
-                                fg=palette[gate_color], bg=palette['background'],
+                                fg=palette['gate_color'], bg=palette['background'],
                                 wraplength=int(self.window_width * 0.8), justify=tk.CENTER)
         analogy_label.place(relx=0.5, rely=0.85, anchor='center')
 
@@ -544,26 +544,6 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
             self.draw_coin()
             # Continue animation
             self.animation_id = self.window.after(200, self.animate_spin)
-
-
-    def next_intro_step(self):
-        """Move to next intro step"""
-        self.play_sound('button_click')
-        self.user_progress['current_step'] += 1
-        self.show_intro_step()
-
-
-    def prev_intro_step(self):
-        """Move to previous intro step"""
-        self.play_sound('button_click')
-        self.user_progress['current_step'] -= 1
-        self.show_intro_step()
-
-
-    def start_gates_tutorial(self):
-        """Start the gates tutorial"""
-        self.user_progress['current_step'] = 2
-        self.setup_ui()
 
 
     def create_canvas_dialog_button(self, parent, text, command, bg_color, text_color,
@@ -1322,21 +1302,6 @@ class GateTutorial:
             print(f"Warning: Could not play sound {sound_name}: {e}")
 
 
-    def center_window(self):
-        """Center the window on the screen"""
-        self.window.update_idletasks()
-
-        # Get screen dimensions
-        screen_width = self.window.winfo_screenwidth()
-        screen_height = self.window.winfo_screenheight()
-
-        # Calculate position
-        x = (screen_width - self.window_width) // 2
-        y = (screen_height - self.window_height) // 2
-
-        self.window.geometry(f"{self.window_width}x{self.window_height}+{x}+{y}")
-
-
     def setup_ui(self):
         """Setup the gate tutorial interface with fullscreen layout using relative positioning"""
         # Main container with gradient-like effect
@@ -1821,17 +1786,6 @@ class GateTutorial:
             self.results_text.configure(state=tk.DISABLED)
 
 
-    def restore_fullscreen(self):
-        """Restore fullscreen mode"""
-        self.window.deiconify()  # Show window again
-        self.window.overrideredirect(True)
-        screen_width = self.window.winfo_screenwidth()
-        screen_height = self.window.winfo_screenheight()
-        self.window.geometry(f"{screen_width}x{screen_height}+0+0")
-        self.window.lift()
-        self.window.focus_force()
-
-
     def get_educational_message(self):
         """Get educational message based on the gate"""
         messages = {
@@ -1845,19 +1799,6 @@ class GateTutorial:
             'CZ': "You've applied conditional phase flip - another way to create entanglement!"
         }
         return messages.get(self.gate, "Great job exploring quantum mechanics!")
-
-
-    def continue_learning(self, congrats_window):
-        """Continue to next gate and mark current as completed"""
-        congrats_window.destroy()
-        self.mark_completed()
-        self.close_tutorial()
-
-
-    def try_again(self, congrats_window):
-        """Clear circuit and try again"""
-        congrats_window.destroy()
-        self.clear_circuit()
 
 
     def display_results(self, state_vector, num_qubits):

@@ -308,10 +308,6 @@ class GameModeSelection:
         glass_canvas = tk.Canvas(main_frame, highlightthickness=0, bg=palette['background'])
         glass_canvas.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        # Draw glassmorphism background
-        # Update glass background with configure event binding
-        glass_canvas.bind('<Configure>', self.on_glass_configure)
-
         # Content frame with relative positioning
         content_frame = tk.Frame(main_frame, bg=palette['background'])
         content_frame.place(relx=0.05, rely=0.05, anchor='nw', relwidth=0.9, relheight=0.9)
@@ -414,18 +410,6 @@ class GameModeSelection:
                                 font=('Arial', max(8, int(self.window_width / 150))),
                                 fg=palette['version_text_color'], bg=palette['background'])
         version_label.pack(side=tk.LEFT)
-
-
-    def update_glass_background(self, canvas):
-        """Update glassmorphism background when canvas is resized"""
-        canvas.delete("glass")
-        canvas.update_idletasks()
-        width = canvas.winfo_width()
-        height = canvas.winfo_height()
-        if width > 1 and height > 1:
-            canvas.create_rectangle(0, 0, width, height,
-                                  fill=palette['background'], stipple='gray50',
-                                  outline=palette['main_box_outline'], width=2, tags="glass")
 
 
     def animate_subtitle(self):
@@ -674,11 +658,6 @@ class GameModeSelection:
         self.root.after(100, execute_delayed)
 
 
-    def on_glass_configure(self, event):
-        """Handle glass canvas configure event"""
-        self.update_glass_background(event.widget)
-
-
     def create_info_display(self):
         """Create the initial info display area"""
         # Clear existing content
@@ -713,13 +692,6 @@ class GameModeSelection:
             print(f"❌ Error starting tutorial: {e}")
             messagebox.showerror("Error", f"Failed to start tutorial: {e}")
             self.root.deiconify()
-
-
-    def return_to_main_menu(self):
-        """Return to the main menu from tutorial"""
-        self.root.deiconify()
-        self.root.lift()
-        self.root.focus_set()
 
 
     def start_puzzle_mode(self):

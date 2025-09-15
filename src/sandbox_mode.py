@@ -1165,7 +1165,7 @@ class SandboxMode:
 
             # Title in title bar with relative font size
             title_font_size = max(12, int(self.screen_width * 0.01))
-            title_bar_label = tk.Label(title_bar, text=" 3D Quantum State Visualizer",
+            title_bar_label = tk.Label(title_bar, text="3D Quantum State Visualizer",
                                     font=('Arial', title_font_size, 'bold'),
                                     fg=palette['3D_visualizer_title_color'], bg=palette['background_4'])
             title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.008))
@@ -1240,42 +1240,6 @@ class SandboxMode:
             canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True,
                                     padx=int(window_width * 0.01),
                                     pady=int(window_height * 0.01))
-
-            # Control buttons at the bottom with relative sizing
-            controls_frame = tk.Frame(main_container, bg=palette['background_3'])
-            controls_frame.pack(fill=tk.X,
-                            padx=int(window_width * 0.02),
-                            pady=int(window_height * 0.01))
-
-            # Button styling with relative font sizes
-            button_font_size = max(10, int(self.screen_width * 0.008))
-            button_padx = int(self.screen_width * 0.012)
-            button_pady = int(self.screen_height * 0.008)
-
-            # FIXED: Save button with correct parameter order
-            save_canvas = self.create_canvas_dialog_button(
-                controls_frame, " Save Image", lambda: self.save_3d_visualization(fig),
-                palette['save_image_background'], palette['background_black'],
-                width=140, height=35, font_size=button_font_size
-            )
-            save_canvas.pack(side=tk.LEFT, padx=int(window_width * 0.008))
-
-            # FIXED: Refresh button with correct parameter order
-            refresh_canvas = self.create_canvas_dialog_button(
-                controls_frame, " Refresh", lambda: self.refresh_3d_visualization(viz_window, state_vector),
-                palette['refresh_button_background'], palette['background_black'],
-                width=120, height=35, font_size=button_font_size
-            )
-            refresh_canvas.pack(side=tk.LEFT, padx=int(window_width * 0.008))
-
-            # FIXED: Close button with correct parameter order
-            close_canvas = self.create_canvas_dialog_button(
-                controls_frame, " Close", viz_window.destroy,
-                palette['close_gamemode_button_background'], palette['close_gamemode_button_text_color'],
-                width=120, height=35, font_size=button_font_size
-            )
-            close_canvas.pack(side=tk.RIGHT, padx=int(window_width * 0.008))
-
             # State information panel with relative sizing
             state_info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
             state_info_frame.pack(fill=tk.X,
@@ -1356,38 +1320,6 @@ class SandboxMode:
                                              abs(state_data[2]) > 0.99 or abs(state_data[3]) > 0.99)
         except:
             return False
-
-
-    def save_3d_visualization(self, fig):
-        """Save the 3D visualization as an image"""
-        try:
-            from tkinter import filedialog
-
-            filename = filedialog.asksaveasfilename(
-                defaultextension=".png",
-                filetypes=[("PNG files", "*.png"), ("PDF files", "*.pdf"), ("SVG files", "*.svg")],
-                title="Save 3D Visualization"
-            )
-
-            if filename:
-                fig.savefig(filename, dpi=300, bbox_inches='tight',
-                        facecolor=palette['background'], edgecolor='none')
-                self.show_custom_dialog("Success", f"Visualization saved as {filename}", "success")
-                self.play_sound('success', self.play_success_sound_fallback)
-
-        except Exception as e:
-            self.show_custom_dialog("Save Error", f"Error saving visualization:\n{str(e)}", "error")
-            self.play_sound('error', self.play_error_sound_fallback)
-
-
-    def refresh_3d_visualization(self, viz_window, state_vector):
-        """Refresh the 3D visualization"""
-        try:
-            # Close current window and reopen with updated state
-            viz_window.destroy()
-            self.open_3d_visualizer()
-        except Exception as e:
-            self.show_custom_dialog("Refresh Error", f"Error refreshing visualization:\n{str(e)}", "error")
 
 
     def setup_results_area(self, parent):

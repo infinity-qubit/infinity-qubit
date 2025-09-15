@@ -293,9 +293,6 @@ class PuzzleMode:
         # Bottom section with gate palette, controls, and state analysis
         self.setup_bottom_section(main_container)
 
-        # Set up window close protocol
-        self.root.protocol("WM_DELETE_WINDOW", self.on_window_close)
-
 
     def create_header(self, parent):
         """Create header with title and navigation using relative positioning"""
@@ -2158,13 +2155,6 @@ Thank you for playing Infinity Qubit!"""
             # Save the progress before exiting
             self.save_progress()
             self.go_back_to_menu()
-
-
-    def on_window_close(self):
-        """Handle window close event (X button)"""
-        # Save the progress before exiting
-        self.save_progress()
-        self.go_back_to_menu()
 
 
     def go_back_to_menu(self):
