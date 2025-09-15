@@ -1493,165 +1493,64 @@ class SandboxMode:
                 viz_window.grab_set()
                 viz_window.focus_force()
             except tk.TclError:
-                # Window not ready yet, try again after a short delay
                 self.root.after(50, lambda: viz_window.grab_set() if viz_window.winfo_exists() else None)
                 viz_window.focus_force()
 
             # Add border since overrideredirect removes window decorations
             border_frame = tk.Frame(viz_window, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
-            border_frame.pack(fill=tk.BOTH, expand=True)
+            border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
             # Main container inside border
             main_container = tk.Frame(border_frame, bg=palette['background'], relief=tk.FLAT, bd=0)
-            main_container.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+            main_container.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
 
-            # Custom title bar since we removed window decorations
-            title_bar = tk.Frame(main_container, bg=palette['background_4'], height=int(self.screen_height * 0.04))
-            title_bar.pack(fill=tk.X)
-            title_bar.pack_propagate(False)
+            # Custom title bar since we removed window decorations - RESPONSIVE
+            title_bar = tk.Frame(main_container, bg=palette['background_4'])
+            title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.08)
 
             # Title in title bar with relative font size
             title_font_size = max(12, int(self.screen_width * 0.01))
             title_bar_label = tk.Label(title_bar, text="🌐 3D Quantum State Visualizer",
                                     font=('Arial', title_font_size, 'bold'),
                                     fg=palette['3D_visualizer_title_color'], bg=palette['background_4'])
-            title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.008))
+            title_bar_label.place(relx=0.02, rely=0.5, anchor='w')
 
             # Close button in title bar using canvas for macOS compatibility
             close_btn_font_size = max(10, int(self.screen_width * 0.008))
-            self.create_canvas_dialog_button(title_bar, "✕ Close", viz_window.destroy, 80, 30,
-                                           palette['background_4'], palette['title_color'])
+            close_btn_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0)
+            close_btn_canvas.place(relx=0.92, rely=0.5, relwidth=0.06, relheight=0.6, anchor='center')
 
-            # Info panel with relative sizing
+            def draw_title_close_button():
+                close_btn_canvas.delete("all")
+                close_btn_canvas.update_idletasks()
+                width = close_btn_canvas.winfo_width()
+                height = close_btn_canvas.winfo_height()
+                if width > 1 and height > 1:
+                    close_btn_canvas.create_rectangle(2, 2, width-2, height-2,
+                                                    fill=palette['background_4'], 
+                                                    outline=palette['title_color'], width=1, tags="bg")
+                    close_btn_canvas.create_text(width//2, height//2, text="✕",
+                                            font=('Arial', int(min(width, height) * 0.4), 'bold'), 
+                                            fill=palette['title_color'], tags="text")
+
+            close_btn_canvas.bind('<Configure>', lambda e: draw_title_close_button())
+            close_btn_canvas.after(10, draw_title_close_button)
+            close_btn_canvas.bind("<Button-1>", lambda e: viz_window.destroy())
+
+            # Info panel with RESPONSIVE positioning
             info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-            info_frame.pack(fill=tk.X, padx=int(window_width * 0.02), pady=int(window_height * 0.01))
+            info_frame.place(relx=0.02, rely=0.09, relwidth=0.96, relheight=0.06)
 
             info_font_size = max(10, int(self.screen_width * 0.008))
             info_text = tk.Label(info_frame,
                 text=f"Circuit: {self.num_qubits} qubits, {len(self.placed_gates)} gates | "
                     f"Gates: {[gate for gate, _ in self.placed_gates]}",
                 font=('Arial', info_font_size), fg=palette['info_panel_text_color'], bg=palette['background_3'])
-            info_text.pack(pady=int(window_height * 0.01))
+            info_text.place(relx=0.5, rely=0.5, anchor='center')
 
-            # Visualization container with relative sizing
-            viz_container = tk.Frame(main_container, bg=palette['background'], relief=tk.SUNKEN, bd=3)
-            viz_container.pack(fill=tk.BOTH, expand=True,
-                            padx=int(window_width * 0.02),
-                            pady=int(window_height * 0.01))
-
-            # Create matplotlib figure with dark theme
-            plt.style.use('dark_background')
-
-            # Choose visualization based on number of qubits
-            if self.num_qubits == 1:
-                # For single qubit, show Bloch sphere
-                try:
-                    fig = plot_bloch_multivector(state_vector)
-                    fig.suptitle('Single Qubit Bloch Sphere Visualization',
-                            fontsize=max(14, int(self.screen_width * 0.012)),
-                            color=palette['sphere_visualization_color'], fontweight='bold')
-                except Exception as bloch_error:
-                    print(f"Bloch sphere error: {bloch_error}")
-                    # Fallback to qsphere if bloch sphere fails
-                    fig = plot_state_qsphere(state_vector)
-                    fig.suptitle('Single Qubit Q-Sphere Visualization',
-                            fontsize=max(14, int(self.screen_width * 0.012)),
-                            color=palette['sphere_visualization_color'], fontweight='bold')
-
-            else:
-                # For multiple qubits, show Q-sphere
-                fig = plot_state_qsphere(state_vector)
-                fig.suptitle(f'{self.num_qubits}-Qubit Q-Sphere Visualization',
-                        fontsize=max(14, int(self.screen_width * 0.012)),
-                        color=palette['sphere_visualization_color'], fontweight='bold')
-
-            # Customize the plot appearance
-            fig.patch.set_facecolor(palette['background'])
-
-            # Make sure all axes have dark background
-            for ax in fig.get_axes():
-                ax.set_facecolor(palette['background'])
-                # Set text colors to be visible on dark background
-                ax.tick_params(colors='white')
-                ax.xaxis.label.set_color('white')
-                ax.yaxis.label.set_color('white')
-                if hasattr(ax, 'zaxis'):
-                    ax.zaxis.label.set_color('white')
-
-            # Embed the matplotlib figure in tkinter
-            canvas = FigureCanvasTkAgg(fig, viz_container)
-            canvas.draw()
-            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True,
-                                    padx=int(window_width * 0.01),
-                                    pady=int(window_height * 0.01))
-
-            # Control buttons at the bottom with relative sizing
-            controls_frame = tk.Frame(main_container, bg=palette['background_3'])
-            controls_frame.pack(fill=tk.X,
-                            padx=int(window_width * 0.02),
-                            pady=int(window_height * 0.01))
-
-            # Button styling with relative font sizes
-            button_font_size = max(10, int(self.screen_width * 0.008))
-            button_padx = int(self.screen_width * 0.012)
-            button_pady = int(self.screen_height * 0.008)
-
-            # Save button using canvas for macOS compatibility
-            save_canvas = tk.Canvas(controls_frame, width=140, height=35,
-                                  bg=palette['save_image_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
-            save_canvas.pack(side=tk.LEFT, padx=int(window_width * 0.008))
-
-            save_rect_id = save_canvas.create_rectangle(2, 2, 138, 33,
-                                                      fill=palette['save_image_background'], outline=palette['save_image_background'], width=0)
-            save_text_id = save_canvas.create_text(70, 17, text="💾 Save Image",
-                                                  font=('Arial', button_font_size, 'bold'), fill=palette['background_black'])
-
-            save_canvas.bind("<Button-1>", lambda e: self.save_3d_visualization(fig))
-            save_canvas.bind("<Enter>", lambda e: (save_canvas.itemconfig(save_rect_id, fill=palette['button_hover_background']),
-                                                  save_canvas.itemconfig(save_text_id, fill=palette['button_hover_text_color'])))
-            save_canvas.bind("<Leave>", lambda e: (save_canvas.itemconfig(save_rect_id, fill=palette['save_image_background']),
-                                                  save_canvas.itemconfig(save_text_id, fill=palette['background_black'])))
-            save_canvas.configure(cursor='hand2')
-
-            # Refresh button using canvas for macOS compatibility
-            refresh_canvas = tk.Canvas(controls_frame, width=120, height=35,
-                                     bg=palette['refresh_button_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
-            refresh_canvas.pack(side=tk.LEFT, padx=int(window_width * 0.008))
-
-            refresh_rect_id = refresh_canvas.create_rectangle(2, 2, 118, 33,
-                                                            fill=palette['refresh_button_background'], outline=palette['refresh_button_background'], width=0)
-            refresh_text_id = refresh_canvas.create_text(60, 17, text="🔄 Refresh",
-                                                        font=('Arial', button_font_size, 'bold'), fill=palette['background_black'])
-
-            refresh_canvas.bind("<Button-1>", lambda e: self.refresh_3d_visualization(viz_window, state_vector))
-            refresh_canvas.bind("<Enter>", lambda e: (refresh_canvas.itemconfig(refresh_rect_id, fill=palette['button_hover_background']),
-                                                    refresh_canvas.itemconfig(refresh_text_id, fill=palette['button_hover_text_color'])))
-            refresh_canvas.bind("<Leave>", lambda e: (refresh_canvas.itemconfig(refresh_rect_id, fill=palette['refresh_button_background']),
-                                                    refresh_canvas.itemconfig(refresh_text_id, fill=palette['background_black'])))
-            refresh_canvas.configure(cursor='hand2')
-
-            # Close button using canvas for macOS compatibility
-            close_canvas = tk.Canvas(controls_frame, width=120, height=35,
-                                   bg=palette['close_button_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
-            close_canvas.pack(side=tk.RIGHT, padx=int(window_width * 0.008))
-
-            close_rect_id = close_canvas.create_rectangle(2, 2, 118, 33,
-                                                        fill=palette['close_button_background'], outline=palette['close_button_background'], width=0)
-            close_text_id = close_canvas.create_text(60, 17, text="❌ Close",
-                                                    font=('Arial', button_font_size, 'bold'), fill=palette['close_button_text_color'])
-
-            close_canvas.bind("<Button-1>", lambda e: viz_window.destroy())
-            close_canvas.bind("<Enter>", lambda e: (close_canvas.itemconfig(close_rect_id, fill=palette['button_hover_background']),
-                                                   close_canvas.itemconfig(close_text_id, fill=palette['button_hover_text_color'])))
-            close_canvas.bind("<Leave>", lambda e: (close_canvas.itemconfig(close_rect_id, fill=palette['close_button_background']),
-                                                   close_canvas.itemconfig(close_text_id, fill=palette['close_button_text_color'])))
-            close_canvas.configure(cursor='hand2')
-
-            # State information panel with relative sizing
+            # State information panel - BOTTOM POSITIONED RESPONSIVELY
             state_info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-            state_info_frame.pack(fill=tk.X,
-                                padx=int(window_width * 0.02),
-                                pady=(0, int(window_height * 0.015)))
+            state_info_frame.place(relx=0.02, rely=0.88, relwidth=0.96, relheight=0.06)
 
             # Calculate and display state information
             state_data = state_vector.data
@@ -1671,7 +1570,139 @@ class SandboxMode:
             state_label = tk.Label(state_info_frame, text=info_text,
                                 font=('Arial', state_font_size),
                                 fg='#ffffff', bg=palette['background_3'])
-            state_label.pack(pady=int(window_height * 0.01))
+            state_label.place(relx=0.5, rely=0.5, anchor='center')
+
+            # Control buttons - BOTTOM POSITIONED RESPONSIVELY
+            controls_frame = tk.Frame(main_container, bg=palette['background_3'])
+            controls_frame.place(relx=0.02, rely=0.795, relwidth=0.96, relheight=0.08)
+
+            # Button styling with relative font sizes
+            button_font_size = max(10, int(self.screen_width * 0.008))
+
+            # Refresh button using canvas for macOS compatibility - RESPONSIVE
+            refresh_canvas = tk.Canvas(controls_frame, bg=palette['refresh_button_background'], 
+                                    highlightthickness=0, relief=tk.FLAT, bd=0)
+            refresh_canvas.place(relx=0.1, rely=0.5, relwidth=0.25, relheight=0.7, anchor='center')
+
+            def draw_refresh_button():
+                refresh_canvas.delete("all")
+                refresh_canvas.update_idletasks()
+                width = refresh_canvas.winfo_width()
+                height = refresh_canvas.winfo_height()
+                if width > 1 and height > 1:
+                    refresh_rect_id = refresh_canvas.create_rectangle(2, 2, width-2, height-2,
+                                                                    fill=palette['refresh_button_background'], 
+                                                                    outline=palette['refresh_button_background'], width=0, tags="bg")
+                    refresh_text_id = refresh_canvas.create_text(width//2, height//2, text="🔄 Refresh",
+                                                            font=('Arial', button_font_size, 'bold'), 
+                                                            fill=palette['background_black'], tags="text")
+                    # Store IDs for hover effects
+                    refresh_canvas.rect_id = refresh_rect_id
+                    refresh_canvas.text_id = refresh_text_id
+
+            refresh_canvas.bind('<Configure>', lambda e: draw_refresh_button())
+            refresh_canvas.after(10, draw_refresh_button)
+
+            refresh_canvas.bind("<Button-1>", lambda e: self.refresh_3d_visualization(viz_window, state_vector))
+            
+            def refresh_on_enter(event):
+                if hasattr(refresh_canvas, 'rect_id'):
+                    refresh_canvas.itemconfig(refresh_canvas.rect_id, fill=palette['button_hover_background'])
+                    refresh_canvas.itemconfig(refresh_canvas.text_id, fill=palette['button_hover_text_color'])
+                refresh_canvas.configure(cursor='hand2')
+
+            def refresh_on_leave(event):
+                if hasattr(refresh_canvas, 'rect_id'):
+                    refresh_canvas.itemconfig(refresh_canvas.rect_id, fill=palette['refresh_button_background'])
+                    refresh_canvas.itemconfig(refresh_canvas.text_id, fill=palette['background_black'])
+                refresh_canvas.configure(cursor='')
+
+            refresh_canvas.bind("<Enter>", refresh_on_enter)
+            refresh_canvas.bind("<Leave>", refresh_on_leave)
+
+            # Close button using canvas for macOS compatibility - RESPONSIVE
+            close_canvas = tk.Canvas(controls_frame, bg=palette['close_button_background'], 
+                                highlightthickness=0, relief=tk.FLAT, bd=0)
+            close_canvas.place(relx=0.9, rely=0.5, relwidth=0.25, relheight=0.7, anchor='center')
+
+            def draw_close_button():
+                close_canvas.delete("all")
+                close_canvas.update_idletasks()
+                width = close_canvas.winfo_width()
+                height = close_canvas.winfo_height()
+                if width > 1 and height > 1:
+                    close_rect_id = close_canvas.create_rectangle(2, 2, width-2, height-2,
+                                                                fill=palette['close_button_background'], 
+                                                                outline=palette['close_button_background'], width=0, tags="bg")
+                    close_text_id = close_canvas.create_text(width//2, height//2, text="❌ Close",
+                                                            font=('Arial', button_font_size, 'bold'), 
+                                                            fill=palette['close_button_text_color'], tags="text")
+                    # Store IDs for hover effects
+                    close_canvas.rect_id = close_rect_id
+                    close_canvas.text_id = close_text_id
+
+            close_canvas.bind('<Configure>', lambda e: draw_close_button())
+            close_canvas.after(10, draw_close_button)
+
+            close_canvas.bind("<Button-1>", lambda e: viz_window.destroy())
+            
+            def close_on_enter(event):
+                if hasattr(close_canvas, 'rect_id'):
+                    close_canvas.itemconfig(close_canvas.rect_id, fill=palette['button_hover_background'])
+                    close_canvas.itemconfig(close_canvas.text_id, fill=palette['button_hover_text_color'])
+                close_canvas.configure(cursor='hand2')
+
+            def close_on_leave(event):
+                if hasattr(close_canvas, 'rect_id'):
+                    close_canvas.itemconfig(close_canvas.rect_id, fill=palette['close_button_background'])
+                    close_canvas.itemconfig(close_canvas.text_id, fill=palette['close_button_text_color'])
+                close_canvas.configure(cursor='')
+
+            close_canvas.bind("<Enter>", close_on_enter)
+            close_canvas.bind("<Leave>", close_on_leave)
+
+            # Visualization container - TAKES UP REMAINING SPACE RESPONSIVELY
+            viz_container = tk.Frame(main_container, bg=palette['background'], relief=tk.SUNKEN, bd=3)
+            viz_container.place(relx=0.02, rely=0.16, relwidth=0.96, relheight=0.63)
+
+            # Create matplotlib figure with dark theme
+            plt.style.use('dark_background')
+
+            # Choose visualization based on number of qubits
+            if self.num_qubits == 1:
+                try:
+                    fig = plot_bloch_multivector(state_vector)
+                    fig.suptitle('Single Qubit Bloch Sphere Visualization',
+                            fontsize=max(14, int(self.screen_width * 0.012)),
+                            color=palette['sphere_visualization_color'], fontweight='bold')
+                except Exception as bloch_error:
+                    print(f"Bloch sphere error: {bloch_error}")
+                    fig = plot_state_qsphere(state_vector)
+                    fig.suptitle('Single Qubit Q-Sphere Visualization',
+                            fontsize=max(14, int(self.screen_width * 0.012)),
+                            color=palette['sphere_visualization_color'], fontweight='bold')
+            else:
+                fig = plot_state_qsphere(state_vector)
+                fig.suptitle(f'{self.num_qubits}-Qubit Q-Sphere Visualization',
+                        fontsize=max(14, int(self.screen_width * 0.012)),
+                        color=palette['sphere_visualization_color'], fontweight='bold')
+
+            # Customize the plot appearance
+            fig.patch.set_facecolor(palette['background'])
+
+            # Make sure all axes have dark background
+            for ax in fig.get_axes():
+                ax.set_facecolor(palette['background'])
+                ax.tick_params(colors='white')
+                ax.xaxis.label.set_color('white')
+                ax.yaxis.label.set_color('white')
+                if hasattr(ax, 'zaxis'):
+                    ax.zaxis.label.set_color('white')
+
+            # Embed the matplotlib figure in tkinter - RESPONSIVE
+            canvas = FigureCanvasTkAgg(fig, viz_container)
+            canvas.draw()
+            canvas.get_tk_widget().place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
 
             # Make title bar draggable
             def start_move(event):
@@ -1702,6 +1733,7 @@ class SandboxMode:
             print(f"Full visualization error: {e}")
             import traceback
             traceback.print_exc()
+
 
     def is_state_entangled(self, state_vector):
         """Simple check for entanglement (for educational purposes)"""
