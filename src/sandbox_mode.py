@@ -156,8 +156,13 @@ class SandboxMode:
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         dialog.transient(self.root)
-        dialog.grab_set()
-        dialog.focus_force()
+        try:
+            dialog.grab_set()
+            dialog.focus_force()
+        except tk.TclError:
+            # Window not ready yet, try again after a short delay
+            self.root.after(50, lambda: dialog.grab_set() if dialog.winfo_exists() else None)
+            dialog.focus_force()
 
         # Border frame
         border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
@@ -212,11 +217,24 @@ class SandboxMode:
                 self.num_qubits = data.get("num_qubits", 1)
                 self.placed_gates = data.get("placed_gates", [])
                 self.initial_state = data.get("initial_state", "|0⟩")
-                self.qubit_var.set(self.num_qubits)
+                
+                # Update the state variable instead of qubit_var
                 self.state_var.set(self.initial_state)
+                
+                # Update the qubit display
+                self.update_qubit_display()
+                
+                # Update the qubit selection dropdowns
                 self.update_qubit_selections()
+                
+                # Update the circuit display
                 self.update_circuit_display()
+                
                 dialog.destroy()
+                
+                # Show success message
+                self.show_custom_dialog("Success", f"Circuit loaded successfully!\n{self.num_qubits} qubits, {len(self.placed_gates)} gates", "success")
+                
             except Exception as e:
                 self.show_custom_dialog("Error", f"Could not load circuit: {e}", "error")
                 dialog.destroy()
@@ -278,6 +296,7 @@ class SandboxMode:
 
         # Bind Escape to close
         dialog.bind('<Escape>', lambda e: dialog.destroy())
+
 
     def exit_fullscreen(self, event=None):
         """Exit fullscreen mode"""
@@ -1197,7 +1216,7 @@ class SandboxMode:
             ("Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
             ("Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
             ("Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
-            ("Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black'])
+            ("Load Circuit", self.load_circuit, palette['load_circuit_button_background'], palette['background_black'])
         ]
 
         # Button layout positions: [row, column, colspan]
@@ -1387,7 +1406,7 @@ class SandboxMode:
         # Close button in title bar
         close_btn_font_size = max(8, int(self.screen_width * 0.006))
         self.create_canvas_dialog_button(title_bar, "✕", dialog.destroy, 30, 25,
-                                       palette['background_4'], palette['title_color'])
+                                    palette['background_4'], palette['title_color'])
 
         # Content area
         content_frame = tk.Frame(main_frame, bg=palette['background_3'])
@@ -1416,12 +1435,12 @@ class SandboxMode:
         button_frame = tk.Frame(content_frame, bg=palette['background_3'])
         button_frame.pack(pady=(int(self.screen_height * 0.015), int(self.screen_height * 0.01)))
 
-        # OK button using canvas for macOS compatibility
+        # OK button using canvas for macOS compatibility - store reference
         button_font_size = max(9, int(self.screen_width * 0.007))
-        self.create_canvas_dialog_button(button_frame, "OK", dialog.destroy, 120, 40,
-                                       palette['background_4'], palette['main_menu_button_text_color'])
+        ok_button_canvas = self.create_canvas_dialog_button(button_frame, "OK", dialog.destroy, 120, 40,
+                                    palette['background_4'], palette['main_menu_button_text_color'])
 
-        # Make title bar draggable (optional)
+        # Make title bar draggable
         def start_move(event):
             dialog.x = event.x
             dialog.y = event.y
@@ -1438,9 +1457,9 @@ class SandboxMode:
         title_bar_label.bind("<Button-1>", start_move)
         title_bar_label.bind("<B1-Motion>", on_move)
 
-        # Focus handling
+        # Focus handling - use the canvas instead of ok_button
         dialog.focus_set()
-        ok_button.focus_set()
+        ok_button_canvas.focus_set()
 
         # Bind Enter and Escape keys
         dialog.bind('<Return>', lambda e: dialog.destroy())
@@ -1470,8 +1489,13 @@ class SandboxMode:
 
             # Make window modal and force focus
             viz_window.transient(self.root)
-            viz_window.grab_set()
-            viz_window.focus_force()
+            try:
+                viz_window.grab_set()
+                viz_window.focus_force()
+            except tk.TclError:
+                # Window not ready yet, try again after a short delay
+                self.root.after(50, lambda: viz_window.grab_set() if viz_window.winfo_exists() else None)
+                viz_window.focus_force()
 
             # Add border since overrideredirect removes window decorations
             border_frame = tk.Frame(viz_window, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
