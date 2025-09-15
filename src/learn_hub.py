@@ -4,12 +4,10 @@ Learn Hub for Infinity Qubit
 Educational resources and quantum computing concepts hub.
 """
 
+import sys
+import webbrowser
 import tkinter as tk
 from tkinter import ttk, scrolledtext
-import webbrowser
-import math
-import random
-import sys
 
 sys.path.append('..')
 from run import PROJECT_ROOT, get_resource_path
@@ -17,6 +15,7 @@ from q_utils import get_colors_from_file, extract_color_palette
 
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'learn_hub')
+
 
 class LearnHub:
     def __init__(self, root):
@@ -28,7 +27,7 @@ class LearnHub:
         screen_height = self.root.winfo_screenheight()
 
         # Enable fullscreen
-        self.root.attributes('-fullscreen', True)
+        self.root.overrideredirect(True)
         self.root.geometry(f"{screen_width}x{screen_height}")
         self.root.configure(bg=palette['background_2'])
         self.root.resizable(False, False)  # Fixed size window
@@ -61,9 +60,11 @@ class LearnHub:
         self.root.lift()
         self.root.focus_force()
 
+
     def exit_fullscreen(self, event=None):
         """Exit the learn hub"""
         self.back_to_menu()
+
 
     def create_canvas_dialog_button(self, parent, text, command, width, height, bg_color, fg_color, padx=0, pady=0):
         """Create a canvas-based button for macOS compatibility"""
@@ -102,6 +103,7 @@ class LearnHub:
 
         return btn_canvas
 
+
     def toggle_fullscreen(self, event=None):
         """Toggle fullscreen mode"""
         # Toggle between windowed and fullscreen mode
@@ -120,6 +122,7 @@ class LearnHub:
             # Enter fullscreen
             self.root.attributes('-fullscreen', True)
 
+
     def start_animations(self):
         """Start background animations"""
         self.animation_running = True
@@ -127,6 +130,7 @@ class LearnHub:
         self.animation_id = self.root.after(500, self.animate_circuit)
         # Start subtitle animation
         self.root.after(1000, self.animate_subtitle)
+
 
     def on_window_resize(self, event):
         """Handle window resize events"""
@@ -141,6 +145,7 @@ class LearnHub:
 
             # Resume animation after a short delay
             self.animation_id = self.root.after(1000, self.animate_circuit)
+
 
     def create_learn_hub_ui(self):
         """Create the enhanced learn hub interface"""
@@ -181,6 +186,7 @@ class LearnHub:
         # Enhanced footer
         # self.create_enhanced_footer(content_frame)
 
+
     def create_animated_header(self, parent):
         """Create an animated quantum-themed header"""
         header_frame = tk.Frame(parent, bg=palette['background_3'])
@@ -200,38 +206,40 @@ class LearnHub:
         button_height = max(35, int(self.screen_height * 0.03))
 
         back_main_canvas = tk.Canvas(nav_frame,
-                                   width=button_width,
-                                   height=button_height,
-                                   bg=palette['background_2'],
-                                   highlightthickness=0,
-                                   bd=0)
+                               width=button_width,
+                               height=button_height,
+                               bg=palette['learn_hub_button_color'],  # FIXED: Use learn_hub_button_color instead of background_2
+                               highlightthickness=0,
+                               bd=0)
+
         back_main_canvas.pack(side=tk.RIGHT)
 
-        # Draw button background
+        # Draw button background with proper colors
         back_main_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
-                                        fill=palette['background_4'],
+                                        fill=palette['learn_hub_button_color'],  # FIXED: Use learn_hub_button_color
                                         outline="#2b3340", width=1,
                                         tags="menu_bg")
 
-        # Add text to button
+        # Add text to button with proper contrast
         back_main_canvas.create_text(button_width//2, button_height//2,
-                                   text="🏠 Main Screen",
-                                   font=('Arial', button_font_size, 'bold'),
-                                   fill=palette['main_menu_button_background'],
-                                   tags="menu_text")
+                                text=" Main Screen",
+                                font=('Arial', button_font_size, 'bold'),
+                                fill=palette['learn_hub_button_text_color'],  # FIXED: Use learn_hub_button_text_color
+                                tags="menu_text")
 
         # Bind click events
         def on_menu_click(event):
             self.back_to_menu()
 
+        # FIXED: Hover effects with proper colors
         def on_menu_enter(event):
-            back_main_canvas.itemconfig("menu_bg", fill=palette['main_menu_button_background'])
-            back_main_canvas.itemconfig("menu_text", fill=palette['background_black'])
+            back_main_canvas.itemconfig("menu_bg", fill=palette['learn_hub_button_hover_color'])  # FIXED: Use hover color
+            back_main_canvas.itemconfig("menu_text", fill=palette['learn_hub_button_text_color'])  # Keep text color consistent
             back_main_canvas.configure(cursor="hand2")
 
         def on_menu_leave(event):
-            back_main_canvas.itemconfig("menu_bg", fill=palette['background_4'])
-            back_main_canvas.itemconfig("menu_text", fill=palette['main_menu_button_background'])
+            back_main_canvas.itemconfig("menu_bg", fill=palette['learn_hub_button_color'])  # FIXED: Back to normal color
+            back_main_canvas.itemconfig("menu_text", fill=palette['learn_hub_button_text_color'])  # Keep text color consistent
             back_main_canvas.configure(cursor="")
 
         back_main_canvas.bind("<Button-1>", on_menu_click)
@@ -253,13 +261,13 @@ class LearnHub:
 
         # Shadow title with relative font size
         title_font_size = max(24, int(self.screen_width * 0.025))
-        shadow_title = tk.Label(title_frame, text="🚀 Quantum Computing Learn Hub",
+        shadow_title = tk.Label(title_frame, text=" Quantum Computing Learn Hub",
                             font=('Arial', title_font_size, 'bold'),
                             fg='#003322', bg=palette['background_3'])
         shadow_title.place(x=3, y=3)
 
         # Main title with gradient-like effect
-        main_title = tk.Label(title_frame, text="🚀 Quantum Computing Learn Hub",
+        main_title = tk.Label(title_frame, text=" Quantum Computing Learn Hub",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_3'])
         main_title.pack(pady=(0, int(self.screen_height * 0.008)))
@@ -267,13 +275,14 @@ class LearnHub:
         # Enhanced subtitle with pulsing effect and relative font size
         subtitle_font_size = max(12, int(self.screen_width * 0.01))
         self.subtitle_label = tk.Label(header_frame,
-                                    text="✨ Explore quantum computing concepts and resources ✨",
+                                    text=" Explore quantum computing concepts and resources ",
                                     font=('Arial', subtitle_font_size, 'italic'),
                                     fg=palette['subtitle_color'], bg=palette['background_3'])
         self.subtitle_label.pack()
 
         # Learning progress indicator
         self.create_learning_progress(header_frame)
+
 
     def draw_quantum_circuit(self):
         """Draw an animated quantum circuit - called only when needed"""
@@ -324,6 +333,7 @@ class LearnHub:
             # Canvas might be destroyed, ignore the error
             pass
 
+
     def draw_enhanced_gate(self, gate_info):
         """Draw enhanced quantum gates with 3D effect"""
         try:
@@ -366,6 +376,7 @@ class LearnHub:
             # Canvas might be destroyed, ignore the error
             pass
 
+
     def create_learning_progress(self, parent):
         """Create a visual learning progress indicator"""
         progress_frame = tk.Frame(parent, bg=palette['background_3'])
@@ -373,7 +384,7 @@ class LearnHub:
 
         # Title with relative font size
         progress_title_font_size = max(12, int(self.screen_width * 0.01))
-        tk.Label(progress_frame, text="📈 Learning Journey",
+        tk.Label(progress_frame, text=" Learning Journey",
                 font=('Arial', progress_title_font_size, 'bold'),
                 fg=palette['learning_journey_title_color'], bg=palette['background_3']).pack()
 
@@ -382,10 +393,10 @@ class LearnHub:
         steps_container.pack(pady=int(self.screen_height * 0.008))
 
         steps = [
-            ("Basics", True, "#00ff88", "🎯"),
-            ("Gates", True, "#4ecdc4", "⚡"),
-            ("Algorithms", False, "#666666", "🧠"),
-            ("Advanced", False, "#333333", "🚀")
+            ("Basics", True, "#00ff88", ""),
+            ("Gates", True, "#4ecdc4", ""),
+            ("Algorithms", False, "#666666", ""),
+            ("Advanced", False, "#333333", "")
         ]
 
         for i, (step, completed, color, icon) in enumerate(steps):
@@ -402,7 +413,7 @@ class LearnHub:
             if completed:
                 canvas.create_oval(2, 2, circle_size-2, circle_size-2, fill=color, outline=color, width=3)
                 canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill=palette['background_3'], outline='white', width=2)
-                canvas.create_text(circle_size//2, circle_size//2, text="✓", fill='white',
+                canvas.create_text(circle_size//2, circle_size//2, text="", fill='white',
                                 font=('Arial', max(10, int(self.screen_width * 0.01)), 'bold'))
             else:
                 canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill='', outline=color, width=2)
@@ -420,6 +431,7 @@ class LearnHub:
                 line_canvas.pack(side=tk.LEFT)
                 line_canvas.create_line(0, 2, line_width, 2, fill='#555555', width=2)
 
+
     def style_notebook(self):
         """Apply enhanced styling to the notebook"""
         style = ttk.Style()
@@ -427,32 +439,35 @@ class LearnHub:
 
         # Enhanced notebook styling - Updated for gray background
         style.configure('TNotebook',
-                    background=palette['background_3'],  # Changed from #1a1a1a to #2a2a2a
+                    background=palette['background_3'],
                     borderwidth=0,
                     tabmargins=[2, 5, 2, 0])
 
         style.configure('TNotebook.Tab',
-                    background=palette['background_4'],  # Slightly darker for contrast
-                    foreground='#ffffff',
+                    background=palette['background_4'],
+                    foreground='#ffffff',  # Default text color - white
                     padding=[25, 15],
                     borderwidth=0,
                     font=('Arial', 11, 'bold'))
 
+        # FIXED: Text colors for tab states
         style.map('TNotebook.Tab',
-                background=[('selected', palette['tnotebook_selected_background']),
-                            ('active', palette['tnotebook_active_background'])],
-                foreground=[('selected', palette['background_black']),
-                            ('active', palette['tnotebook_active_foreground'])])
+                background=[('selected', palette['background_3']),  # Selected tab background
+                            ('active', palette['background_4'])],    # Hover background
+                foreground=[('selected', '#ffb86b'),               # FIXED: Orange text when selected
+                            ('active', '#ffffff'),                  # White text when hovering
+                            ('!active', '#ffffff')])               # White text when not active
 
-        style.configure('TFrame', background=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
+        style.configure('TFrame', background=palette['background_3'])
 
         # Center the tabs by configuring tab positioning
         style.configure('TNotebook', tabposition='n')
 
+
     def create_concepts_tab(self):
         """Create the enhanced basic concepts tab"""
         concepts_frame = ttk.Frame(self.notebook)
-        self.notebook.add(concepts_frame, text="📚 Basic Concepts")
+        self.notebook.add(concepts_frame, text=" Basic Concepts")
 
         # Main container with padding - changed to match text area background
         main_container = tk.Frame(concepts_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
@@ -475,72 +490,73 @@ class LearnHub:
 
         # Enhanced content with better formatting
         concepts_content = """
-🔬 QUANTUM COMPUTING FUNDAMENTALS
+ QUANTUM COMPUTING FUNDAMENTALS
 
-🌟 What is Quantum Computing?
+ What is Quantum Computing?
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Quantum computing harnesses the principles of quantum mechanics to process information in
 fundamentally different ways than classical computers. Instead of using bits that are either
 0 or 1, quantum computers use quantum bits (qubits) that can exist in superposition.
 
-🎯 KEY CONCEPTS:
+ KEY CONCEPTS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔹 1. QUBIT (Quantum Bit)
+ 1. QUBIT (Quantum Bit)
    ┌─ The basic unit of quantum information
    ├─ Can be in state |0⟩, |1⟩, or a superposition of both
    └─ Represented as α|0⟩ + β|1⟩ where |α|² + |β|² = 1
 
-🔹 2. SUPERPOSITION
+ 2. SUPERPOSITION
    ┌─ A qubit can exist in multiple states simultaneously
    ├─ Enables quantum computers to process many possibilities at once
    └─ Collapses to a definite state when measured
 
-🔹 3. ENTANGLEMENT
+ 3. ENTANGLEMENT
    ┌─ Quantum particles become correlated in impossible ways
    ├─ Measurement of one particle instantly affects its entangled partner
    └─ Key resource for quantum algorithms and communication
 
-🔹 4. INTERFERENCE
+ 4. INTERFERENCE
    ┌─ Quantum states can interfere constructively or destructively
    ├─ Used in quantum algorithms to amplify correct answers
    └─ Cancels out wrong answers in many quantum computations
 
-🔹 5. MEASUREMENT
+ 5. MEASUREMENT
    ┌─ The act of observing a quantum system
    ├─ Causes the quantum state to collapse to a classical state
    └─ Probabilistic outcome based on quantum amplitudes
 
-🚀 WHY QUANTUM COMPUTING MATTERS:
+ WHY QUANTUM COMPUTING MATTERS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✨ Exponential speedup for certain problems
-✨ Cryptography and security applications
-✨ Drug discovery and molecular simulation
-✨ Optimization problems
-✨ Machine learning and AI
-✨ Financial modeling
+ - Exponential speedup for certain problems
+ - Cryptography and security applications
+ - Drug discovery and molecular simulation
+ - Optimization problems
+ - Machine learning and AI
+ - Financial modeling
 
-🔧 CURRENT CHALLENGES:
+ CURRENT CHALLENGES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ Quantum decoherence (qubits losing their quantum properties)
-⚠️ Error rates in quantum operations
-⚠️ Limited number of qubits in current systems
-⚠️ Need for extremely low temperatures
-⚠️ Quantum error correction
+- Quantum decoherence (qubits losing their quantum properties)
+- Error rates in quantum operations
+- Limited number of qubits in current systems
+- Need for extremely low temperatures
+- Quantum error correction
 
-📈 THE FUTURE:
+ THE FUTURE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Quantum computing represents a paradigm shift that could revolutionize how we solve
-complex problems in science, technology, and beyond. The future is quantum! 🌟
+complex problems in science, technology, and beyond. The future is quantum!
         """
 
         concepts_text.insert(tk.END, concepts_content)
         concepts_text.config(state=tk.DISABLED)
 
+
     def create_gates_tab(self):
         """Create the enhanced quantum gates tab with all gates in one horizontal line"""
         gates_frame = ttk.Frame(self.notebook)
-        self.notebook.add(gates_frame, text="⚡ Quantum Gates")
+        self.notebook.add(gates_frame, text=" Quantum Gates")
 
         # Main container - changed to match card background
         main_container = tk.Frame(gates_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
@@ -568,14 +584,14 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
 
         # Enhanced gate definitions with more details
         gates = [
-            ("X Gate (NOT)", "Flips |0⟩ ↔ |1⟩", "Pauli-X rotation", "#ff6b6b", "❌", 2),
-            ("Y Gate", "Rotates around Y-axis", "Pauli-Y rotation", "#4ecdc4", "🔄", 3),
-            ("Z Gate", "Phase flip: |1⟩ → -|1⟩", "Pauli-Z rotation", "#96ceb4", "⚡", 2),
-            ("H Gate (Hadamard)", "Creates superposition", "|0⟩ → (|0⟩+|1⟩)/√2", "#f39c12", "🌟", 4),
-            ("S Gate", "Phase gate: |1⟩ → i|1⟩", "90° Z rotation", "#9b59b6", "📐", 3),
-            ("T Gate", "π/8 gate", "45° Z rotation", "#e74c3c", "🔺", 3),
-            ("CNOT Gate", "Controlled NOT", "Entangles two qubits", "#00ff88", "🔗", 5),
-            ("CZ Gate", "Controlled Z", "Conditional phase flip", "#ff9ff3", "⭐", 4),
+            ("X Gate (NOT)", "Flips |0⟩ ↔ |1⟩", "Pauli-X rotation", "#ff6b6b", "", 2),
+            ("Y Gate", "Rotates around Y-axis", "Pauli-Y rotation", "#4ecdc4", "", 3),
+            ("Z Gate", "Phase flip: |1⟩ → -|1⟩", "Pauli-Z rotation", "#96ceb4", "", 2),
+            ("H Gate (Hadamard)", "Creates superposition", "|0⟩ → (|0⟩+|1⟩)/√2", "#f39c12", "", 4),
+            ("S Gate", "Phase gate: |1⟩ → i|1⟩", "90° Z rotation", "#9b59b6", "", 3),
+            ("T Gate", "π/8 gate", "45° Z rotation", "#e74c3c", "", 3),
+            ("CNOT Gate", "Controlled NOT", "Entangles two qubits", "#00ff88", "", 5),
+            ("CZ Gate", "Controlled Z", "Conditional phase flip", "#ff9ff3", "", 4),
         ]
 
         # Create one single row with all gates
@@ -598,6 +614,7 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
         # For Linux
         canvas.bind("<Button-4>", lambda e: canvas.xview_scroll(-1, "units"))
         canvas.bind("<Button-5>", lambda e: canvas.xview_scroll(1, "units"))
+
 
     def create_enhanced_gate_card_horizontal(self, parent, name, description, formula, color, icon, difficulty):
         """Create enhanced cards for quantum gates with horizontal layout and hover effects"""
@@ -630,7 +647,7 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
         name_label.pack(pady=(5, 0))
 
         # Difficulty stars - centered
-        stars = "⭐" * difficulty + "☆" * (5 - difficulty)
+        stars = "" * difficulty + "" * (5 - difficulty)
         difficulty_label = tk.Label(header_frame, text=f"{stars}",
                                 font=('Arial', 8),  # Smaller font
                                 fg=palette['difficulty_label_color'], bg=palette['background_3'])
@@ -675,10 +692,11 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
             widget.bind("<Enter>", on_enter)
             widget.bind("<Leave>", on_leave)
 
+
     def create_algorithms_tab(self):
         """Create the enhanced algorithms tab"""
         algorithms_frame = ttk.Frame(self.notebook)
-        self.notebook.add(algorithms_frame, text="🧠 Algorithms")
+        self.notebook.add(algorithms_frame, text=" Algorithms")
 
         # Main container - changed to match text area background
         main_container = tk.Frame(algorithms_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
@@ -701,103 +719,104 @@ complex problems in science, technology, and beyond. The future is quantum! 🌟
 
         # Enhanced algorithm content
         algorithms_content = """
-🧠 FAMOUS QUANTUM ALGORITHMS
+ FAMOUS QUANTUM ALGORITHMS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔍 1. SHOR'S ALGORITHM (1994) ⭐⭐⭐⭐⭐
+ 1. SHOR'S ALGORITHM (1994)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎯 Purpose: Integer factorization
-   💥 Impact: Breaks RSA encryption
-   🚀 Speedup: Exponential over classical methods
+    Purpose: Integer factorization
+    Impact: Breaks RSA encryption
+    Speedup: Exponential over classical methods
 
-   🔑 Key Ideas:
+    Key Ideas:
    ┌─ Uses quantum Fourier transform
    ├─ Finds period of modular exponentiation
    └─ Factors large numbers efficiently
 
-   📱 Applications:
+    Applications:
    ┌─ Cryptography and security
    ├─ Breaking current encryption schemes
    └─ Motivating post-quantum cryptography
 
-🔍 2. GROVER'S ALGORITHM (1996) ⭐⭐⭐⭐☆
+ 2. GROVER'S ALGORITHM (1996)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎯 Purpose: Database search
-   💥 Impact: Quadratic speedup for search problems
-   🚀 Speedup: √N instead of N comparisons
+    Purpose: Database search
+    Impact: Quadratic speedup for search problems
+    Speedup: √N instead of N comparisons
 
-   🔑 Key Ideas:
+    Key Ideas:
    ┌─ Amplitude amplification
    ├─ Iteratively increases probability of correct answer
    └─ Uses quantum interference
 
-   📱 Applications:
+    Applications:
    ┌─ Unstructured search
    ├─ Optimization problems
    └─ Machine learning
 
-🔍 3. DEUTSCH-JOZSA ALGORITHM ⭐⭐⭐☆☆
+ 3. DEUTSCH-JOZSA ALGORITHM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎯 Purpose: Determine if function is constant or balanced
-   💥 Impact: First quantum algorithm with exponential speedup
-   🚀 Speedup: 1 query vs N/2 queries classically
+    Purpose: Determine if function is constant or balanced
+    Impact: First quantum algorithm with exponential speedup
+    Speedup: 1 query vs N/2 queries classically
 
-   🔑 Key Ideas:
+    Key Ideas:
    ┌─ Uses quantum parallelism
    ├─ Evaluates function on all inputs simultaneously
    └─ Quantum interference reveals global property
 
-🔍 4. VARIATIONAL QUANTUM EIGENSOLVER (VQE) ⭐⭐⭐⭐☆
+ 4. VARIATIONAL QUANTUM EIGENSOLVER (VQE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎯 Purpose: Find ground state of molecular systems
-   💥 Impact: Near-term quantum chemistry applications
-   🔄 Approach: Hybrid quantum-classical optimization
+    Purpose: Find ground state of molecular systems
+    Impact: Near-term quantum chemistry applications
+    Approach: Hybrid quantum-classical optimization
 
-   🔑 Key Ideas:
+    Key Ideas:
    ┌─ Parametrized quantum circuits
    ├─ Classical optimization loop
    └─ Minimizes energy expectation value
 
-🎯 ALGORITHM CATEGORIES:
+ ALGORITHM CATEGORIES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📈 Algebraic Algorithms:
+ Algebraic Algorithms:
    • Shor's Algorithm (factoring)
    • Hidden Subgroup Problem
    • Discrete logarithm
 
-🔍 Search Algorithms:
+ Search Algorithms:
    • Grover's Algorithm
    • Amplitude amplification
    • Quantum walks
 
-🧮 Simulation Algorithms:
+ Simulation Algorithms:
    • Quantum chemistry simulation
    • Many-body physics
    • Quantum field theory
 
-🎲 Optimization Algorithms:
+ Optimization Algorithms:
    • QAOA
    • VQE
    • Quantum annealing
 
-🔮 FUTURE DIRECTIONS:
+ FUTURE DIRECTIONS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✨ Fault-tolerant quantum algorithms
-✨ Quantum machine learning
-✨ Quantum error correction
-✨ Distributed quantum computing
+ Fault-tolerant quantum algorithms
+ Quantum machine learning
+ Quantum error correction
+ Distributed quantum computing
 
-The quantum future awaits! 🌟🚀
+The quantum future awaits!
         """
 
         algorithms_text.insert(tk.END, algorithms_content)
         algorithms_text.config(state=tk.DISABLED)
 
+
     def create_resources_tab(self):
         """Create the enhanced resources tab with horizontal layout"""
         resources_frame = ttk.Frame(self.notebook)
-        self.notebook.add(resources_frame, text="🔗 Resources")
+        self.notebook.add(resources_frame, text=" Resources")
 
         # Main container
         main_container = tk.Frame(resources_frame, bg=palette['background_3'])
@@ -820,7 +839,7 @@ The quantum future awaits! 🌟🚀
         scrollbar.pack(side="bottom", fill="x")
 
         # Learning Resources section
-        self.create_section_header_horizontal(scrollable_frame, "📚 Learning Resources", "#00ff88")
+        self.create_section_header_horizontal(scrollable_frame, " Learning Resources", "#00ff88")
 
         # Resources in horizontal layout
         resources_row = tk.Frame(scrollable_frame, bg=palette['background_3'])
@@ -828,15 +847,15 @@ The quantum future awaits! 🌟🚀
 
         resources = [
             ("IBM Quantum Experience", "https://quantum-computing.ibm.com/",
-            "Hands-on quantum programming", "🔬", 4),
+            "Hands-on quantum programming", "", 4),
             ("Microsoft Quantum Development Kit", "https://azure.microsoft.com/en-us/products/quantum/",
-            "Q# programming language", "💻", 3),
+            "Q# programming language", "", 3),
             ("Google Cirq", "https://quantumai.google/cirq",
-            "Python framework for quantum circuits", "🐍", 3),
+            "Python framework for quantum circuits", "", 3),
             ("Qiskit Textbook", "https://qiskit.org/textbook/",
-            "Comprehensive quantum computing textbook", "📖", 5),
+            "Comprehensive quantum computing textbook", "", 5),
             ("Nielsen & Chuang", "https://www.cambridge.org/core/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE",
-            "The quantum computing bible", "📚", 5),
+            "The quantum computing bible", "", 5),
         ]
 
         for title, url, description, icon, rating in resources:
@@ -848,7 +867,7 @@ The quantum future awaits! 🌟🚀
         self.create_separator_horizontal(scrollable_frame)
 
         # Tools section
-        self.create_section_header_horizontal(scrollable_frame, "🛠️ Quantum Computing Tools", "#f39c12")
+        self.create_section_header_horizontal(scrollable_frame, "️ Quantum Computing Tools", "#f39c12")
 
         # Tools in horizontal layout
         tools_row = tk.Frame(scrollable_frame, bg=palette['background_3'])
@@ -856,13 +875,13 @@ The quantum future awaits! 🌟🚀
 
         tools = [
             ("Qiskit", "https://qiskit.org/",
-            "Open-source quantum computing framework", "⚛️", 5),
+            "Open-source quantum computing framework", "️", 5),
             ("Cirq", "https://quantumai.google/cirq",
-            "Google's quantum computing framework", "🔧", 4),
+            "Google's quantum computing framework", "", 4),
             ("PennyLane", "https://pennylane.ai/",
-            "Quantum machine learning library", "🤖", 4),
+            "Quantum machine learning library", "", 4),
             ("Quantum Inspire", "https://www.quantum-inspire.com/",
-            "QuTech's quantum computing platform", "💡", 3),
+            "QuTech's quantum computing platform", "", 3),
         ]
 
         for title, url, description, icon, rating in tools:
@@ -878,6 +897,7 @@ The quantum future awaits! 🌟🚀
         # For Linux
         canvas.bind("<Button-4>", lambda e: canvas.xview_scroll(-1, "units"))
         canvas.bind("<Button-5>", lambda e: canvas.xview_scroll(1, "units"))
+
 
     def create_enhanced_resource_card_horizontal(self, parent, title, url, description, icon, rating):
         """Create enhanced resource cards with horizontal layout and hover effects"""
@@ -912,7 +932,7 @@ The quantum future awaits! 🌟🚀
         title_label.bind("<Button-1>", lambda e: self.open_url(url))
 
         # Rating stars - centered
-        stars = "⭐" * rating + "☆" * (5 - rating)
+        stars = "" * rating + "" * (5 - rating)
         rating_label = tk.Label(header_frame, text=stars,
                             font=('Arial', 10),
                             fg=palette['rating_label_color'], bg=palette['background_3'])
@@ -975,6 +995,7 @@ The quantum future awaits! 🌟🚀
             widget.bind("<Enter>", on_enter)
             widget.bind("<Leave>", on_leave)
 
+
     def create_separator_horizontal(self, parent):
         """Create a horizontal separator for horizontal layout"""
         separator_frame = tk.Frame(parent, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
@@ -985,6 +1006,7 @@ The quantum future awaits! 🌟🚀
         for i, color in enumerate(colors):
             line = tk.Frame(separator_frame, bg=color, height=2)
             line.pack(fill=tk.X, pady=1)
+
 
     def create_section_header_horizontal(self, parent, title, color):
         """Create an enhanced section header for horizontal layout"""
@@ -1001,6 +1023,7 @@ The quantum future awaits! 🌟🚀
         underline = tk.Frame(header_frame, bg=color, height=2)
         underline.pack(fill=tk.X, pady=(5, 0))
 
+
     def create_section_header(self, parent, title, color):
         """Create an enhanced section header"""
         header_frame = tk.Frame(parent, bg=palette['background'])
@@ -1015,6 +1038,7 @@ The quantum future awaits! 🌟🚀
         # Underline
         underline = tk.Frame(header_frame, bg=color, height=2)
         underline.pack(fill=tk.X, pady=(5, 0))
+
 
     def create_enhanced_resource_card(self, parent, title, url, description, icon, rating):
         """Create enhanced resource cards with ratings and hover effects"""
@@ -1051,7 +1075,7 @@ The quantum future awaits! 🌟🚀
         title_label.bind("<Button-1>", lambda e: self.open_url(url))
 
         # Rating stars
-        stars = "⭐" * rating + "☆" * (5 - rating)
+        stars = "" * rating + "" * (5 - rating)
         rating_label = tk.Label(title_frame, text=f"Rating: {stars}",
                                font=('Arial', 10),
                                fg=palette['rating_label_color'], bg=palette['background_3'])
@@ -1110,6 +1134,7 @@ The quantum future awaits! 🌟🚀
         card_frame.bind("<Enter>", on_enter)
         card_frame.bind("<Leave>", on_leave)
 
+
     def create_separator(self, parent):
         """Create an animated separator"""
         separator_frame = tk.Frame(parent, bg=palette['background'])
@@ -1120,6 +1145,7 @@ The quantum future awaits! 🌟🚀
         for i, color in enumerate(colors):
             line = tk.Frame(separator_frame, bg=color, height=1)
             line.pack(fill=tk.X, pady=1)
+
 
     def animate_circuit(self):
         """Animate the quantum circuit with subtle effects"""
@@ -1138,6 +1164,7 @@ The quantum future awaits! 🌟🚀
             # Widget might be destroyed, stop animation
             self.animation_running = False
 
+
     def animate_subtitle(self):
         """Animate subtitle with pulsing effect"""
         if not self.animation_running or not hasattr(self, 'subtitle_label'):
@@ -1154,6 +1181,7 @@ The quantum future awaits! 🌟🚀
         except (tk.TclError, AttributeError):
             # Widget might be destroyed or not exist, ignore
             pass
+
 
     def open_url(self, url):
         """Open URL in default browser"""
@@ -1222,7 +1250,7 @@ The quantum future awaits! 🌟🚀
         menu_root.geometry(f"400x300+{x}+{y}")
 
         # Title
-        title_label = tk.Label(menu_root, text="🚀 Infinity Qubit",
+        title_label = tk.Label(menu_root, text=" Infinity Qubit",
                             font=('Arial', 24, 'bold'),
                             fg=palette['title_color'], bg=palette['background'])
         title_label.pack(pady=30)
@@ -1239,7 +1267,7 @@ The quantum future awaits! 🌟🚀
 
         # Learn Hub button
         # Learn button using canvas for macOS compatibility
-        self.create_canvas_dialog_button(button_frame, "📚 Learn Hub",
+        self.create_canvas_dialog_button(button_frame, " Learn Hub",
                                         lambda: self.reopen_learn_hub(menu_root),
                                         200, 45, palette['learn_button_background'],
                                         palette['background_black'], pady=5)
@@ -1251,11 +1279,12 @@ The quantum future awaits! 🌟🚀
         placeholder_label.pack(pady=20)
 
         # Close button using canvas for macOS compatibility
-        self.create_canvas_dialog_button(button_frame, "❌ Exit", menu_root.destroy,
+        self.create_canvas_dialog_button(button_frame, " Exit", menu_root.destroy,
                                         200, 45, palette['close_button_background'],
                                         palette['close_button_text_color'], pady=5)
 
         menu_root.mainloop()
+
 
     def reopen_learn_hub(self, menu_root):
         """Reopen the Learn Hub"""
@@ -1263,6 +1292,7 @@ The quantum future awaits! 🌟🚀
         new_root = tk.Tk()
         LearnHub(new_root)
         new_root.mainloop()
+
 
     def close_window(self):
         """Close the learn hub window"""
@@ -1277,11 +1307,13 @@ The quantum future awaits! 🌟🚀
 
         self.root.destroy()
 
+
 def main():
     """For testing the learn hub independently"""
     root = tk.Tk()
     app = LearnHub(root)
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()

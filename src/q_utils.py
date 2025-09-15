@@ -7,6 +7,7 @@ def get_colors_from_file(file_path):
         palette_list = json.load(file)
     return palette_list
 
+
 # Search palette for specific stage
 def extract_color_palette(palette_list, stage_name):
     """Extract color palette for a specific stage"""

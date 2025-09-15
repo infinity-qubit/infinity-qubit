@@ -9,15 +9,10 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
-import pygame
 import sys
+import pygame
 import tkinter as tk
 import tkinter.messagebox as messagebox
-import tkinter.ttk as ttk
-from PIL import Image, ImageTk
-import threading
-import time
-import cv2
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -66,6 +61,8 @@ class GameModeSelection:
         self.root.lift()
         self.root.focus_force()
 
+        self.start_animations()
+
 
     def setup_video_background(self):
         self.create_fallback_background()  # Create fallback background first
@@ -100,7 +97,10 @@ class GameModeSelection:
                 y = __import__('random').randint(0, self.window_height)
                 dx = __import__('random').uniform(-2, 2)
                 dy = __import__('random').uniform(-2, 2)
-                color = __import__('random').choice(['#ffb86b', '#ffd08f', '#ff6b6b'])
+
+                # Change this line to yellowish red colors
+                color = __import__('random').choice(['#ff6b47', '#ff7f4f', '#ff9347', '#ff8c42', '#ff7849'])
+
                 # Use consistent dictionary structure
                 self.particles.append({
                     'x': x,
@@ -120,6 +120,7 @@ class GameModeSelection:
             simple_canvas.place(x=0, y=0)
             return simple_canvas
 
+
     def update_info_display(self, mode_key):
         """Update the info display with selected mode information"""
         # Clear existing content
@@ -129,25 +130,25 @@ class GameModeSelection:
         # Mode information dictionary
         mode_info = {
             'tutorial': {
-                'title': '📚 Tutorial Mode',
+                'title': 'Tutorial Mode',
                 'description': 'Perfect for beginners! Learn quantum computing fundamentals through interactive lessons and guided exercises.',
                 'features': ['• Step-by-step quantum gate tutorials', '• Interactive circuit builder', '• Qubit visualization'],
                 'difficulty': 'Beginner'
             },
             'puzzle': {
-                'title': '🎮 Puzzle Mode',
+                'title': 'Puzzle Mode',
                 'description': 'Challenge yourself with quantum puzzles! Solve increasingly complex quantum circuit problems.',
                 'features': ['• 30+ quantum puzzles', '• Multiple difficulty levels', '• Scoring system'],
                 'difficulty': 'Intermediate'
             },
             'sandbox': {
-                'title': '🛠️ Sandbox Mode',
+                'title': 'Sandbox Mode',
                 'description': 'Unlimited creativity! Build and experiment with quantum circuits without restrictions.',
                 'features': ['• Free-form circuit design', '• Real quantum simulation', '• Visualize circuits in 3D'],
                 'difficulty': 'Advanced'
             },
             'learn_hub': {
-                'title': '🚀 Learn Hub',
+                'title': 'Learn Hub',
                 'description': 'Comprehensive learning center with courses, documentation, and advanced quantum concepts.',
                 'features': ['• Reference materials', '• Advanced algorithms', '• Research papers'],
                 'difficulty': 'All Levels'
@@ -170,7 +171,7 @@ class GameModeSelection:
         difficulty_label = tk.Label(self.info_frame,
                                 text=f"Difficulty: {info['difficulty']}",
                                 font=('Arial', max(10, int(self.window_width / 120)), 'italic'),
-                                fg=palette['subtitle_color_2'],
+                                fg=palette['subtitle_color'],
                                 bg=palette['background'])
         difficulty_label.place(relx=0.5, rely=0.18, anchor='n')
 
@@ -216,7 +217,7 @@ class GameModeSelection:
         start_canvas.create_text(start_canvas_width//2, start_canvas_height//2,
                                text=f"Start {info['title'].split(' ', 1)[1]}",
                                font=('Arial', max(12, int(self.window_width / 100)), 'bold'),
-                               fill=palette['black'],
+                               fill=palette['background'],
                                tags="start_text")
 
         # Bind click events for start button
@@ -254,7 +255,7 @@ class GameModeSelection:
                         dot_size = max(2, int(self.window_width / 500))
                         x, y = particle['x'], particle['y']
                         canvas.create_oval(x-dot_size, y-dot_size, x+dot_size, y+dot_size,
-                                        fill=particle['color'], outline='#4ecdc4',
+                                        fill=particle['color'], outline='#ff8c42',
                                         tags="particle", width=2)
 
                     if self.animations_running:
@@ -288,12 +289,13 @@ class GameModeSelection:
                 import pygame
                 if not pygame.mixer.get_init():
                     pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
-                
+
                 click_sound = pygame.mixer.Sound(str(get_resource_path('resources/sounds/click.wav')))
                 click_sound.play()
             except Exception as e:
                 print(f"Could not play sound: {e}")
                 self.sound_enabled = False
+
 
     def create_selection_ui(self):
         """Create the game mode selection interface with glassmorphism effect using relative positioning"""
@@ -305,10 +307,6 @@ class GameModeSelection:
         # Create glassmorphism background
         glass_canvas = tk.Canvas(main_frame, highlightthickness=0, bg=palette['background'])
         glass_canvas.place(relx=0, rely=0, relwidth=1, relheight=1)
-
-        # Draw glassmorphism background
-        # Update glass background with configure event binding
-        glass_canvas.bind('<Configure>', self.on_glass_configure)
 
         # Content frame with relative positioning
         content_frame = tk.Frame(main_frame, bg=palette['background'])
@@ -323,13 +321,13 @@ class GameModeSelection:
         subtitle_font_size = max(14, int(self.window_width / 80))
 
         # Shadow title for glow effect
-        shadow_title = tk.Label(title_frame, text="🔬 Infinity Qubit",
+        shadow_title = tk.Label(title_frame, text="Infinity Qubit",
                             font=('Arial', title_font_size, 'bold'),
-                            fg=palette['shadow_title_color'], bg=palette['background'])
+                            fg=palette['title_color'], bg=palette['background'])
         shadow_title.place(x=3, y=3)
 
         # Main title
-        title_label = tk.Label(title_frame, text="🔬 Infinity Qubit",
+        title_label = tk.Label(title_frame, text="Infinity Qubit",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background'])
         title_label.pack()
@@ -337,7 +335,7 @@ class GameModeSelection:
         # Enhanced subtitle with animation - positioned below title
         self.subtitle_label = tk.Label(content_frame, text="Choose Your Quantum Adventure",
                                     font=('Arial', subtitle_font_size, 'italic'),
-                                    fg=palette['subtitle_color_1'], bg=palette['background'])
+                                    fg=palette['subtitle_color'], bg=palette['background'])
         self.subtitle_label.place(relx=0.5, rely=0.15, anchor='n')
 
         # Animate subtitle
@@ -386,7 +384,7 @@ class GameModeSelection:
 
         # Add text to exit button
         exit_canvas.create_text(canvas_width//2, canvas_height//2,
-                              text="❌ Exit Game",
+                              text="Exit Game",
                               font=('Arial', max(10, int(self.window_width / 120)), 'bold'),
                               fill=palette['exit_text_color'],
                               tags="exit_text")
@@ -413,25 +411,13 @@ class GameModeSelection:
                                 fg=palette['version_text_color'], bg=palette['background'])
         version_label.pack(side=tk.LEFT)
 
-    def update_glass_background(self, canvas):
-        """Update glassmorphism background when canvas is resized"""
-        canvas.delete("glass")
-        canvas.update_idletasks()
-        width = canvas.winfo_width()
-        height = canvas.winfo_height()
-        if width > 1 and height > 1:
-            canvas.create_rectangle(0, 0, width, height,
-                                  fill=palette['background'], stipple='gray50',
-                                  outline=palette['main_box_outline'], width=2, tags="glass")
-
 
     def animate_subtitle(self):
         """Animate subtitle with color cycling - only if not pre-loading"""
         if self.pre_loading:
             return
 
-        colors = [palette['subtitle_color_1'], palette['subtitle_color_2'], palette['subtitle_color_3'],
-                 palette['subtitle_color_4'], palette['subtitle_color_5']]
+        colors = palette['subtitle_color']
         color_index = [0]
 
         def cycle_color():
@@ -455,22 +441,22 @@ class GameModeSelection:
 
         button_configs = [
             {
-                'title': '📚 Tutorial Mode',
+                'title': 'Tutorial Mode',
                 'command': self.start_tutorial_mode,
                 'mode_key': 'tutorial'
             },
             {
-                'title': '🎮 Puzzle Mode',
+                'title': 'Puzzle Mode',
                 'command': self.start_puzzle_mode,
                 'mode_key': 'puzzle'
             },
             {
-                'title': '🛠️ Sandbox Mode',
+                'title': 'Sandbox Mode',
                 'command': self.start_sandbox_mode,
                 'mode_key': 'sandbox'
             },
             {
-                'title': '🚀 Learn Hub',
+                'title': 'Learn Hub',
                 'command': self.start_learn_hub_mode,
                 'mode_key': 'learn_hub'
             }
@@ -611,6 +597,7 @@ class GameModeSelection:
                 'selected_font_size': selected_font_size
             }
 
+
     def select_mode(self, mode_key, command):
         """Select a game mode and update the info display"""
         self.play_sound()
@@ -659,6 +646,7 @@ class GameModeSelection:
         self.selected_command = command
         self.update_info_display(mode_key)
 
+
     def execute_command(self, command):
         """Execute button command with sound effect"""
         self.play_sound()
@@ -669,31 +657,6 @@ class GameModeSelection:
             command()
         self.root.after(100, execute_delayed)
 
-    def on_glass_configure(self, event):
-        """Handle glass canvas configure event"""
-        self.update_glass_background(event.widget)
-
-    def on_escape_key(self, event):
-        """Handle escape key press"""
-        self.on_closing()
-
-    def on_f11_key(self, event):
-        """Handle F11 key press - toggle fullscreen"""
-        # Toggle between windowed and fullscreen mode
-        if self.root.attributes('-fullscreen'):
-            # Exit fullscreen
-            self.root.attributes('-fullscreen', False)
-            # Reset to optimal window size and center
-            screen_width = self.root.winfo_screenwidth()
-            screen_height = self.root.winfo_screenheight()
-            target_width = int(screen_width * 0.85)
-            target_height = int(screen_height * 0.85)
-            x = (screen_width - target_width) // 2
-            y = (screen_height - target_height) // 2
-            self.root.geometry(f"{target_width}x{target_height}+{x}+{y}")
-        else:
-            # Enter fullscreen
-            self.root.attributes('-fullscreen', True)
 
     def create_info_display(self):
         """Create the initial info display area"""
@@ -705,10 +668,11 @@ class GameModeSelection:
         welcome_label = tk.Label(self.info_frame,
                             text="Select a game mode\nto see details",
                             font=('Arial', max(14, int(self.window_width / 80)), 'italic'),
-                            fg=palette['subtitle_color_1'],
+                            fg=palette['subtitle_color'],
                             bg=palette['background'],
                             justify=tk.CENTER)
         welcome_label.place(relx=0.5, rely=0.5, anchor='center')
+
 
     def start_tutorial_mode(self):
         """Start the tutorial mode"""
@@ -729,16 +693,6 @@ class GameModeSelection:
             messagebox.showerror("Error", f"Failed to start tutorial: {e}")
             self.root.deiconify()
 
-    def return_to_main_menu(self):
-        """Return to the main menu from tutorial"""
-        self.root.deiconify()
-        self.root.lift()
-        self.root.focus_set()
-        # Restart video if available
-        if self.video_cap and not self.video_running:
-            self.video_running = True
-            self.video_thread = threading.Thread(target=self.play_video, daemon=True)
-            self.video_thread.start()
 
     def start_puzzle_mode(self):
         """Start the puzzle mode"""
@@ -839,10 +793,12 @@ class GameModeSelection:
         """Run the game mode selection window"""
         self.root.mainloop()
 
+
 def main():
     """For testing the game mode selection independently"""
     app = GameModeSelection()
     app.run()
+
 
 if __name__ == "__main__":
     main()
