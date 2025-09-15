@@ -778,13 +778,13 @@ class SandboxMode:
                                            font=('Arial', 12, 'bold'),
                                            fg=palette['combobox_color'], bg=palette['background_4'],
                                            relief=tk.SUNKEN, bd=2)
-        self.current_state_label.place(relx=0.5, rely=0.35, relwidth=0.8, relheight=0.25, anchor='center')
+        self.current_state_label.place(relx=0.5, rely=0.35, relwidth=0.8, relheight=0.3, anchor='center')
 
         # Select state canvas - simplified without rectangle
         select_state_canvas = tk.Canvas(parent, bg=palette['background'], 
                                       highlightthickness=2, highlightcolor=palette['combobox_color'],
                                       bd=0)
-        select_state_canvas.place(relx=0.5, rely=0.7, relwidth=0.8, relheight=0.25, anchor='center')
+        select_state_canvas.place(relx=0.5, rely=0.7, relwidth=0.8, relheight=0.3, anchor='center')
 
         def draw_select_button():
             select_state_canvas.delete("all")
