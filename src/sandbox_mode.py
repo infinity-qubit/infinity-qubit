@@ -1136,9 +1136,11 @@ class SandboxMode:
         bottom_frame = tk.Frame(parent, bg=palette['background_3'])
         bottom_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
 
-        # Left side - Gate Palette (40% width)
+        # Left side - Gate Palette (35% width instead of expanding)
         gate_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        gate_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        gate_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 5))
+        gate_frame.configure(width=int(self.screen_width * 0.35))  # Fixed width
+        gate_frame.pack_propagate(False)  # Maintain fixed width
 
         # Gate palette title
         tk.Label(gate_frame, text="🎨 Gate Palette",
@@ -1158,63 +1160,99 @@ class SandboxMode:
         gate_notebook.add(multi_frame, text="Multi-Qubit Gates")
         self.setup_multi_gate_controls(multi_frame)
 
-        # Middle section - Circuit Controls (30% width)
+        # Middle section - Circuit Controls (30% width with fixed size)
         controls_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         controls_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5)
+        controls_frame.configure(width=int(self.screen_width * 0.25))  # Fixed width
+        controls_frame.pack_propagate(False)  # Maintain fixed width
 
         # Action buttons in middle section
         self.setup_action_buttons(controls_frame)
 
-        # Right side - Quantum State Analysis (30% width)
+        # Right side - Quantum State Analysis (35% width instead of expanding)
         results_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        results_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 0))
+        results_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(5, 0))
+        results_frame.configure(width=int(self.screen_width * 0.35))  # Fixed width
+        results_frame.pack_propagate(False)  # Maintain fixed width
 
         # Results area in right section
         self.setup_results_area(results_frame)
 
+
     def setup_action_buttons(self, parent):
-        """Setup action buttons with enhanced styling in middle section"""
+        """Setup action buttons with enhanced styling in middle section using place layout"""
         # Title for action section
         action_title = tk.Label(parent, text="🎮 Circuit Controls",
-                               font=('Arial', 14, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['background_3'])
-        action_title.pack(pady=(10, 15))
+                            font=('Arial', 14, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['background_3'])
+        action_title.place(relx=0.5, rely=0.05, anchor='center')
 
-        # Create buttons container with fixed width and proper height
-        action_frame = tk.Frame(parent, bg=palette['background_3'], width=250, height=350)  # Increased height for new button
-        action_frame.pack(pady=(0, 15), padx=15)
-        action_frame.pack_propagate(False)  # Maintain fixed size
+        # Create buttons container - remove fixed width/height, use relative sizing only
+        action_frame = tk.Frame(parent, bg=palette['background_3'])
+        action_frame.place(relx=0.05, rely=0.15, relwidth=0.9, relheight=0.85)
 
-        # Create enhanced buttons with hover effects
+        # Create enhanced buttons with hover effects - arranged in rows
         buttons_data = [
-            ("🚀 Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
-            ("🔄 Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
-            ("💾 Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
-            ("📂 Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black']),
-            ("🌐 3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color']),
-            ("↶ Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black'])
+            ("Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
+            ("3D Visualizer", self.open_3d_visualizer, palette['visualizer_button_background'], palette['visualizer_button_text_color']),
+            ("Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
+            ("Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black']),
+            ("Save Circuit", self.save_circuit, palette['save_image_background'], palette['background_black']),
+            ("Load Circuit", self.load_circuit, palette['refresh_button_background'], palette['background_black'])
         ]
 
-        # Create buttons in a vertical layout for the middle section
+        # Button layout positions: [row, column, colspan]
+        button_positions = [
+            (0, 0, 2),  # Run Circuit - full width
+            (1, 0, 2),  # 3D Visualizer - full width
+            (2, 0, 1),  # Clear Circuit - left half
+            (2, 1, 1),  # Undo Last - right half
+            (3, 0, 1),  # Save Circuit - left half
+            (3, 1, 1)   # Load Circuit - right half
+        ]
+
+        # Create buttons using place layout
         for i, (text, command, bg_color, fg_color) in enumerate(buttons_data):
-            # Button container with proper spacing
-            btn_container = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.RAISED, bd=2)
-            btn_container.pack(fill=tk.X, pady=8, padx=5)  # Reduced padding for 4 buttons
+            row, col, colspan = button_positions[i]
+            
+            # Calculate position and size based on row/column
+            if colspan == 2:  # Full width buttons
+                relx = 0.5
+                relwidth = 0.9
+            else:  # Half width buttons
+                relx = 0.25 if col == 0 else 0.75
+                relwidth = 0.4
+            
+            rely = 0.1 + (row * 0.23)  # Start at 10% with 23% spacing between rows
+            relheight = 0.2  # Button height
 
-            # Create canvas-based button instead of tk.Button
-            btn_canvas = tk.Canvas(btn_container, bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
-            btn_canvas.pack(padx=4, pady=4, fill=tk.X)
+            # Create canvas-based button directly
+            btn_canvas = tk.Canvas(action_frame, bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
+            btn_canvas.place(relx=relx, rely=rely, relwidth=relwidth, relheight=relheight, anchor='center')
 
-            # Update canvas dimensions after packing
-            btn_container.update_idletasks()
-            canvas_width = btn_container.winfo_width() - 8  # Account for padding
-            canvas_height = 40  # Fixed height for consistency
-            btn_canvas.configure(width=canvas_width, height=canvas_height)
+            # Create button rectangle and text with responsive font size
+            def draw_button(event=None, canvas=btn_canvas, color=bg_color, button_text=text, text_color=fg_color):
+                canvas.delete("all")
+                canvas.update_idletasks()
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    rect_id = canvas.create_rectangle(2, 2, width-2, height-2,
+                                                    fill=color, outline=color, width=0, tags="bg")
+                    
+                    # Calculate responsive font size based on button dimensions
+                    # Use the smaller dimension to ensure text fits
+                    min_dimension = min(width, height)
+                    # Scale font size between 8 and 16 based on button size
+                    font_size = max(8, min(16, int(min_dimension * 0.3)))
+                    
+                    text_id = canvas.create_text(width//2, height//2, text=button_text,
+                                            font=('Arial', font_size, 'bold'), fill=text_color, tags="text")
+                    # Store IDs for hover effects
+                    canvas.rect_id = rect_id
+                    canvas.text_id = text_id
 
-            # Create button rectangle and text
-            rect_id = btn_canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
-                                                fill=bg_color, outline=bg_color, width=0)
-            text_id = btn_canvas.create_text(canvas_width//2, canvas_height//2, text=text,
-                                           font=('Arial', 11, 'bold'), fill=fg_color)
+            btn_canvas.bind('<Configure>', draw_button)
+            btn_canvas.after(10, draw_button)
 
             # Add click handler with proper closure
             def create_click_handler(cmd):
@@ -1224,40 +1262,22 @@ class SandboxMode:
             btn_canvas.configure(cursor='hand2')
 
             # Add hover effects for canvas
-            original_bg = bg_color
-
-            def create_hover_functions(canvas, rect_id, text_id, orig_color, orig_fg):
+            def create_hover_functions(canvas, orig_color, orig_fg):
                 def on_enter(event):
-                    canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
-                    canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
+                    if hasattr(canvas, 'rect_id') and hasattr(canvas, 'text_id'):
+                        canvas.itemconfig(canvas.rect_id, fill=palette['button_hover_background'])
+                        canvas.itemconfig(canvas.text_id, fill=palette['button_hover_text_color'])
 
                 def on_leave(event):
-                    canvas.itemconfig(rect_id, fill=orig_color)
-                    canvas.itemconfig(text_id, fill=orig_fg)
+                    if hasattr(canvas, 'rect_id') and hasattr(canvas, 'text_id'):
+                        canvas.itemconfig(canvas.rect_id, fill=orig_color)
+                        canvas.itemconfig(canvas.text_id, fill=orig_fg)
 
                 return on_enter, on_leave
 
-            on_enter, on_leave = create_hover_functions(btn_canvas, rect_id, text_id, original_bg, fg_color)
+            on_enter, on_leave = create_hover_functions(btn_canvas, bg_color, fg_color)
             btn_canvas.bind("<Enter>", on_enter)
             btn_canvas.bind("<Leave>", on_leave)
-
-        # Add status info at the bottom of the controls
-        status_frame = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.SUNKEN, bd=1)
-        status_frame.pack(fill=tk.X, pady=(15, 0), padx=5)  # Reduced top padding
-
-        status_title = tk.Label(status_frame, text="📊 Circuit Status",
-                               font=('Arial', 10, 'bold'), fg=palette['circuit_status_title_color'], bg=palette['background_4'])
-        status_title.pack(pady=(5, 3))
-
-        # Gates count
-        self.gates_count_label = tk.Label(status_frame, text=f"Gates: {len(self.placed_gates)}",
-                                         font=('Arial', 9), fg=palette['gates_counter_color'], bg=palette['background_4'])
-        self.gates_count_label.pack(pady=2)
-
-        # Qubits info
-        self.qubits_info_label = tk.Label(status_frame, text=f"Qubits: {self.num_qubits}",
-                                         font=('Arial', 9), fg=palette['used_gates_counter_color'], bg=palette['background_4'])
-        self.qubits_info_label.pack(pady=(0, 5))
 
 
     def open_3d_visualizer(self):
