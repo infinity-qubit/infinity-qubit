@@ -1290,23 +1290,117 @@ class SandboxMode:
         gate_frame.configure(width=int(self.screen_width * 0.35))  # Fixed width
         gate_frame.pack_propagate(False)  # Maintain fixed width
 
-        # Gate palette title
-        tk.Label(gate_frame, text=" Gate Palette",
-                font=('Arial', 14, 'bold'), fg=palette['gate_palette_title_color'], bg=palette['background_3']).pack(pady=(10, 10))
+        # # Gate palette title
+        # title_label = tk.Label(gate_frame, text=" Gate Palette",
+        #         font=('Arial', 14, 'bold'), fg=palette['gate_palette_title_color'], bg=palette['background_3'])
+        # title_label.place(relx=0.5, rely=0.08, anchor='center')
 
-        # Create tabbed interface for gates
-        gate_notebook = ttk.Notebook(gate_frame)
-        gate_notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        # Create button selection area
+        button_frame = tk.Frame(gate_frame, bg=palette['background_3'])
+        button_frame.place(relx=0.1, rely=0.05, relwidth=0.8, relheight=0.12)
 
-        # Single-qubit gates tab
-        single_frame = ttk.Frame(gate_notebook)
-        gate_notebook.add(single_frame, text="Single-Qubit Gates")
-        self.setup_single_gate_controls(single_frame)
+        # Initialize current view state
+        self.current_gate_view = "single"
 
-        # Multi-qubit gates tab
-        self.multi_frame = ttk.Frame(gate_notebook)
-        gate_notebook.add(self.multi_frame, text="Multi-Qubit Gates")
+        # Single-qubit gates button
+        self.single_btn_canvas = tk.Canvas(button_frame, bg=palette['background_4'], 
+                                         highlightthickness=1, highlightcolor=palette['combobox_color'])
+        self.single_btn_canvas.place(relx=0, rely=0, relwidth=0.48, relheight=1)
+
+        # Multi-qubit gates button  
+        self.multi_btn_canvas = tk.Canvas(button_frame, bg=palette['background'], 
+                                        highlightthickness=1, highlightcolor=palette['combobox_color'])
+        self.multi_btn_canvas.place(relx=0.52, rely=0, relwidth=0.48, relheight=1)
+
+        # Create content area for gate controls
+        content_area = tk.Frame(gate_frame, bg=palette['background_3'])
+        content_area.place(relx=0.05, rely=0.20, relwidth=0.9, relheight=0.8)
+
+        # Single-qubit gates frame
+        self.single_frame = tk.Frame(content_area, bg=palette['background_3'])
+        self.single_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.setup_single_gate_controls(self.single_frame)
+
+        # Multi-qubit gates frame (initially hidden)
+        self.multi_frame = tk.Frame(content_area, bg=palette['background_3'])
         self.setup_multi_gate_controls(self.multi_frame)
+
+        # Button drawing and click functions
+        def draw_single_button():
+            self.single_btn_canvas.delete("all")
+            self.single_btn_canvas.update_idletasks()
+            width = self.single_btn_canvas.winfo_width()
+            height = self.single_btn_canvas.winfo_height()
+            if width > 1 and height > 1:
+                font_size = max(8, int(min(width, height) * 0.25))
+                color = palette['combobox_color'] if self.current_gate_view == "single" else palette['subtitle_color']
+                self.single_btn_canvas.create_text(width//2, height//2, text="Single-Qubit",
+                                                 font=('Arial', font_size, 'bold'), 
+                                                 fill=color, tags="text")
+
+        def draw_multi_button():
+            self.multi_btn_canvas.delete("all")
+            self.multi_btn_canvas.update_idletasks()
+            width = self.multi_btn_canvas.winfo_width()
+            height = self.multi_btn_canvas.winfo_height()
+            if width > 1 and height > 1:
+                font_size = max(8, int(min(width, height) * 0.25))
+                color = palette['combobox_color'] if self.current_gate_view == "multi" else palette['subtitle_color']
+                self.multi_btn_canvas.create_text(width//2, height//2, text="Multi-Qubit",
+                                                font=('Arial', font_size, 'bold'), 
+                                                fill=color, tags="text")
+
+        def switch_to_single():
+            if self.current_gate_view != "single":
+                self.current_gate_view = "single"
+                self.single_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+                self.multi_frame.place_forget()
+                self.single_btn_canvas.configure(bg=palette['background_4'])
+                self.multi_btn_canvas.configure(bg=palette['background'])
+                draw_single_button()
+                draw_multi_button()
+                self.play_sound('click')
+
+        def switch_to_multi():
+            if self.current_gate_view != "multi":
+                self.current_gate_view = "multi"
+                self.multi_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+                self.single_frame.place_forget()
+                self.multi_btn_canvas.configure(bg=palette['background_4'])
+                self.single_btn_canvas.configure(bg=palette['background'])
+                draw_single_button()
+                draw_multi_button()
+                self.play_sound('click')
+
+        # Bind events
+        self.single_btn_canvas.bind('<Configure>', lambda e: draw_single_button())
+        self.multi_btn_canvas.bind('<Configure>', lambda e: draw_multi_button())
+        self.single_btn_canvas.bind("<Button-1>", lambda e: switch_to_single())
+        self.multi_btn_canvas.bind("<Button-1>", lambda e: switch_to_multi())
+
+        # Hover effects
+        def single_on_enter(event):
+            if self.current_gate_view != "single":
+                self.single_btn_canvas.configure(cursor='hand2')
+
+        def single_on_leave(event):
+            self.single_btn_canvas.configure(cursor='')
+
+        def multi_on_enter(event):
+            if self.current_gate_view != "multi":
+                self.multi_btn_canvas.configure(cursor='hand2')
+
+        def multi_on_leave(event):
+            self.multi_btn_canvas.configure(cursor='')
+
+        self.single_btn_canvas.bind("<Enter>", single_on_enter)
+        self.single_btn_canvas.bind("<Leave>", single_on_leave)
+        self.multi_btn_canvas.bind("<Enter>", multi_on_enter)
+        self.multi_btn_canvas.bind("<Leave>", multi_on_leave)
+
+        # Initialize buttons after a short delay to ensure proper sizing
+        self.single_btn_canvas.after(100, draw_single_button)
+        self.multi_btn_canvas.after(100, draw_multi_button)
 
         # Middle section - Circuit Controls (30% width with fixed size)
         controls_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
