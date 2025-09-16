@@ -882,56 +882,58 @@ class SandboxMode:
 
 
     def setup_state_controls(self, parent):
-        """Setup initial state controls with compact layout using place"""
+        """Setup initial state controls with a single button showing current state"""
 
-        # Current state display with adjusted positioning (moved up)
+        # Initialize state variable
         self.state_var = tk.StringVar(value="|0⟩")
-        self.current_state_label = tk.Label(parent, textvariable=self.state_var,
-                                           font=('Arial', 12, 'bold'),
-                                           fg=palette['combobox_color'], bg=palette['background_4'],
-                                           relief=tk.SUNKEN, bd=2)
-        self.current_state_label.place(relx=0.5, rely=0.35, relwidth=0.8, relheight=0.3, anchor='center')
 
-        # Select state canvas - simplified without rectangle
-        select_state_canvas = tk.Canvas(parent, bg=palette['background'], 
+        # Single state button that shows current state and opens dialog when clicked
+        state_button_canvas = tk.Canvas(parent, bg=palette['background_4'], 
                                       highlightthickness=2, highlightcolor=palette['combobox_color'],
-                                      bd=0)
-        select_state_canvas.place(relx=0.5, rely=0.7, relwidth=0.8, relheight=0.3, anchor='center')
+                                      bd=0, relief=tk.SUNKEN)
+        state_button_canvas.place(relx=0.5, rely=0.5, relwidth=0.8, relheight=0.6, anchor='center')
 
-        def draw_select_button():
-            select_state_canvas.delete("all")
-            select_state_canvas.update_idletasks()
-            width = select_state_canvas.winfo_width()
-            height = select_state_canvas.winfo_height()
+        def draw_state_button():
+            state_button_canvas.delete("all")
+            state_button_canvas.update_idletasks()
+            width = state_button_canvas.winfo_width()
+            height = state_button_canvas.winfo_height()
             if width > 1 and height > 1:
-                # Just draw the text directly on the canvas background
-                font_size = max(16, int(min(width, height) * 0.25))
-                select_state_canvas.create_text(width//2, height//2, text="Select State",
+                # Draw current state text
+                font_size = max(14, int(min(width, height) * 0.3))
+                current_state = self.state_var.get()
+                state_button_canvas.create_text(width//2, height//2, text=current_state,
                                               font=('Arial', font_size, 'bold'), 
                                               fill=palette['combobox_color'], tags="text")
 
-        select_state_canvas.bind('<Configure>', lambda e: draw_select_button())
-        select_state_canvas.after(100, draw_select_button)
+        # Update button display when state changes
+        def update_state_display(*args):
+            draw_state_button()
+        
+        self.state_var.trace('w', update_state_display)
+
+        state_button_canvas.bind('<Configure>', lambda e: draw_state_button())
+        state_button_canvas.after(100, draw_state_button)
 
         # Click handler for state selection
         def open_state_dialog(event):
             self.show_state_selection_dialog()
 
-        select_state_canvas.bind("<Button-1>", open_state_dialog)
+        state_button_canvas.bind("<Button-1>", open_state_dialog)
 
-        # Simplified hover effects - just change canvas background and text color
+        # Hover effects
         def state_on_enter(event):
-            select_state_canvas.configure(bg=palette['button_hover_background'])
-            select_state_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
-            select_state_canvas.configure(cursor='hand2')
+            state_button_canvas.configure(bg=palette['button_hover_background'])
+            state_button_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            state_button_canvas.configure(cursor='hand2')
 
         def state_on_leave(event):
-            select_state_canvas.configure(bg=palette['background'])
-            select_state_canvas.itemconfig("text", fill=palette['combobox_color'])
-            select_state_canvas.configure(cursor='')
+            state_button_canvas.configure(bg=palette['background_4'])
+            state_button_canvas.itemconfig("text", fill=palette['combobox_color'])
+            state_button_canvas.configure(cursor='')
 
-        select_state_canvas.bind("<Enter>", state_on_enter)
-        select_state_canvas.bind("<Leave>", state_on_leave)
+        state_button_canvas.bind("<Enter>", state_on_enter)
+        state_button_canvas.bind("<Leave>", state_on_leave)
 
 
     def show_state_selection_dialog(self):
