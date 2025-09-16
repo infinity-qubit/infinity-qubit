@@ -5,7 +5,7 @@ Main entry point for the application.
 """
 
 import sys
-import os
+
 
 def main():
     """Main entry point for the game"""
@@ -18,6 +18,7 @@ def main():
     except Exception as e:
         print(f"❌ Error running game: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

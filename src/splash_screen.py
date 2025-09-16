@@ -5,10 +5,8 @@ Displays loading animation before showing game mode selection.
 """
 
 import sys
-import os
 import tkinter as tk
 from tkinter import ttk
-import sys
 
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -18,6 +16,7 @@ from run import PROJECT_ROOT, get_resource_path
 # Get color palette
 color_file_path = get_resource_path('config/color_palette.json')
 palette = extract_color_palette(get_colors_from_file(color_file_path), 'splash_screen')
+
 
 class SplashScreen:
     def __init__(self, fullscreen=True):
@@ -80,6 +79,7 @@ class SplashScreen:
         # Start timer to close splash screen (increased to allow pre-loading)
         self.splash.after(2000, self.close_splash)
 
+
     def pre_load_game_mode_selection(self):
         """Pre-load the game mode selection window while splash is visible"""
         try:
@@ -93,6 +93,7 @@ class SplashScreen:
             print(f"Error pre-loading game mode selection: {e}")
             self.game_mode_selection = None
 
+
     def create_splash_content(self):
         """Create the content for the splash screen"""
         if self.fullscreen:
@@ -105,39 +106,39 @@ class SplashScreen:
             main_frame = tk.Frame(outer_frame, bg=palette['background'])
             main_frame.place(relx=0.5, rely=0.5, anchor='center')
 
-            # Scale fonts for fullscreen
-            title_font_size = 48
-            subtitle_font_size = 20
-            loading_font_size = 16
-            version_font_size = 12
-            canvas_width, canvas_height = 500, 120
+            # FIXED: Scale fonts 70% bigger for fullscreen
+            title_font_size = 82  # 70% bigger: 48 -> 82
+            subtitle_font_size = 34  # 70% bigger: 20 -> 34
+            loading_font_size = 27  # 70% bigger: 16 -> 27
+            version_font_size = 20  # 70% bigger: 12 -> 20
+            canvas_width, canvas_height = 850, 204  # 70% bigger: 500x120 -> 850x204
         else:
-            # Original windowed layout
+            # Original windowed layout - also make bigger
             main_frame = tk.Frame(self.splash, bg=palette['background'])
             main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-            # Original font sizes
-            title_font_size = 28
-            subtitle_font_size = 14
-            loading_font_size = 11
-            version_font_size = 9
-            canvas_width, canvas_height = 380, 90
+            # FIXED: Scale windowed fonts 70% bigger too
+            title_font_size = 48  # 70% bigger: 28 -> 48
+            subtitle_font_size = 24  # 70% bigger: 14 -> 24
+            loading_font_size = 19  # 70% bigger: 11 -> 19
+            version_font_size = 15  # 70% bigger: 9 -> 15
+            canvas_width, canvas_height = 646, 153  # 70% bigger: 380x90 -> 646x153
 
         # Title - adjusted font size based on mode
-        title_label = tk.Label(main_frame, text="🔬 Infinity Qubit",
+        title_label = tk.Label(main_frame, text="Infinity Qubit",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background'])
-        title_label.pack(pady=(40, 15))
+        title_label.pack(pady=(68, 26))  # 70% bigger padding: (40,15) -> (68,26)
 
         # Subtitle - adjusted font size
         subtitle_label = tk.Label(main_frame, text="Quantum Computing Educational Game",
                                 font=('Arial', subtitle_font_size),
                                 fg=palette['sub-title_color'], bg=palette['background'])
-        subtitle_label.pack(pady=(5, 30))
+        subtitle_label.pack(pady=(9, 51))  # 70% bigger padding: (5,30) -> (9,51)
 
         # Quantum circuit animation area
         self.animation_frame = tk.Frame(main_frame, bg=palette['background'])
-        self.animation_frame.pack(pady=15)
+        self.animation_frame.pack(pady=26)  # 70% bigger: 15 -> 26
 
         # Create animated quantum gates with scaled canvas
         self.create_quantum_animation(canvas_width, canvas_height)
@@ -146,22 +147,22 @@ class SplashScreen:
         self.loading_label = tk.Label(main_frame, text="Initializing quantum circuits...",
                                     font=('Arial', loading_font_size),
                                     fg=palette['loading_text_color'], bg=palette['background'])
-        self.loading_label.pack(pady=(30, 15))
+        self.loading_label.pack(pady=(51, 26))  # 70% bigger padding: (30,15) -> (51,26)
 
-        # Progress bar - scaled length
-        progress_length = 400 if self.fullscreen else 300
+        # Progress bar - scaled length 70% bigger
+        progress_length = 680 if self.fullscreen else 510  # 70% bigger: 400->680, 300->510
         self.progress = ttk.Progressbar(main_frame, mode='indeterminate',
                                     length=progress_length, style='Splash.Horizontal.TProgressbar')
-        self.progress.pack(pady=(5, 20))
+        self.progress.pack(pady=(9, 34))  # 70% bigger padding: (5,20) -> (9,34)
 
         # Version info - adjusted font size
         version_label = tk.Label(main_frame, text="Version 1.0 | Built with Qiskit",
                                 font=('Arial', version_font_size),
                                 fg=palette['version_text_color'], bg=palette['background'])
         if self.fullscreen:
-            version_label.pack(pady=(20, 0))
+            version_label.pack(pady=(34, 0))  # 70% bigger: (20,0) -> (34,0)
         else:
-            version_label.pack(side=tk.BOTTOM, pady=(10, 15))
+            version_label.pack(side=tk.BOTTOM, pady=(17, 26))  # 70% bigger: (10,15) -> (17,26)
 
         # Configure progress bar style
         style = ttk.Style()
@@ -173,23 +174,26 @@ class SplashScreen:
                     lightcolor=palette['background'],
                     darkcolor=palette['background'])
 
-    def create_quantum_animation(self, canvas_width=380, canvas_height=90):
+
+    def create_quantum_animation(self, canvas_width=646, canvas_height=153):  # Updated defaults
         """Create animated quantum circuit elements with scalable dimensions"""
         circuit_canvas = tk.Canvas(self.animation_frame, width=canvas_width, height=canvas_height,
                                 bg='#1a1a1a', highlightthickness=0)
-        circuit_canvas.pack(pady=10)
+        circuit_canvas.pack(pady=17)  # 70% bigger: 10 -> 17
 
         # Scale wire spacing and positions based on canvas size
         wire_spacing = canvas_height // 4
         start_x = canvas_width // 8
         end_x = canvas_width - start_x
 
-        # Draw quantum wires
+        # Draw quantum wires - thicker for better visibility
         for i in range(3):
             y = wire_spacing + i * wire_spacing
-            circuit_canvas.create_line(start_x, y, end_x, y, fill='#ffffff', width=2)
-            circuit_canvas.create_text(start_x - 20, y, text=f'q{i}', fill='#ffffff',
-                                     font=('Arial', 10 if not self.fullscreen else 12))
+            circuit_canvas.create_line(start_x, y, end_x, y, fill='#ffffff', width=3)  # Thicker: 2 -> 3
+            # FIXED: Scale qubit labels 70% bigger
+            font_size = 20 if self.fullscreen else 17  # 70% bigger: 12->20, 10->17
+            circuit_canvas.create_text(start_x - 34, y, text=f'q{i}', fill='#ffffff',  # More spacing: -20 -> -34
+                                    font=('Arial', font_size))
 
         # Store canvas reference and dimensions for animation
         self.circuit_canvas = circuit_canvas
@@ -197,12 +201,13 @@ class SplashScreen:
         self.wire_spacing = wire_spacing
 
         # Scale gate positions based on canvas width
-        gate_spacing = (end_x - start_x - 80) // 3
-        self.gate_positions = [start_x + 40 + i * gate_spacing for i in range(3)]
+        gate_spacing = (end_x - start_x - 136) // 3  # 70% bigger spacing: 80 -> 136
+        self.gate_positions = [start_x + 68 + i * gate_spacing for i in range(3)]  # 70% bigger: 40 -> 68
         self.gate_colors = ["#002b7f", '#fcd116', '#ce1126']
         self.gate_labels = ['H', 'X', 'Z']
 
         self.draw_animated_gates()
+
 
     def draw_animated_gates(self):
         """Draw the animated quantum gates"""
@@ -213,19 +218,19 @@ class SplashScreen:
             # Clear previous gates
             self.circuit_canvas.delete("gate")
 
-            # Scale gate size based on fullscreen mode
-            gate_size = 20 if self.fullscreen else 18
+            # FIXED: Scale gate size 70% bigger based on fullscreen mode
+            gate_size = 34 if self.fullscreen else 31  # 70% bigger: 20->34, 18->31
 
             # Draw gates at current positions
             for i, (x, color, label) in enumerate(zip(self.gate_positions, self.gate_colors, self.gate_labels)):
                 y = self.wire_spacing + i * self.wire_spacing
 
-                # Gate rectangle
+                # Gate rectangle - 70% bigger
                 self.circuit_canvas.create_rectangle(x-gate_size, y-gate_size//2, x+gate_size, y+gate_size//2,
-                                                fill=color, outline='#ffffff', width=2, tags="gate")
+                                                fill=color, outline='#ffffff', width=3, tags="gate")  # Thicker border
 
-                # Gate label
-                font_size = 12 if self.fullscreen else 10
+                # Gate label - 70% bigger font
+                font_size = 20 if self.fullscreen else 17  # 70% bigger: 12->20, 10->17
                 self.circuit_canvas.create_text(x, y, text=label, fill='#000000',
                                             font=('Arial', font_size, 'bold'), tags="gate")
         except tk.TclError:
@@ -257,9 +262,9 @@ class SplashScreen:
 
             try:
                 if hasattr(self, 'circuit_canvas') and self.circuit_canvas.winfo_exists():
-                    # Move gates based on canvas width
-                    move_speed = 3 if self.fullscreen else 2
-                    reset_position = self.canvas_width // 8 + 20
+                    # FIXED: Scale move speed 70% bigger for smoother animation
+                    move_speed = 5 if self.fullscreen else 4  # 70% bigger: 3->5, 2->4
+                    reset_position = self.canvas_width // 8 + 34  # 70% bigger: 20 -> 34
                     max_position = self.canvas_width - reset_position
 
                     for i in range(len(self.gate_positions)):
@@ -276,6 +281,7 @@ class SplashScreen:
 
         move_gates()
 
+
     def animate_loading(self):
         """Animate the loading elements"""
         # Start progress bar animation
@@ -286,6 +292,7 @@ class SplashScreen:
 
         # Animate quantum gates
         self.animate_gates()
+
 
     def animate_text(self):
         """Animate the loading text"""
@@ -360,17 +367,18 @@ class SplashScreen:
         selection_window = GameModeSelection()
         selection_window.run()
 
+
     def run(self):
         """Run the splash screen"""
         self.splash.mainloop()
+
 
 def show_splash_screen(fullscreen=True):
     """Show the splash screen before the game mode selection"""
     splash = SplashScreen(fullscreen)
     splash.run()
 
+
 if __name__ == "__main__":
-    # Test in fullscreen
+    # Show in fullscreen
     show_splash_screen(fullscreen=True)
-    # Or test in windowed mode
-    # show_splash_screen(fullscreen=False)
