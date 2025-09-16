@@ -1496,8 +1496,8 @@ class SandboxMode:
         dialog.attributes('-topmost', True)
 
         # Calculate relative sizing
-        dialog_width = int(self.screen_width * 0.3)
-        dialog_height = int(self.screen_height * 0.25)
+        dialog_width = int(self.screen_width * 0.35)
+        dialog_height = int(self.screen_height * 0.35)
         x = (self.screen_width - dialog_width) // 2
         y = (self.screen_height - dialog_height) // 2
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
@@ -1514,23 +1514,15 @@ class SandboxMode:
 
         # Add border frame
         border_frame = tk.Frame(dialog, bg=palette.get('main_menu_button_text_color', '#2c1f12'), bd=2, relief=tk.RAISED)
-        border_frame.pack(fill=tk.BOTH, expand=True)
+        border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
         # Main frame inside border
         main_frame = tk.Frame(border_frame, bg=palette['background_3'], relief=tk.FLAT, bd=0)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        main_frame.place(relx=0.005, rely=0.005, relwidth=0.99, relheight=0.99)
 
         # Add title bar
-        title_bar = tk.Frame(main_frame, bg=palette['background_4'], height=int(self.screen_height * 0.03))
-        title_bar.pack(fill=tk.X)
-        title_bar.pack_propagate(False)
-
-        # Title in title bar
-        title_font_size = max(10, int(self.screen_width * 0.008))
-        title_bar_label = tk.Label(title_bar, text=f"● {title}",
-                                font=('Arial', title_font_size, 'bold'),
-                                fg=palette['title_color'], bg=palette['background_4'])
-        title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008), pady=int(self.screen_height * 0.005))
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'])
+        title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.15)
 
         # FIXED: Close button with correct parameters
         close_btn = self.create_canvas_dialog_button(
@@ -1538,38 +1530,38 @@ class SandboxMode:
             palette['background_4'], palette['title_color'],
             width=25, height=20, font_size=12
         )
-        close_btn.pack(side=tk.RIGHT, padx=5)
+        close_btn.place(relx=0.92, rely=0.2, relwidth=0.06, relheight=0.6)
 
         # Content area
         content_frame = tk.Frame(main_frame, bg=palette['background_3'])
-        content_frame.pack(fill=tk.BOTH, expand=True, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.01))
+        content_frame.place(relx=0.05, rely=0.2, relwidth=0.9, relheight=0.75)
 
         # Icon and title together
-        header_font_size = max(12, int(self.screen_width * 0.01))
+        header_font_size = max(12, int(self.screen_width * 0.02))
         header_label = tk.Label(content_frame, text=f"{title}",
                             font=('Arial', header_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_3'])
-        header_label.pack(pady=(int(self.screen_height * 0.01), int(self.screen_height * 0.008)))
+        header_label.place(relx=0, rely=0.1, relwidth=1, relheight=0.2)
 
         # Message
-        message_font_size = max(10, int(self.screen_width * 0.008))
+        message_font_size = max(10, int(self.screen_width * 0.012))
         message_label = tk.Label(content_frame, text=message,
                                 font=('Arial', message_font_size),
                                 fg=palette['subtitle_color'], bg=palette['background_3'],
                                 wraplength=int(dialog_width * 0.8), justify=tk.CENTER)
-        message_label.pack(pady=int(self.screen_height * 0.01))
+        message_label.place(relx=0, rely=0.35, relwidth=1, relheight=0.3)
 
         # Button frame
         button_frame = tk.Frame(content_frame, bg=palette['background_3'])
-        button_frame.pack(pady=(int(self.screen_height * 0.015), int(self.screen_height * 0.01)))
+        button_frame.place(relx=0, rely=0.75, relwidth=1, relheight=0.2)
 
         # OK button with correct parameters
         ok_button = self.create_canvas_dialog_button(
             button_frame, "OK", dialog.destroy,
-            palette['background_4'], palette.get('main_menu_button_text_color', '#2c1f12'),
-            width=80, height=30, font_size=10
+            palette['close_button_background'], palette.get('main_menu_button_text_color', '#2c1f12'),
+            width=80, height=30, font_size=max(8, int(self.screen_width * 0.007))
         )
-        ok_button.pack()
+        ok_button.place(relx=0.35, rely=0.2, relwidth=0.3, relheight=0.7)
 
         # Make title bar draggable
         def start_move(event):
@@ -1585,8 +1577,6 @@ class SandboxMode:
 
         title_bar.bind("<Button-1>", start_move)
         title_bar.bind("<B1-Motion>", on_move)
-        title_bar_label.bind("<Button-1>", start_move)
-        title_bar_label.bind("<B1-Motion>", on_move)
 
         # Bind keys
         dialog.bind('<Return>', lambda e: dialog.destroy())
