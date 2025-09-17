@@ -2100,7 +2100,7 @@ class PuzzleMode:
                                     font=('Arial', level_font_size, 'bold'), 
                                     fill='white', tags="text")
                     
-                    # Level name (truncated if too long) with larger font
+                    # Level name (truncated if too long) with larger font - single line only
                     name = level_data['name']
                     if len(name) > 15:  # Allow longer names for bigger buttons
                         name = name[:15] + "..."
@@ -2108,7 +2108,7 @@ class PuzzleMode:
                     name_font_size = max(12, int(min(width, height) * 0.14))
                     canvas.create_text(width//2, height//2, text=name,
                                     font=('Arial', name_font_size), 
-                                    fill='white', tags="text", width=width-10)
+                                    fill='white', tags="text")
                     
                     # Difficulty with larger font
                     diff_font_size = max(10, int(min(width, height) * 0.12))
