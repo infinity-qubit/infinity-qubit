@@ -224,11 +224,24 @@ class SandboxMode:
                 self.num_qubits = data.get("num_qubits", 1)
                 self.placed_gates = data.get("placed_gates", [])
                 self.initial_state = data.get("initial_state", "|0⟩")
-                self.qubit_var.set(self.num_qubits)
+                
+                # Update the state variable instead of qubit_var
                 self.state_var.set(self.initial_state)
+                
+                # Update the qubit display
+                self.update_qubit_display()
+                
+                # Update the qubit selection dropdowns
                 self.update_qubit_selections()
+                
+                # Update the circuit display
                 self.update_circuit_display()
+                
                 dialog.destroy()
+                
+                # Show success message
+                self.show_custom_dialog("Success", f"Circuit loaded successfully!\n{self.num_qubits} qubits, {len(self.placed_gates)} gates", "success")
+                
             except Exception as e:
                 self.show_custom_dialog("Error", f"Could not load circuit: {e}", "error")
                 dialog.destroy()
@@ -713,74 +726,495 @@ class SandboxMode:
     def setup_control_panel(self, parent):
         """Setup the control panel with enhanced styling"""
         control_frame = tk.Frame(parent, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        control_frame.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.02)))
+        control_frame.pack(fill=tk.X, pady=(0, 10))
 
         # Enhanced title with relative font size
         title_font_size = max(14, int(self.screen_width * 0.012))
         control_title = tk.Label(control_frame, text="️ Circuit Configuration",
                                 font=('Arial', title_font_size, 'bold'),
                                 fg=palette['circuit_title_text_color'], bg=palette['background_3'])
-        control_title.pack(pady=(int(self.screen_height * 0.012), int(self.screen_height * 0.008)))
+        control_title.pack(pady=(10, 15))
 
-        # Main controls container with relative padding
-        controls_container = tk.Frame(control_frame, bg=palette['background_3'])
-        controls_container.pack(padx=int(self.screen_width * 0.015),
-                            pady=(0, int(self.screen_height * 0.012)))
+        # Main controls container with fixed height
+        controls_container = tk.Frame(control_frame, bg=palette['background_3'], height=120)
+        controls_container.pack(fill=tk.X, padx=20, pady=(0, 15))
+        controls_container.pack_propagate(False)  # Prevent height from expanding
 
-        # Qubit controls - left side with relative sizing
-        qubit_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-        qubit_frame.pack(side=tk.LEFT, fill=tk.Y,
-                        padx=(0, int(self.screen_width * 0.012)),
-                        pady=int(self.screen_height * 0.004),
-                        ipadx=int(self.screen_width * 0.012),
-                        ipady=int(self.screen_height * 0.008))
+        # Create left and right sections directly in controls_container
+        left_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
+        left_frame.place(relx=0.35, rely=0.5, relwidth=0.2, relheight=0.9, anchor='center')
 
+        right_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
+        right_frame.place(relx=0.65, rely=0.5, relwidth=0.2, relheight=0.9, anchor='center')
+
+        # Setup qubit controls in left frame
+        self.setup_qubit_controls(left_frame)
+
+        # Setup state controls in right frame
+        self.setup_state_controls(right_frame)
+
+
+    def setup_qubit_controls(self, parent):
+        """Setup qubit number controls with proper height using place"""
         label_font_size = max(11, int(self.screen_width * 0.009))
-        tk.Label(qubit_frame, text="️ Number of Qubits",
-                font=('Arial', label_font_size, 'bold'),
-                fg=palette['qubit_number_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
+        
+        # Title with relative positioning
+        title_label = tk.Label(parent, text="Number of Qubits",
+                              font=('Arial', label_font_size, 'bold'),
+                              fg=palette['qubit_number_title_color'], bg=palette['background_4'])
+        title_label.place(relx=0.5, rely=0.15, anchor='center')
 
-        self.qubit_var = tk.IntVar(value=1)
-        spinbox_font_size = max(11, int(self.screen_width * 0.009))
-        qubit_spinbox = tk.Spinbox(qubit_frame, from_=1, to=4, textvariable=self.qubit_var,
-                                command=self.on_qubit_change,
-                                font=('Arial', spinbox_font_size),
-                                width=int(self.screen_width * 0.006),
-                                bg=palette['background'], fg=palette['qubit_spinbox_color'],
-                                insertbackground=palette['qubit_spinbox_color'])
-        qubit_spinbox.pack(pady=int(self.screen_height * 0.004))
+        # Counter container with relative positioning
+        counter_container = tk.Frame(parent, bg=palette['background_4'])
+        counter_container.place(relx=0.5, rely=0.65, relwidth=0.9, relheight=0.5, anchor='center')
 
-        # Initial state selection - right side with relative sizing
-        state_frame = tk.Frame(controls_container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-        state_frame.pack(side=tk.LEFT, fill=tk.Y,
-                        padx=int(self.screen_width * 0.004),
-                        pady=int(self.screen_height * 0.004),
-                        ipadx=int(self.screen_width * 0.012),
-                        ipady=int(self.screen_height * 0.008))
+        # Decrement button frame
+        decrement_frame = tk.Frame(counter_container, bg=palette['background_4'])
+        decrement_frame.place(relx=0.15, rely=0.5, relwidth=0.3, relheight=0.8, anchor='center')
 
-        tk.Label(state_frame, text=" Initial State",
-                font=('Arial', label_font_size, 'bold'),
-                fg=palette['initial_state_title_color'], bg=palette['background_4']).pack(pady=(0, int(self.screen_height * 0.004)))
+        decrement_canvas = tk.Canvas(decrement_frame, bg=palette['background'], 
+                                   highlightthickness=0, bd=0)
+        decrement_canvas.place(relx=0.5, rely=0.5, relwidth=0.7, relheight=0.9, anchor='center')
 
+        # Draw decrement button
+        def draw_decrement_button():
+            decrement_canvas.delete("all")
+            decrement_canvas.update_idletasks()
+            width = decrement_canvas.winfo_width()
+            height = decrement_canvas.winfo_height()
+            if width > 1 and height > 1:
+                decrement_canvas.create_rectangle(2, 2, width-2, height-2,
+                                                fill=palette['background'], 
+                                                outline=palette['qubit_spinbox_color'], width=2, tags="bg")
+                font_size = max(10, int(min(width, height) * 0.4))
+                decrement_canvas.create_text(width//2, height//2, text="−",
+                                           font=('Arial', font_size, 'bold'), 
+                                           fill=palette['qubit_spinbox_color'], tags="text")
+
+        decrement_canvas.bind('<Configure>', lambda e: draw_decrement_button())
+        decrement_canvas.after(10, draw_decrement_button)
+
+        # Display frame
+        display_frame = tk.Frame(counter_container, bg=palette['background_4'])
+        display_frame.place(relx=0.5, rely=0.5, relwidth=0.4, relheight=0.8, anchor='center')
+
+        self.qubit_display_label = tk.Label(display_frame, 
+                                          text=str(self.num_qubits),
+                                          font=('Arial', 16, 'bold'),
+                                          fg=palette['qubit_spinbox_color'], 
+                                          bg=palette['background_4'],
+                                          relief=tk.SUNKEN, bd=2)
+        self.qubit_display_label.place(relx=0.5, rely=0.5, relwidth=0.8, relheight=0.8, anchor='center')
+
+        # Increment button frame
+        increment_frame = tk.Frame(counter_container, bg=palette['background_4'])
+        increment_frame.place(relx=0.85, rely=0.5, relwidth=0.3, relheight=0.8, anchor='center')
+
+        increment_canvas = tk.Canvas(increment_frame, bg=palette['background'], 
+                                   highlightthickness=0, bd=0)
+        increment_canvas.place(relx=0.5, rely=0.5, relwidth=0.7, relheight=0.9, anchor='center')
+
+        # Draw increment button
+        def draw_increment_button():
+            increment_canvas.delete("all")
+            increment_canvas.update_idletasks()
+            width = increment_canvas.winfo_width()
+            height = increment_canvas.winfo_height()
+            if width > 1 and height > 1:
+                increment_canvas.create_rectangle(2, 2, width-2, height-2,
+                                                fill=palette['background'], 
+                                                outline=palette['qubit_spinbox_color'], width=2, tags="bg")
+                font_size = max(10, int(min(width, height) * 0.4))
+                increment_canvas.create_text(width//2, height//2, text="+",
+                                           font=('Arial', font_size, 'bold'), 
+                                           fill=palette['qubit_spinbox_color'], tags="text")
+
+        increment_canvas.bind('<Configure>', lambda e: draw_increment_button())
+        increment_canvas.after(10, draw_increment_button)
+
+        # Button click handlers
+        def decrement_qubits(event):
+            if self.num_qubits > 1:
+                self.num_qubits -= 1
+                self.update_qubit_display()
+                self.on_qubit_change_touch()
+                self.play_sound('click')
+
+        def increment_qubits(event):
+            if self.num_qubits < 4:
+                self.num_qubits += 1
+                self.update_qubit_display()
+                self.on_qubit_change_touch()
+                self.play_sound('click')
+
+        # Bind click events and hover effects
+        decrement_canvas.bind("<Button-1>", decrement_qubits)
+        increment_canvas.bind("<Button-1>", increment_qubits)
+
+        # Hover effects for decrement button
+        def dec_on_enter(event):
+            decrement_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            decrement_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            decrement_canvas.configure(cursor='hand2')
+
+        def dec_on_leave(event):
+            decrement_canvas.itemconfig("bg", fill=palette['background'])
+            decrement_canvas.itemconfig("text", fill=palette['qubit_spinbox_color'])
+            decrement_canvas.configure(cursor='')
+
+        decrement_canvas.bind("<Enter>", dec_on_enter)
+        decrement_canvas.bind("<Leave>", dec_on_leave)
+
+        # Hover effects for increment button
+        def inc_on_enter(event):
+            increment_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            increment_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            increment_canvas.configure(cursor='hand2')
+
+        def inc_on_leave(event):
+            increment_canvas.itemconfig("bg", fill=palette['background'])
+            increment_canvas.itemconfig("text", fill=palette['qubit_spinbox_color'])
+            increment_canvas.configure(cursor='')
+
+        increment_canvas.bind("<Enter>", inc_on_enter)
+        increment_canvas.bind("<Leave>", inc_on_leave)
+
+
+
+    def setup_state_controls(self, parent):
+        """Setup initial state controls with a single button showing current state"""
+
+        # Initialize state variable
         self.state_var = tk.StringVar(value="|0⟩")
-        state_options = ["|0⟩", "|1⟩", "|+⟩", "|-⟩"]
 
-        # Custom styled combobox
-        style = ttk.Style()
-        style.configure('Custom.TCombobox',
-                    fieldbackground=palette['background'],
-                    background=palette['background_4'],
-                    foreground=palette['combobox_color'],
-                    arrowcolor=palette['combobox_color'])
+        # Single state button that shows current state and opens dialog when clicked
+        state_button_canvas = tk.Canvas(parent, bg=palette['background_4'], 
+                                      highlightthickness=2, highlightcolor=palette['combobox_color'],
+                                      bd=0, relief=tk.SUNKEN)
+        state_button_canvas.place(relx=0.5, rely=0.5, relwidth=0.8, relheight=0.6, anchor='center')
 
-        combo_font_size = max(10, int(self.screen_width * 0.008))
-        self.state_combo = ttk.Combobox(state_frame, textvariable=self.state_var,
-                                    values=state_options, state="readonly",
-                                    font=('Arial', combo_font_size),
-                                    width=int(self.screen_width * 0.006),
-                                    style='Custom.TCombobox')
-        self.state_combo.pack(pady=int(self.screen_height * 0.004))
-        self.state_combo.bind('<<ComboboxSelected>>', self.on_state_change)
+        def draw_state_button():
+            state_button_canvas.delete("all")
+            state_button_canvas.update_idletasks()
+            width = state_button_canvas.winfo_width()
+            height = state_button_canvas.winfo_height()
+            if width > 1 and height > 1:
+                # Draw current state text
+                font_size = max(14, int(min(width, height) * 0.3))
+                current_state = self.state_var.get()
+                state_button_canvas.create_text(width//2, height//2, text=current_state,
+                                              font=('Arial', font_size, 'bold'), 
+                                              fill=palette['combobox_color'], tags="text")
+
+        # Update button display when state changes
+        def update_state_display(*args):
+            draw_state_button()
+        
+        self.state_var.trace('w', update_state_display)
+
+        state_button_canvas.bind('<Configure>', lambda e: draw_state_button())
+        state_button_canvas.after(100, draw_state_button)
+
+        # Click handler for state selection
+        def open_state_dialog(event):
+            self.show_state_selection_dialog()
+
+        state_button_canvas.bind("<Button-1>", open_state_dialog)
+
+        # Hover effects
+        def state_on_enter(event):
+            state_button_canvas.configure(bg=palette['button_hover_background'])
+            state_button_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            state_button_canvas.configure(cursor='hand2')
+
+        def state_on_leave(event):
+            state_button_canvas.configure(bg=palette['background_4'])
+            state_button_canvas.itemconfig("text", fill=palette['combobox_color'])
+            state_button_canvas.configure(cursor='')
+
+        state_button_canvas.bind("<Enter>", state_on_enter)
+        state_button_canvas.bind("<Leave>", state_on_leave)
+
+
+    def show_state_selection_dialog(self):
+        """Show a touch-friendly state selection dialog with grid layout"""
+        self.play_sound('click')
+
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Select Initial State")
+        dialog.configure(bg=palette['background'])
+
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+
+        # Calculate responsive size using geometry instead of place
+        dialog_width = int(self.screen_width * 0.6)
+        dialog_height = int(self.screen_height * 0.7)
+        x = (self.screen_width - dialog_width) // 2
+        y = (self.screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        dialog.transient(self.root)
+        dialog.transient(self.root)
+        try:
+            dialog.grab_set()
+            dialog.focus_force()
+        except tk.TclError:
+            # Window not ready yet, try again after a short delay
+            self.root.after(50, lambda: dialog.grab_set() if dialog.winfo_exists() else None)
+            dialog.focus_force()
+
+        # Border frame
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Main frame
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+
+        # Title bar
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'], height=50)
+        title_bar.pack(fill=tk.X)
+        title_bar.pack_propagate(False)
+
+        # Title
+        title_label = tk.Label(title_bar, text="🎯 Select Initial Quantum State",
+                            font=('Arial', 14, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_4'])
+        title_label.pack(side=tk.LEFT, padx=15, pady=15)
+
+        # Close button
+        close_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0, width=40, height=30)
+        close_canvas.pack(side=tk.RIGHT, padx=15, pady=10)
+
+        def draw_close_button():
+            close_canvas.delete("all")
+            close_canvas.create_rectangle(2, 2, 38, 28,
+                                        fill=palette['background_4'], 
+                                        outline=palette['title_color'], width=1, tags="bg")
+            close_canvas.create_text(20, 15, text="✕",
+                                   font=('Arial', 12, 'bold'), 
+                                   fill=palette['title_color'], tags="text")
+
+        draw_close_button()
+        close_canvas.bind("<Button-1>", lambda e: dialog.destroy())
+
+        # Hover effects for close button
+        def close_on_enter(event):
+            close_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            close_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            close_canvas.configure(cursor='hand2')
+
+        def close_on_leave(event):
+            close_canvas.itemconfig("bg", fill=palette['background_4'])
+            close_canvas.itemconfig("text", fill=palette['title_color'])
+            close_canvas.configure(cursor='')
+
+        close_canvas.bind("<Enter>", close_on_enter)
+        close_canvas.bind("<Leave>", close_on_leave)
+
+        # Content area
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
+        content_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Get available states based on number of qubits
+        states = self.get_available_states()
+
+        # Create grid of state buttons
+        self.create_state_grid(content_frame, states, dialog)
+
+        # Make title bar draggable
+        def start_move(event):
+            dialog.x = event.x_root - dialog.winfo_x()
+            dialog.y = event.y_root - dialog.winfo_y()
+
+        def on_move(event):
+            x = event.x_root - dialog.x
+            y = event.y_root - dialog.y
+            dialog.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_label.bind("<Button-1>", start_move)
+        title_label.bind("<B1-Motion>", on_move)
+
+        # Bind Escape to close
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
+
+
+    def get_available_states(self):
+        """Get available initial states based on number of qubits"""
+        if self.num_qubits == 1:
+            return ["|0⟩", "|1⟩", "|+⟩", "|-⟩"]
+        elif self.num_qubits == 2:
+            return ["|00⟩", "|01⟩", "|10⟩", "|11⟩", "|++⟩", "|--⟩", "|+-⟩", "|−+⟩"]
+        elif self.num_qubits == 3:
+            return ["|000⟩", "|001⟩", "|010⟩", "|011⟩", "|100⟩", "|101⟩", "|110⟩", "|111⟩"]
+        elif self.num_qubits == 4:
+            return ["|0000⟩", "|0001⟩", "|0010⟩", "|0011⟩", "|0100⟩", "|0101⟩", "|0110⟩", "|0111⟩",
+                   "|1000⟩", "|1001⟩", "|1010⟩", "|1011⟩", "|1100⟩", "|1101⟩", "|1110⟩", "|1111⟩"]
+        else:
+            return ["|" + "0" * self.num_qubits + "⟩"]
+
+
+    def create_state_grid(self, parent, states, dialog):
+        """Create a responsive grid of state selection buttons"""
+        # Calculate grid dimensions
+        total_states = len(states)
+        if total_states <= 4:
+            cols = 2
+            rows = 2
+        elif total_states <= 8:
+            cols = 4
+            rows = 2
+        elif total_states <= 16:
+            cols = 4
+            rows = 4
+        else:
+            cols = 6
+            rows = (total_states + cols - 1) // cols
+
+        # Create scrollable area if needed
+        if total_states > 16:
+            canvas = tk.Canvas(parent, bg=palette['background_3'], highlightthickness=0)
+            scrollbar = tk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
+            scrollable_frame = tk.Frame(canvas, bg=palette['background_3'])
+
+            canvas.configure(yscrollcommand=scrollbar.set)
+            scrollbar.place(relx=0.98, rely=0.05, relwidth=0.02, relheight=0.9)
+            canvas.place(relx=0.05, rely=0.05, relwidth=0.9, relheight=0.9)
+
+            canvas.create_window((0, 0), window=scrollable_frame, anchor=tk.NW)
+            grid_parent = scrollable_frame
+        else:
+            grid_parent = parent
+
+        # Create grid of buttons
+        for i, state in enumerate(states):
+            row = i // cols
+            col = i % cols
+
+            # Calculate button position using relative coordinates
+            button_relx = (col + 0.5) / cols
+            button_rely = (row + 0.5) / rows
+            button_relwidth = 0.8 / cols
+            button_relheight = 0.8 / rows
+
+            # Create button frame
+            btn_frame = tk.Frame(grid_parent, bg=palette['background_4'], relief=tk.RAISED, bd=2)
+            if total_states <= 16:
+                btn_frame.place(relx=button_relx, rely=button_rely, 
+                               relwidth=button_relwidth, relheight=button_relheight, anchor='center')
+            else:
+                # For scrollable grid, use pack
+                btn_frame.pack(side=tk.LEFT if col == 0 else None, 
+                              fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+            # Create canvas button
+            btn_canvas = tk.Canvas(btn_frame, bg=palette['background'], highlightthickness=0, bd=0)
+            btn_canvas.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+            # State description
+            state_desc = self.get_state_description(state)
+            
+            def draw_state_button(event=None, canvas=btn_canvas, state_text=state, desc=state_desc):
+                canvas.delete("all")
+                canvas.update_idletasks()
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(2, 2, width-2, height-2,
+                                          fill=palette['background'], 
+                                          outline=palette['combobox_color'], width=2, tags="bg")
+                    
+                    # State text
+                    state_font_size = max(8, int(min(width, height) * 0.2))
+                    canvas.create_text(width//2, height//3, text=state_text,
+                                     font=('Arial', state_font_size, 'bold'), 
+                                     fill=palette['combobox_color'], tags="state_text")
+                    
+                    # Description text
+                    desc_font_size = max(6, int(min(width, height) * 0.12))
+                    canvas.create_text(width//2, 2*height//3, text=desc,
+                                     font=('Arial', desc_font_size), 
+                                     fill=palette['subtitle_color'], tags="desc_text")
+
+            btn_canvas.bind('<Configure>', draw_state_button)
+            btn_canvas.after(10, draw_state_button)
+
+            # Click handler
+            def create_state_handler(selected_state):
+                def on_state_select(event):
+                    self.state_var.set(selected_state)
+                    self.initial_state = selected_state
+                    self.on_state_change()
+                    self.play_sound('click')
+                    dialog.destroy()
+                return on_state_select
+
+            btn_canvas.bind("<Button-1>", create_state_handler(state))
+
+            # Hover effects
+            def create_hover_handlers(canvas, state_text, desc):
+                def on_enter(event):
+                    canvas.itemconfig("bg", fill=palette['button_hover_background'])
+                    canvas.itemconfig("state_text", fill=palette['button_hover_text_color'])
+                    canvas.itemconfig("desc_text", fill=palette['button_hover_text_color'])
+                    canvas.configure(cursor='hand2')
+
+                def on_leave(event):
+                    canvas.itemconfig("bg", fill=palette['background'])
+                    canvas.itemconfig("state_text", fill=palette['combobox_color'])
+                    canvas.itemconfig("desc_text", fill=palette['subtitle_color'])
+                    canvas.configure(cursor='')
+
+                return on_enter, on_leave
+
+            on_enter, on_leave = create_hover_handlers(btn_canvas, state, state_desc)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
+
+        # Update scroll region for scrollable grids
+        if total_states > 16:
+            scrollable_frame.update_idletasks()
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+
+    def get_state_description(self, state):
+        """Get a descriptive name for the quantum state"""
+        descriptions = {
+            "|0⟩": "Ground",
+            "|1⟩": "Excited", 
+            "|+⟩": "Plus",
+            "|-⟩": "Minus",
+            "|00⟩": "00",
+            "|01⟩": "01", 
+            "|10⟩": "10",
+            "|11⟩": "11",
+            "|++⟩": "Plus-Plus",
+            "|--⟩": "Minus-Minus",
+            "|+-⟩": "Plus-Minus",
+            "|−+⟩": "Minus-Plus"
+        }
+        
+        # For longer states, just return the binary part
+        if state.startswith("|") and state.endswith("⟩"):
+            binary_part = state[1:-1]
+            if binary_part in descriptions.values():
+                return descriptions.get(state, binary_part)
+            return binary_part
+        
+        return descriptions.get(state, "Custom")
+
+
+    def update_qubit_display(self):
+        """Update the qubit counter display"""
+        if hasattr(self, 'qubit_display_label'):
+            self.qubit_display_label.configure(text=str(self.num_qubits))
+
+
 
 
     def setup_circuit_area(self, parent):
@@ -816,61 +1250,190 @@ class SandboxMode:
         self.setup_bottom_section(parent)
 
 
+    def on_qubit_change_touch(self):
+        """Handle change in number of qubits for touch interface"""
+        self.placed_gates = []  # Clear gates when changing qubit count
+
+        # Update available initial states based on qubit count
+        states = self.get_available_states()
+        self.state_var.set(states[0])
+        self.initial_state = states[0]
+
+        # Update the qubit selection dropdowns
+        self.update_qubit_selections()
+
+        # Refresh multi-qubit gate controls to show/hide gates based on new qubit count
+        self.refresh_multi_gate_controls()
+
+        self.update_circuit_display()
+
+    def refresh_multi_gate_controls(self):
+        """Refresh the multi-qubit gate controls when the number of qubits changes"""
+        if hasattr(self, 'multi_frame'):
+            # Clear existing widgets in the multi-qubit frame
+            for widget in self.multi_frame.winfo_children():
+                widget.destroy()
+            
+            # Recreate the multi-qubit gate controls
+            self.setup_multi_gate_controls(self.multi_frame)
+
+
+
     def setup_bottom_section(self, parent):
         """Setup the bottom section with gate palette on left, controls in middle, and results on right"""
         bottom_frame = tk.Frame(parent, bg=palette['background_3'])
         bottom_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
 
-        # Left side - Gate Palette (40% width)
+        # Left side - Gate Palette (35% width instead of expanding)
         gate_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        gate_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        gate_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 5))
+        gate_frame.configure(width=int(self.screen_width * 0.35))  # Fixed width
+        gate_frame.pack_propagate(False)  # Maintain fixed width
 
-        # Gate palette title
-        tk.Label(gate_frame, text=" Gate Palette",
-                font=('Arial', 14, 'bold'), fg=palette['gate_palette_title_color'], bg=palette['background_3']).pack(pady=(10, 10))
+        # # Gate palette title
+        # title_label = tk.Label(gate_frame, text=" Gate Palette",
+        #         font=('Arial', 14, 'bold'), fg=palette['gate_palette_title_color'], bg=palette['background_3'])
+        # title_label.place(relx=0.5, rely=0.08, anchor='center')
 
-        # Create tabbed interface for gates
-        gate_notebook = ttk.Notebook(gate_frame)
-        gate_notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        # Create button selection area
+        button_frame = tk.Frame(gate_frame, bg=palette['background_3'])
+        button_frame.place(relx=0.1, rely=0.05, relwidth=0.8, relheight=0.12)
 
-        # Single-qubit gates tab
-        single_frame = ttk.Frame(gate_notebook)
-        gate_notebook.add(single_frame, text="Single-Qubit Gates")
-        self.setup_single_gate_controls(single_frame)
+        # Initialize current view state
+        self.current_gate_view = "single"
 
-        # Multi-qubit gates tab
-        multi_frame = ttk.Frame(gate_notebook)
-        gate_notebook.add(multi_frame, text="Multi-Qubit Gates")
-        self.setup_multi_gate_controls(multi_frame)
+        # Single-qubit gates button
+        self.single_btn_canvas = tk.Canvas(button_frame, bg=palette['background_4'], 
+                                         highlightthickness=1, highlightcolor=palette['combobox_color'])
+        self.single_btn_canvas.place(relx=0, rely=0, relwidth=0.48, relheight=1)
 
-        # Middle section - Circuit Controls (30% width)
+        # Multi-qubit gates button  
+        self.multi_btn_canvas = tk.Canvas(button_frame, bg=palette['background'], 
+                                        highlightthickness=1, highlightcolor=palette['combobox_color'])
+        self.multi_btn_canvas.place(relx=0.52, rely=0, relwidth=0.48, relheight=1)
+
+        # Create content area for gate controls
+        content_area = tk.Frame(gate_frame, bg=palette['background_3'])
+        content_area.place(relx=0.05, rely=0.20, relwidth=0.9, relheight=0.8)
+
+        # Single-qubit gates frame
+        self.single_frame = tk.Frame(content_area, bg=palette['background_3'])
+        self.single_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.setup_single_gate_controls(self.single_frame)
+
+        # Multi-qubit gates frame (initially hidden)
+        self.multi_frame = tk.Frame(content_area, bg=palette['background_3'])
+        self.setup_multi_gate_controls(self.multi_frame)
+
+        # Button drawing and click functions
+        def draw_single_button():
+            self.single_btn_canvas.delete("all")
+            self.single_btn_canvas.update_idletasks()
+            width = self.single_btn_canvas.winfo_width()
+            height = self.single_btn_canvas.winfo_height()
+            if width > 1 and height > 1:
+                font_size = max(8, int(min(width, height) * 0.25))
+                color = palette['combobox_color'] if self.current_gate_view == "single" else palette['subtitle_color']
+                self.single_btn_canvas.create_text(width//2, height//2, text="Single-Qubit",
+                                                 font=('Arial', font_size, 'bold'), 
+                                                 fill=color, tags="text")
+
+        def draw_multi_button():
+            self.multi_btn_canvas.delete("all")
+            self.multi_btn_canvas.update_idletasks()
+            width = self.multi_btn_canvas.winfo_width()
+            height = self.multi_btn_canvas.winfo_height()
+            if width > 1 and height > 1:
+                font_size = max(8, int(min(width, height) * 0.25))
+                color = palette['combobox_color'] if self.current_gate_view == "multi" else palette['subtitle_color']
+                self.multi_btn_canvas.create_text(width//2, height//2, text="Multi-Qubit",
+                                                font=('Arial', font_size, 'bold'), 
+                                                fill=color, tags="text")
+
+        def switch_to_single():
+            if self.current_gate_view != "single":
+                self.current_gate_view = "single"
+                self.single_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+                self.multi_frame.place_forget()
+                self.single_btn_canvas.configure(bg=palette['background_4'])
+                self.multi_btn_canvas.configure(bg=palette['background'])
+                draw_single_button()
+                draw_multi_button()
+                self.play_sound('click')
+
+        def switch_to_multi():
+            if self.current_gate_view != "multi":
+                self.current_gate_view = "multi"
+                self.multi_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+                self.single_frame.place_forget()
+                self.multi_btn_canvas.configure(bg=palette['background_4'])
+                self.single_btn_canvas.configure(bg=palette['background'])
+                draw_single_button()
+                draw_multi_button()
+                self.play_sound('click')
+
+        # Bind events
+        self.single_btn_canvas.bind('<Configure>', lambda e: draw_single_button())
+        self.multi_btn_canvas.bind('<Configure>', lambda e: draw_multi_button())
+        self.single_btn_canvas.bind("<Button-1>", lambda e: switch_to_single())
+        self.multi_btn_canvas.bind("<Button-1>", lambda e: switch_to_multi())
+
+        # Hover effects
+        def single_on_enter(event):
+            if self.current_gate_view != "single":
+                self.single_btn_canvas.configure(cursor='hand2')
+
+        def single_on_leave(event):
+            self.single_btn_canvas.configure(cursor='')
+
+        def multi_on_enter(event):
+            if self.current_gate_view != "multi":
+                self.multi_btn_canvas.configure(cursor='hand2')
+
+        def multi_on_leave(event):
+            self.multi_btn_canvas.configure(cursor='')
+
+        self.single_btn_canvas.bind("<Enter>", single_on_enter)
+        self.single_btn_canvas.bind("<Leave>", single_on_leave)
+        self.multi_btn_canvas.bind("<Enter>", multi_on_enter)
+        self.multi_btn_canvas.bind("<Leave>", multi_on_leave)
+
+        # Initialize buttons after a short delay to ensure proper sizing
+        self.single_btn_canvas.after(100, draw_single_button)
+        self.multi_btn_canvas.after(100, draw_multi_button)
+
+        # Middle section - Circuit Controls (30% width with fixed size)
         controls_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
         controls_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5)
+        controls_frame.configure(width=int(self.screen_width * 0.25))  # Fixed width
+        controls_frame.pack_propagate(False)  # Maintain fixed width
 
         # Action buttons in middle section
         self.setup_action_buttons(controls_frame)
 
-        # Right side - Quantum State Analysis (30% width)
+        # Right side - Quantum State Analysis (35% width instead of expanding)
         results_frame = tk.Frame(bottom_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        results_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 0))
+        results_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(5, 0))
+        results_frame.configure(width=int(self.screen_width * 0.35))  # Fixed width
+        results_frame.pack_propagate(False)  # Maintain fixed width
 
         # Results area in right section
         self.setup_results_area(results_frame)
 
 
+
     def setup_action_buttons(self, parent):
-        """Setup action buttons with enhanced styling in middle section"""
+        """Setup action buttons with enhanced styling in middle section using place layout"""
         # Title for action section
-        action_title = tk.Label(parent, text=" Circuit Controls",
-                               font=('Arial', 14, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['background_3'])
-        action_title.pack(pady=(10, 15))
+        action_title = tk.Label(parent, text="Circuit Controls",
+                            font=('Arial', 14, 'bold'), fg=palette['circuit_title_text_color'], bg=palette['background_3'])
+        action_title.place(relx=0.5, rely=0.05, anchor='center')
 
-        # Create buttons container with fixed width and proper height
-        action_frame = tk.Frame(parent, bg=palette['background_3'], width=250, height=350)  # Increased height for new button
-        action_frame.pack(pady=(0, 15), padx=15)
-        action_frame.pack_propagate(False)  # Maintain fixed size
+        # Create buttons container - remove fixed width/height, use relative sizing only
+        action_frame = tk.Frame(parent, bg=palette['background_3'])
+        action_frame.place(relx=0.05, rely=0.15, relwidth=0.9, relheight=0.85)
 
-        # Create enhanced buttons with hover effects
+        # Create enhanced buttons with hover effects - arranged in rows
         buttons_data = [
             ("Run Circuit", self.run_circuit, palette['run_button_background'], palette['background_black']),
             ("Clear Circuit", self.clear_circuit, palette['clear_button_background'], palette['clear_button_text_color']),
@@ -880,27 +1443,59 @@ class SandboxMode:
             ("Undo Last", self.undo_gate, palette['undo_button_background'], palette['background_black'])
         ]
 
-        # Create buttons in a vertical layout for the middle section
+        # Button layout positions: [row, column, colspan]
+        button_positions = [
+            (0, 0, 2),  # Run Circuit - full width
+            (1, 0, 2),  # 3D Visualizer - full width
+            (2, 0, 1),  # Clear Circuit - left half
+            (2, 1, 1),  # Undo Last - right half
+            (3, 0, 1),  # Save Circuit - left half
+            (3, 1, 1)   # Load Circuit - right half
+        ]
+
+        # Create buttons using place layout
         for i, (text, command, bg_color, fg_color) in enumerate(buttons_data):
-            # Button container with proper spacing
-            btn_container = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.RAISED, bd=2)
-            btn_container.pack(fill=tk.X, pady=8, padx=5)  # Reduced padding for 4 buttons
+            row, col, colspan = button_positions[i]
+            
+            # Calculate position and size based on row/column
+            if colspan == 2:  # Full width buttons
+                relx = 0.5
+                relwidth = 0.9
+            else:  # Half width buttons
+                relx = 0.25 if col == 0 else 0.75
+                relwidth = 0.4
+            
+            rely = 0.1 + (row * 0.23)  # Start at 10% with 23% spacing between rows
+            relheight = 0.2  # Button height
 
-            # Create canvas-based button instead of tk.Button
-            btn_canvas = tk.Canvas(btn_container, bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
-            btn_canvas.pack(padx=4, pady=4, fill=tk.X)
+            # Create canvas-based button directly
+            btn_canvas = tk.Canvas(action_frame, bg=bg_color, highlightthickness=0, relief=tk.FLAT, bd=0)
+            btn_canvas.place(relx=relx, rely=rely, relwidth=relwidth, relheight=relheight, anchor='center')
 
-            # Update canvas dimensions after packing
-            btn_container.update_idletasks()
-            canvas_width = btn_container.winfo_width() - 8  # Account for padding
-            canvas_height = 40  # Fixed height for consistency
-            btn_canvas.configure(width=canvas_width, height=canvas_height)
+            # Create button rectangle and text with responsive font size
+            def draw_button(event=None, canvas=btn_canvas, color=bg_color, button_text=text, text_color=fg_color):
+                canvas.delete("all")
+                canvas.update_idletasks()
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    rect_id = canvas.create_rectangle(2, 2, width-2, height-2,
+                                                    fill=color, outline=color, width=0, tags="bg")
+                    
+                    # Calculate responsive font size based on button dimensions
+                    # Use the smaller dimension to ensure text fits
+                    min_dimension = min(width, height)
+                    # Scale font size between 8 and 16 based on button size
+                    font_size = max(8, min(16, int(min_dimension * 0.3)))
+                    
+                    text_id = canvas.create_text(width//2, height//2, text=button_text,
+                                            font=('Arial', font_size, 'bold'), fill=text_color, tags="text")
+                    # Store IDs for hover effects
+                    canvas.rect_id = rect_id
+                    canvas.text_id = text_id
 
-            # Create button rectangle and text
-            rect_id = btn_canvas.create_rectangle(2, 2, canvas_width-2, canvas_height-2,
-                                                fill=bg_color, outline=bg_color, width=0)
-            text_id = btn_canvas.create_text(canvas_width//2, canvas_height//2, text=text,
-                                           font=('Arial', 11, 'bold'), fill=fg_color)
+            btn_canvas.bind('<Configure>', draw_button)
+            btn_canvas.after(10, draw_button)
 
             # Add click handler with proper closure
             def create_click_handler(cmd):
@@ -910,40 +1505,22 @@ class SandboxMode:
             btn_canvas.configure(cursor='hand2')
 
             # Add hover effects for canvas
-            original_bg = bg_color
-
-            def create_hover_functions(canvas, rect_id, text_id, orig_color, orig_fg):
+            def create_hover_functions(canvas, orig_color, orig_fg):
                 def on_enter(event):
-                    canvas.itemconfig(rect_id, fill=palette['button_hover_background'])
-                    canvas.itemconfig(text_id, fill=palette['button_hover_text_color'])
+                    if hasattr(canvas, 'rect_id') and hasattr(canvas, 'text_id'):
+                        canvas.itemconfig(canvas.rect_id, fill=palette['button_hover_background'])
+                        canvas.itemconfig(canvas.text_id, fill=palette['button_hover_text_color'])
 
                 def on_leave(event):
-                    canvas.itemconfig(rect_id, fill=orig_color)
-                    canvas.itemconfig(text_id, fill=orig_fg)
+                    if hasattr(canvas, 'rect_id') and hasattr(canvas, 'text_id'):
+                        canvas.itemconfig(canvas.rect_id, fill=orig_color)
+                        canvas.itemconfig(canvas.text_id, fill=orig_fg)
 
                 return on_enter, on_leave
 
-            on_enter, on_leave = create_hover_functions(btn_canvas, rect_id, text_id, original_bg, fg_color)
+            on_enter, on_leave = create_hover_functions(btn_canvas, bg_color, fg_color)
             btn_canvas.bind("<Enter>", on_enter)
             btn_canvas.bind("<Leave>", on_leave)
-
-        # Add status info at the bottom of the controls
-        status_frame = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.SUNKEN, bd=1)
-        status_frame.pack(fill=tk.X, pady=(15, 0), padx=5)  # Reduced top padding
-
-        status_title = tk.Label(status_frame, text=" Circuit Status",
-                               font=('Arial', 10, 'bold'), fg=palette['circuit_status_title_color'], bg=palette['background_4'])
-        status_title.pack(pady=(5, 3))
-
-        # Gates count
-        self.gates_count_label = tk.Label(status_frame, text=f"Gates: {len(self.placed_gates)}",
-                                         font=('Arial', 9), fg=palette['gates_counter_color'], bg=palette['background_4'])
-        self.gates_count_label.pack(pady=2)
-
-        # Qubits info
-        self.qubits_info_label = tk.Label(status_frame, text=f"Qubits: {self.num_qubits}",
-                                         font=('Arial', 9), fg=palette['used_gates_counter_color'], bg=palette['background_4'])
-        self.qubits_info_label.pack(pady=(0, 5))
 
 
     def open_3d_visualizer(self):
@@ -1015,8 +1592,8 @@ class SandboxMode:
         dialog.attributes('-topmost', True)
 
         # Calculate relative sizing
-        dialog_width = int(self.screen_width * 0.3)
-        dialog_height = int(self.screen_height * 0.25)
+        dialog_width = int(self.screen_width * 0.35)
+        dialog_height = int(self.screen_height * 0.35)
         x = (self.screen_width - dialog_width) // 2
         y = (self.screen_height - dialog_height) // 2
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
@@ -1033,23 +1610,15 @@ class SandboxMode:
 
         # Add border frame
         border_frame = tk.Frame(dialog, bg=palette.get('main_menu_button_text_color', '#2c1f12'), bd=2, relief=tk.RAISED)
-        border_frame.pack(fill=tk.BOTH, expand=True)
+        border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
         # Main frame inside border
         main_frame = tk.Frame(border_frame, bg=palette['background_3'], relief=tk.FLAT, bd=0)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        main_frame.place(relx=0.005, rely=0.005, relwidth=0.99, relheight=0.99)
 
         # Add title bar
-        title_bar = tk.Frame(main_frame, bg=palette['background_4'], height=int(self.screen_height * 0.03))
-        title_bar.pack(fill=tk.X)
-        title_bar.pack_propagate(False)
-
-        # Title in title bar
-        title_font_size = max(10, int(self.screen_width * 0.008))
-        title_bar_label = tk.Label(title_bar, text=f"● {title}",
-                                font=('Arial', title_font_size, 'bold'),
-                                fg=palette['title_color'], bg=palette['background_4'])
-        title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.008), pady=int(self.screen_height * 0.005))
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'])
+        title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.15)
 
         # FIXED: Close button with correct parameters
         close_btn = self.create_canvas_dialog_button(
@@ -1057,42 +1626,38 @@ class SandboxMode:
             palette['background_4'], palette['title_color'],
             width=25, height=20, font_size=12
         )
-        close_btn.pack(side=tk.RIGHT, padx=5)
+        close_btn.place(relx=0.92, rely=0.2, relwidth=0.06, relheight=0.6)
 
         # Content area
         content_frame = tk.Frame(main_frame, bg=palette['background_3'])
-        content_frame.pack(fill=tk.BOTH, expand=True, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.01))
-
-        # Icon and message
-        icon_map = {"info": "ℹ️", "warning": "⚠️", "error": "❌", "success": "✅"}
-        icon = icon_map.get(dialog_type, "ℹ️")
+        content_frame.place(relx=0.05, rely=0.2, relwidth=0.9, relheight=0.75)
 
         # Icon and title together
-        header_font_size = max(12, int(self.screen_width * 0.01))
-        header_label = tk.Label(content_frame, text=f"{icon} {title}",
+        header_font_size = max(12, int(self.screen_width * 0.02))
+        header_label = tk.Label(content_frame, text=f"{title}",
                             font=('Arial', header_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_3'])
-        header_label.pack(pady=(int(self.screen_height * 0.01), int(self.screen_height * 0.008)))
+        header_label.place(relx=0, rely=0.1, relwidth=1, relheight=0.2)
 
         # Message
-        message_font_size = max(10, int(self.screen_width * 0.008))
+        message_font_size = max(10, int(self.screen_width * 0.012))
         message_label = tk.Label(content_frame, text=message,
                                 font=('Arial', message_font_size),
                                 fg=palette['subtitle_color'], bg=palette['background_3'],
                                 wraplength=int(dialog_width * 0.8), justify=tk.CENTER)
-        message_label.pack(pady=int(self.screen_height * 0.01))
+        message_label.place(relx=0, rely=0.35, relwidth=1, relheight=0.3)
 
         # Button frame
         button_frame = tk.Frame(content_frame, bg=palette['background_3'])
-        button_frame.pack(pady=(int(self.screen_height * 0.015), int(self.screen_height * 0.01)))
+        button_frame.place(relx=0, rely=0.75, relwidth=1, relheight=0.2)
 
         # OK button with correct parameters
         ok_button = self.create_canvas_dialog_button(
             button_frame, "OK", dialog.destroy,
-            palette['background_4'], palette.get('main_menu_button_text_color', '#2c1f12'),
-            width=80, height=30, font_size=10
+            palette['close_button_background'], palette.get('main_menu_button_text_color', '#2c1f12'),
+            width=80, height=30, font_size=max(8, int(self.screen_width * 0.007))
         )
-        ok_button.pack()
+        ok_button.place(relx=0.35, rely=0.2, relwidth=0.3, relheight=0.7)
 
         # Make title bar draggable
         def start_move(event):
@@ -1108,8 +1673,6 @@ class SandboxMode:
 
         title_bar.bind("<Button-1>", start_move)
         title_bar.bind("<B1-Motion>", on_move)
-        title_bar_label.bind("<Button-1>", start_move)
-        title_bar_label.bind("<B1-Motion>", on_move)
 
         # Bind keys
         dialog.bind('<Return>', lambda e: dialog.destroy())
@@ -1152,105 +1715,65 @@ class SandboxMode:
 
             # Add border since overrideredirect removes window decorations
             border_frame = tk.Frame(viz_window, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
-            border_frame.pack(fill=tk.BOTH, expand=True)
+            border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
             # Main container inside border
             main_container = tk.Frame(border_frame, bg=palette['background'], relief=tk.FLAT, bd=0)
-            main_container.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+            main_container.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
 
-            # Custom title bar since we removed window decorations
-            title_bar = tk.Frame(main_container, bg=palette['background_4'], height=int(self.screen_height * 0.04))
-            title_bar.pack(fill=tk.X)
-            title_bar.pack_propagate(False)
+            # Custom title bar since we removed window decorations - RESPONSIVE
+            title_bar = tk.Frame(main_container, bg=palette['background_4'])
+            title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.08)
 
             # Title in title bar with relative font size
             title_font_size = max(12, int(self.screen_width * 0.01))
             title_bar_label = tk.Label(title_bar, text="3D Quantum State Visualizer",
                                     font=('Arial', title_font_size, 'bold'),
                                     fg=palette['3D_visualizer_title_color'], bg=palette['background_4'])
-            title_bar_label.pack(side=tk.LEFT, padx=int(self.screen_width * 0.01), pady=int(self.screen_height * 0.008))
+            title_bar_label.place(relx=0.02, rely=0.5, anchor='w')
 
-            # FIXED: Close button with correct parameter order
-            close_btn = self.create_canvas_dialog_button(
-                title_bar, " Close", viz_window.destroy,
-                palette['background_4'], palette['title_color'],
-                width=80, height=30, font_size=10
-            )
-            close_btn.pack(side=tk.RIGHT, padx=5)
+            # Close button in title bar using canvas for macOS compatibility
+            close_btn_font_size = max(10, int(self.screen_width * 0.008))
+            close_btn_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0)
+            close_btn_canvas.place(relx=0.92, rely=0.5, relwidth=0.06, relheight=0.6, anchor='center')
 
-            # Info panel with relative sizing
+            def draw_title_close_button():
+                close_btn_canvas.delete("all")
+                close_btn_canvas.update_idletasks()
+                width = close_btn_canvas.winfo_width()
+                height = close_btn_canvas.winfo_height()
+                if width > 1 and height > 1:
+                    close_btn_canvas.create_rectangle(2, 2, width-2, height-2,
+                                                    fill=palette['background_4'], 
+                                                    outline=palette['title_color'], width=1, tags="bg")
+                    close_btn_canvas.create_text(width//2, height//2, text="✕",
+                                            font=('Arial', int(min(width, height) * 0.4), 'bold'), 
+                                            fill=palette['title_color'], tags="text")
+
+            close_btn_canvas.bind('<Configure>', lambda e: draw_title_close_button())
+            close_btn_canvas.after(10, draw_title_close_button)
+            close_btn_canvas.bind("<Button-1>", lambda e: viz_window.destroy())
+
+            # Info panel with RESPONSIVE positioning
             info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-            info_frame.pack(fill=tk.X, padx=int(window_width * 0.02), pady=int(window_height * 0.01))
+            info_frame.place(relx=0.02, rely=0.09, relwidth=0.96, relheight=0.06)
 
             info_font_size = max(10, int(self.screen_width * 0.008))
             info_text = tk.Label(info_frame,
                 text=f"Circuit: {self.num_qubits} qubits, {len(self.placed_gates)} gates | "
                     f"Gates: {[gate for gate, _ in self.placed_gates]}",
                 font=('Arial', info_font_size), fg=palette['info_panel_text_color'], bg=palette['background_3'])
-            info_text.pack(pady=int(window_height * 0.01))
+            info_text.place(relx=0.5, rely=0.5, anchor='center')
 
-            # Visualization container with relative sizing
-            viz_container = tk.Frame(main_container, bg=palette['background'], relief=tk.SUNKEN, bd=3)
-            viz_container.pack(fill=tk.BOTH, expand=True,
-                            padx=int(window_width * 0.02),
-                            pady=int(window_height * 0.01))
-
-            # Create matplotlib figure with dark theme
-            plt.style.use('dark_background')
-
-            # Choose visualization based on number of qubits
-            if self.num_qubits == 1:
-                # For single qubit, show Bloch sphere
-                try:
-                    fig = plot_bloch_multivector(state_vector)
-                    fig.suptitle('Single Qubit Bloch Sphere Visualization',
-                            fontsize=max(14, int(self.screen_width * 0.012)),
-                            color=palette['sphere_visualization_color'], fontweight='bold')
-                except Exception as bloch_error:
-                    print(f"Bloch sphere error: {bloch_error}")
-                    # Fallback to qsphere if bloch sphere fails
-                    fig = plot_state_qsphere(state_vector)
-                    fig.suptitle('Single Qubit Q-Sphere Visualization',
-                            fontsize=max(14, int(self.screen_width * 0.012)),
-                            color=palette['sphere_visualization_color'], fontweight='bold')
-
-            else:
-                # For multiple qubits, show Q-sphere
-                fig = plot_state_qsphere(state_vector)
-                fig.suptitle(f'{self.num_qubits}-Qubit Q-Sphere Visualization',
-                        fontsize=max(14, int(self.screen_width * 0.012)),
-                        color=palette['sphere_visualization_color'], fontweight='bold')
-
-            # Customize the plot appearance
-            fig.patch.set_facecolor(palette['background'])
-
-            # Make sure all axes have dark background
-            for ax in fig.get_axes():
-                ax.set_facecolor(palette['background'])
-                # Set text colors to be visible on dark background
-                ax.tick_params(colors='white')
-                ax.xaxis.label.set_color('white')
-                ax.yaxis.label.set_color('white')
-                if hasattr(ax, 'zaxis'):
-                    ax.zaxis.label.set_color('white')
-
-            # Embed the matplotlib figure in tkinter
-            canvas = FigureCanvasTkAgg(fig, viz_container)
-            canvas.draw()
-            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True,
-                                    padx=int(window_width * 0.01),
-                                    pady=int(window_height * 0.01))
-            # State information panel with relative sizing
+            # State information panel - BOTTOM POSITIONED RESPONSIVELY
             state_info_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
-            state_info_frame.pack(fill=tk.X,
-                                padx=int(window_width * 0.02),
-                                pady=(0, int(window_height * 0.015)))
+            state_info_frame.place(relx=0.02, rely=0.88, relwidth=0.96, relheight=0.06)
 
             # Calculate and display state information
             state_data = state_vector.data
             entangled = self.is_state_entangled(state_vector) if self.num_qubits > 1 else False
 
-            info_text = f" State Analysis: "
+            info_text = f"🔬 State Analysis: "
             if entangled:
                 info_text += "Entangled state detected! "
             else:
@@ -1264,7 +1787,57 @@ class SandboxMode:
             state_label = tk.Label(state_info_frame, text=info_text,
                                 font=('Arial', state_font_size),
                                 fg='#ffffff', bg=palette['background_3'])
-            state_label.pack(pady=int(window_height * 0.01))
+            state_label.place(relx=0.5, rely=0.5, anchor='center')
+
+            # Control buttons - BOTTOM POSITIONED RESPONSIVELY
+            controls_frame = tk.Frame(main_container, bg=palette['background_3'])
+            controls_frame.place(relx=0.02, rely=0.795, relwidth=0.96, relheight=0.08)
+
+            # Button styling with relative font sizes
+            button_font_size = max(10, int(self.screen_width * 0.008))
+
+            # Visualization container - TAKES UP REMAINING SPACE RESPONSIVELY
+            viz_container = tk.Frame(main_container, bg=palette['background'], relief=tk.SUNKEN, bd=3)
+            viz_container.place(relx=0.02, rely=0.16, relwidth=0.96, relheight=0.63)
+
+            # Create matplotlib figure with dark theme
+            plt.style.use('dark_background')
+
+            # Choose visualization based on number of qubits
+            if self.num_qubits == 1:
+                try:
+                    fig = plot_bloch_multivector(state_vector)
+                    fig.suptitle('Single Qubit Bloch Sphere Visualization',
+                            fontsize=max(14, int(self.screen_width * 0.012)),
+                            color=palette['sphere_visualization_color'], fontweight='bold')
+                except Exception as bloch_error:
+                    print(f"Bloch sphere error: {bloch_error}")
+                    fig = plot_state_qsphere(state_vector)
+                    fig.suptitle('Single Qubit Q-Sphere Visualization',
+                            fontsize=max(14, int(self.screen_width * 0.012)),
+                            color=palette['sphere_visualization_color'], fontweight='bold')
+            else:
+                fig = plot_state_qsphere(state_vector)
+                fig.suptitle(f'{self.num_qubits}-Qubit Q-Sphere Visualization',
+                        fontsize=max(14, int(self.screen_width * 0.012)),
+                        color=palette['sphere_visualization_color'], fontweight='bold')
+
+            # Customize the plot appearance
+            fig.patch.set_facecolor(palette['background'])
+
+            # Make sure all axes have dark background
+            for ax in fig.get_axes():
+                ax.set_facecolor(palette['background'])
+                ax.tick_params(colors='white')
+                ax.xaxis.label.set_color('white')
+                ax.yaxis.label.set_color('white')
+                if hasattr(ax, 'zaxis'):
+                    ax.zaxis.label.set_color('white')
+
+            # Embed the matplotlib figure in tkinter - RESPONSIVE
+            canvas = FigureCanvasTkAgg(fig, viz_container)
+            canvas.draw()
+            canvas.get_tk_widget().place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
 
             # Make title bar draggable
             def start_move(event):
@@ -1297,6 +1870,7 @@ class SandboxMode:
             traceback.print_exc()
 
 
+
     def is_state_entangled(self, state_vector):
         """Simple check for entanglement (for educational purposes)"""
         try:
@@ -1324,9 +1898,10 @@ class SandboxMode:
 
     def setup_results_area(self, parent):
         """Setup the results display area on the right side"""
-        # Enhanced title
-        results_title = tk.Label(parent, text=" Quantum State Analysis",
-                                font=('Arial', 14, 'bold'), fg=palette['state_analysis_title_color'], bg=palette['background_3'])
+        # Enhanced title with responsive font size
+        title_font_size = max(14, int(self.screen_width * 0.012))
+        results_title = tk.Label(parent, text="Quantum State Analysis",
+                                font=('Arial', title_font_size, 'bold'), fg=palette['state_analysis_title_color'], bg=palette['background_3'])
         results_title.pack(pady=(10, 15))
 
         # Results container with styling
@@ -1337,61 +1912,59 @@ class SandboxMode:
         text_frame = tk.Frame(results_container, bg=palette['background'])
         text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
+        # Calculate responsive font size for results text
+        results_font_size = max(10, int(self.screen_width * 0.008))  # Increased from 9
+        
         self.results_text = tk.Text(text_frame, width=40,  # Fixed width for right panel
-                                   font=('Consolas', 9), bg=palette['background_2'], fg=palette['results_text_color'],
-                                   relief=tk.FLAT, bd=0, insertbackground=palette['results_background'],
-                                   selectbackground=palette['results_select_background'], selectforeground=palette['background_black'],
-                                   wrap=tk.WORD)
+                                font=('Consolas', results_font_size), bg=palette['background_2'], fg=palette['results_text_color'],
+                                relief=tk.FLAT, bd=0, insertbackground=palette['results_background'],
+                                selectbackground=palette['results_select_background'], selectforeground=palette['background_black'],
+                                wrap=tk.WORD)
 
-        # Add scrollbar
+        # Add scrollbar with responsive width
+        scrollbar_width = max(15, int(self.screen_width * 0.01))
         scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.results_text.yview,
-                                bg=palette['background_4'], troughcolor=palette['background'], activebackground=palette['scrollbar_active_background'])
+                                bg=palette['background_4'], troughcolor=palette['background'], 
+                                activebackground=palette['scrollbar_active_background'],
+                                width=scrollbar_width)
         self.results_text.configure(yscrollcommand=scrollbar.set)
 
         self.results_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Initial message
-        self.results_text.insert(tk.END, " Welcome to Quantum Circuit Sandbox!\n\n")
-        self.results_text.insert(tk.END, "Build your circuit and click 'Run Circuit' to see the results.\n\n")
-        self.results_text.insert(tk.END, " Instructions:\n")
-        self.results_text.insert(tk.END, "1. Select gates from the palette\n")
-        self.results_text.insert(tk.END, "2. Configure qubits and initial states\n")
-        self.results_text.insert(tk.END, "3. Run your circuit to see quantum state analysis\n")
+        # Initial message with responsive formatting
+        welcome_font_size = max(12, int(self.screen_width * 0.009))
+        instruction_font_size = max(10, int(self.screen_width * 0.008))
+        
+        # Configure text tags for different font sizes
+        self.results_text.tag_configure("welcome", font=('Consolas', welcome_font_size, 'bold'))
+        self.results_text.tag_configure("instruction", font=('Consolas', instruction_font_size))
+        self.results_text.tag_configure("normal", font=('Consolas', results_font_size))
+
+        # Insert initial message with tags
+        self.results_text.insert(tk.END, "Welcome to Quantum Circuit Sandbox!\n\n", "welcome")
+        self.results_text.insert(tk.END, "Build your circuit and click 'Run Circuit' to see the results.\n\n", "instruction")
+        self.results_text.insert(tk.END, "Instructions:\n", "instruction")
+        self.results_text.insert(tk.END, "1. Select gates from the palette\n", "normal")
+        self.results_text.insert(tk.END, "2. Configure qubits and initial states\n", "normal")
+        self.results_text.insert(tk.END, "3. Run your circuit to see quantum state analysis\n", "normal")
         self.results_text.configure(state=tk.DISABLED)
 
 
+
     def setup_single_gate_controls(self, parent):
-        """Setup single-qubit gate controls with centered 2x3 grid layout using relative sizing"""
+        """Setup single-qubit gate controls with canvas-based buttons and responsive design"""
         # Create a frame that works with ttk parent
         container = tk.Frame(parent)
         container.configure(bg=palette['background_3'])
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        # Target qubit selection at top with relative sizing
-        qubit_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-        qubit_frame.place(relx=0.5, rely=0.05, relwidth=1, relheight=0.1, anchor='center')
-
-        # Relative font size for qubit selection
-        qubit_label_font = max(9, int(self.screen_width * 0.008))
-        tk.Label(qubit_frame, text=" Target Qubit:",
-                font=('Arial', qubit_label_font, 'bold'),
-                fg=palette['target_qubit_title_color'], bg=palette['background_4']).place(
-                    relx=0.05, rely=0.5, anchor='w')
-
-        self.target_qubit_var = tk.IntVar(value=0)
-        combo_font = max(8, int(self.screen_width * 0.007))
-        self.target_qubit_combo = ttk.Combobox(qubit_frame, textvariable=self.target_qubit_var,
-                                            values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', combo_font), width=max(3, int(self.screen_width * 0.004)))
-        self.target_qubit_combo.place(relx=0.3, rely=0.5, anchor='w')
 
         # Gate buttons section title
         title_font_size = max(10, int(self.screen_width * 0.009))
         gates_title = tk.Label(container, text="Single-Qubit Gates:",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['single_qubit_gates_title_color'], bg=palette['background_3'])
-        gates_title.place(relx=0.5, rely=0.25, anchor='center')
+        gates_title.place(relx=0.5, rely=0.1, anchor='center')
 
         # Gate data
         gate_colors = {
@@ -1417,9 +1990,9 @@ class SandboxMode:
         # Create 2x3 grid with relative positioning
         button_positions = [
             # Row 1: H, X, Y
-            (0.15, 0.45), (0.5, 0.45), (0.85, 0.45),
+            (0.15, 0.35), (0.5, 0.35), (0.85, 0.35),
             # Row 2: Z, S, T
-            (0.15, 0.83), (0.5, 0.83), (0.85, 0.83)
+            (0.15, 0.75), (0.5, 0.75), (0.85, 0.75)
         ]
 
         for i, gate in enumerate(single_gates):
@@ -1443,8 +2016,8 @@ class SandboxMode:
                 if width > 1 and height > 1:  # Only draw if we have valid dimensions
                     canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
                     canvas.create_text(width//2, height//2, text=gate_text,
-                                     font=('Arial', button_font_size, 'bold'),
-                                     fill=palette['background_black'], tags="text")
+                                    font=('Arial', button_font_size, 'bold'),
+                                    fill=palette['background_black'], tags="text")
 
             # Bind configure event to redraw when size changes
             btn_canvas.bind('<Configure>', draw_button)
@@ -1487,473 +2060,694 @@ class SandboxMode:
 
 
     def setup_multi_gate_controls(self, parent):
-        """Setup multi-qubit gate controls with enhanced styling"""
+        """Setup multi-qubit gate controls with canvas-based buttons similar to single-qubit gates"""
         # Create a frame that works with ttk parent
         container = tk.Frame(parent)
         container.configure(bg=palette['background_3'])
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Title
-        title_label = tk.Label(container, text="Multi-Qubit Gates:",
-                              font=('Arial', 12, 'bold'), fg=palette['multi_qubit_gates_title_color'], bg=palette['background_3'])
-        title_label.pack(pady=(0, 10))
+        # Gate buttons section title
+        title_font_size = max(10, int(self.screen_width * 0.009))
+        gates_title = tk.Label(container, text="Multi-Qubit Gates:",
+                            font=('Arial', title_font_size, 'bold'),
+                            fg=palette['multi_qubit_gates_title_color'], bg=palette['background_3'])
+        gates_title.place(relx=0.5, rely=0.1, anchor='center')
 
-        # CNOT Gate section with compact layout
-        cnot_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
-        cnot_frame.pack(fill=tk.X, pady=3, ipady=10)
-
-        cnot_title = tk.Label(cnot_frame, text=" CNOT Gate",
-                            font=('Arial', 10, 'bold'), fg=palette['CNOT_gate_title_color'], bg=palette['background_4'])
-        cnot_title.pack(pady=(3, 5))
-
-        cnot_controls = tk.Frame(cnot_frame, bg=palette['background_4'])
-        cnot_controls.pack()
-
-        # CNOT Controls in compact layout
-        tk.Label(cnot_controls, text="Control:", font=('Arial', 9),
-                fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(5, 2))
-
-        self.cnot_control_var = tk.IntVar(value=0)
-        self.cnot_control_combo = ttk.Combobox(cnot_controls, textvariable=self.cnot_control_var,
-                                            values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', 9), width=3)
-        self.cnot_control_combo.pack(side=tk.LEFT, padx=2)
-
-        tk.Label(cnot_controls, text="T:", font=('Arial', 9),
-                fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(5, 2))
-
-        self.cnot_target_var = tk.IntVar(value=1 if self.num_qubits > 1 else 0)
-        self.cnot_target_combo = ttk.Combobox(cnot_controls, textvariable=self.cnot_target_var,
-                                            values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', 9), width=3)
-        self.cnot_target_combo.pack(side=tk.LEFT, padx=2)
-
-        # CNOT button
-        cnot_canvas = tk.Canvas(cnot_controls, highlightthickness=0, bd=0, width=60, height=30)
-        cnot_canvas.pack(side=tk.LEFT, padx=8)
-
-        # Draw CNOT button
-        cnot_canvas.create_rectangle(0, 0, 60, 30, fill=palette['CNOT_gate_title_color'], outline='#2b3340', tags="bg")
-        cnot_canvas.create_text(30, 15, text="Add",
-                              font=('Arial', 9, 'bold'),
-                              fill=palette['background_black'], tags="text")
-
-        def on_cnot_click(event):
-            self.add_cnot_gate()
-
-        def on_cnot_enter(event):
-            cnot_canvas.itemconfig("bg", fill=palette['button_hover_background'])
-            cnot_canvas.configure(cursor='hand2')
-
-        def on_cnot_leave(event):
-            cnot_canvas.itemconfig("bg", fill=palette['CNOT_gate_title_color'])
-            cnot_canvas.configure(cursor='')
-
-        cnot_canvas.bind("<Button-1>", on_cnot_click)
-        cnot_canvas.bind("<Enter>", on_cnot_enter)
-        cnot_canvas.bind("<Leave>", on_cnot_leave)
-
-        # CZ Gate section with compact layout
-        cz_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
-        cz_frame.pack(fill=tk.X, pady=3, ipady=10)
-
-        cz_title = tk.Label(cz_frame, text=" CZ Gate",
-                           font=('Arial', 10, 'bold'), fg=palette['CZ_gate_title_color'], bg=palette['background_4'])
-        cz_title.pack(pady=(3, 5))
-
-        cz_controls = tk.Frame(cz_frame, bg=palette['background_4'])
-        cz_controls.pack()
-
-        # CZ Controls in compact layout
-        tk.Label(cz_controls, text="Control:", font=('Arial', 9),
-                fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(5, 2))
-
-        self.cz_control_var = tk.IntVar(value=0)
-        self.cz_control_combo = ttk.Combobox(cz_controls, textvariable=self.cz_control_var,
-                                           values=list(range(self.num_qubits)), state="readonly",
-                                           font=('Arial', 9), width=3)
-        self.cz_control_combo.pack(side=tk.LEFT, padx=2)
-
-        tk.Label(cz_controls, text="Target:", font=('Arial', 9),
-                fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(5, 2))
-
-        self.cz_target_var = tk.IntVar(value=1 if self.num_qubits > 1 else 0)
-        self.cz_target_combo = ttk.Combobox(cz_controls, textvariable=self.cz_target_var,
-                                          values=list(range(self.num_qubits)), state="readonly",
-                                          font=('Arial', 9), width=3)
-        self.cz_target_combo.pack(side=tk.LEFT, padx=2)
-
-        # CZ button
-        cz_canvas = tk.Canvas(cz_controls, highlightthickness=0, bd=0, width=60, height=30)
-        cz_canvas.pack(side=tk.LEFT, padx=8)
-
-        # Draw CZ button
-        cz_canvas.create_rectangle(0, 0, 60, 30, fill=palette['CZ_gate_title_color'], outline='#2b3340', tags="bg")
-        cz_canvas.create_text(30, 15, text="Add",
-                            font=('Arial', 9, 'bold'),
-                            fill=palette['background_black'], tags="text")
-
-        def on_cz_click(event):
-            self.add_cz_gate()
-
-        def on_cz_enter(event):
-            cz_canvas.itemconfig("bg", fill=palette['button_hover_background'])
-            cz_canvas.configure(cursor='hand2')
-
-        def on_cz_leave(event):
-            cz_canvas.itemconfig("bg", fill=palette['CZ_gate_title_color'])
-            cz_canvas.configure(cursor='')
-
-        cz_canvas.bind("<Button-1>", on_cz_click)
-        cz_canvas.bind("<Enter>", on_cz_enter)
-        cz_canvas.bind("<Leave>", on_cz_leave)
-
-        # Toffoli Gate section (only show if 3+ qubits) with compact layout
-        if self.num_qubits >= 3:
-            toffoli_frame = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=2)
-            toffoli_frame.pack(fill=tk.X, pady=3, ipady=10)
-
-            toffoli_title = tk.Label(toffoli_frame, text=" Toffoli Gate",
-                                   font=('Arial', 10, 'bold'), fg=palette['toffoli_gate_title_color'], bg=palette['background_4'])
-            toffoli_title.pack(pady=(3, 5))
-
-            toffoli_controls = tk.Frame(toffoli_frame, bg=palette['background_4'])
-            toffoli_controls.pack()
-
-            # Toffoli Controls in compact layout
-            tk.Label(toffoli_controls, text="C1:", font=('Arial', 9),
-                    fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(3, 1))
-
-            self.toffoli_c1_var = tk.IntVar(value=0)
-            self.toffoli_c1_combo = ttk.Combobox(toffoli_controls, textvariable=self.toffoli_c1_var,
-                                               values=list(range(self.num_qubits)), state="readonly",
-                                               font=('Arial', 8), width=2)
-            self.toffoli_c1_combo.pack(side=tk.LEFT, padx=1)
-
-            tk.Label(toffoli_controls, text="C2:", font=('Arial', 9),
-                    fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(3, 1))
-
-            self.toffoli_c2_var = tk.IntVar(value=1)
-            self.toffoli_c2_combo = ttk.Combobox(toffoli_controls, textvariable=self.toffoli_c2_var,
-                                               values=list(range(self.num_qubits)), state="readonly",
-                                               font=('Arial', 8), width=2)
-            self.toffoli_c2_combo.pack(side=tk.LEFT, padx=1)
-
-            tk.Label(toffoli_controls, text="Target:", font=('Arial', 9),
-                    fg='#ffffff', bg=palette['background_4']).pack(side=tk.LEFT, padx=(3, 1))
-
-            self.toffoli_target_var = tk.IntVar(value=2)
-            self.toffoli_target_combo = ttk.Combobox(toffoli_controls, textvariable=self.toffoli_target_var,
-                                                   values=list(range(self.num_qubits)), state="readonly",
-                                                   font=('Arial', 8), width=2)
-            self.toffoli_target_combo.pack(side=tk.LEFT, padx=1)
-
-            # Toffoli button using canvas for macOS compatibility
-            toffoli_canvas = tk.Canvas(toffoli_controls, width=50, height=25,
-                                     bg=palette['toffoli_add_button_background'], highlightthickness=0, relief=tk.FLAT, bd=0)
-            toffoli_canvas.pack(side=tk.LEFT, padx=5)
-
-            toffoli_rect_id = toffoli_canvas.create_rectangle(2, 2, 48, 23,
-                                                            fill=palette['toffoli_add_button_background'], outline=palette['toffoli_add_button_background'], width=0)
-            toffoli_text_id = toffoli_canvas.create_text(25, 12, text="Add",
-                                                        font=('Arial', 9, 'bold'), fill=palette['background_black'])
-
-            toffoli_canvas.bind("<Button-1>", lambda e: self.add_toffoli_gate())
-            toffoli_canvas.bind("<Enter>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['button_hover_background']),
-                                                    toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['button_hover_text_color'])))
-            toffoli_canvas.bind("<Leave>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['toffoli_add_button_background']),
-                                                    toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['background_black'])))
-            toffoli_canvas.configure(cursor='hand2')
-
-
-    def setup_gate_panel(self, parent):
-        """Setup the gate selection panel"""
-        gate_frame = tk.Frame(parent, bg=palette['background_3'])
-        gate_frame.pack(fill=tk.X, padx=20, pady=10)
-
-        tk.Label(gate_frame, text="Available Gates:",
-                font=('Arial', 12, 'bold'), fg=palette['available_gates_title_color'], bg=palette['background_3']).pack(anchor=tk.W)
-
-        # Gate buttons and qubit selection
-        buttons_frame = tk.Frame(gate_frame, bg=palette['background_3'])
-        buttons_frame.pack(fill=tk.X, pady=5)
-
-        # Qubit selection for single-qubit gates
-        qubit_select_frame = tk.Frame(buttons_frame, bg=palette['background_3'])
-        qubit_select_frame.pack(side=tk.LEFT, padx=(0, 20))
-
-        tk.Label(qubit_select_frame, text="Target Qubit:",
-                font=('Arial', 10), fg=palette['target_qubit_title_color'], bg=palette['background_3']).pack()
-
-        self.target_qubit_var = tk.IntVar(value=0)
-        self.target_qubit_combo = ttk.Combobox(qubit_select_frame, textvariable=self.target_qubit_var,
-                                            values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', 10), width=5)
-        self.target_qubit_combo.pack()
-
-        # Single-qubit gates
-        single_gates_frame = tk.Frame(buttons_frame, bg=palette['background_3'])
-        single_gates_frame.pack(side=tk.LEFT, padx=10)
-
-        tk.Label(single_gates_frame, text="Single-Qubit Gates:",
-                font=('Arial', 10), fg=palette['single_qubit_gates_title_color'], bg=palette['background_3']).pack()
-
-        single_gates_buttons = tk.Frame(single_gates_frame, bg=palette['background_3'])
-        single_gates_buttons.pack()
-
+        # Gate data
         gate_colors = {
-            'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'],
-            'Z': palette['Z_color'], 'S': palette['S_color'], 'T': palette['T_color']
+            'CNOT': palette['CNOT_color'], 
+            'CZ': palette['CZ_gate_title_color'], 
+            'Toffoli': palette['Toffoli_color']
         }
 
-        single_gates = ['H', 'X', 'Y', 'Z', 'S', 'T']
-        for gate in single_gates:
-            color = gate_colors.get(gate, '#ffffff')
+        gate_descriptions = {
+            'CNOT': 'Controlled-X',
+            'CZ': 'Controlled-Z',
+            'Toffoli': 'CCNOT Gate'
+        }
 
-            # Create canvas-based gate button for macOS compatibility
-            gate_canvas = tk.Canvas(single_gates_buttons, width=50, height=30,
-                                  bg=color, highlightthickness=0, relief=tk.FLAT, bd=0)
-            gate_canvas.pack(side=tk.LEFT, padx=2, pady=2)
-
-            gate_rect_id = gate_canvas.create_rectangle(2, 2, 48, 28,
-                                                      fill=color, outline=color, width=0)
-            gate_text_id = gate_canvas.create_text(25, 15, text=gate,
-                                                  font=('Arial', 10, 'bold'), fill=palette['background_black'])
-
-            # Create click handler with proper closure
-            def create_gate_handler(g):
-                return lambda e: self.add_single_gate(g)
-
-            gate_canvas.bind("<Button-1>", create_gate_handler(gate))
-            gate_canvas.bind("<Enter>", lambda e, c=gate_canvas, r=gate_rect_id, t=gate_text_id: (
-                c.itemconfig(r, fill=palette['button_hover_background']),
-                c.itemconfig(t, fill=palette['button_hover_text_color'])))
-            gate_canvas.bind("<Leave>", lambda e, c=gate_canvas, r=gate_rect_id, t=gate_text_id, orig_color=color: (
-                c.itemconfig(r, fill=orig_color),
-                c.itemconfig(t, fill=palette['background_black'])))
-            gate_canvas.configure(cursor='hand2')
-
-        # Multi-qubit gates section
-        multi_gates_frame = tk.Frame(buttons_frame, bg=palette['background_3'])
-        multi_gates_frame.pack(side=tk.LEFT, padx=20)
-
-        tk.Label(multi_gates_frame, text="Multi-Qubit Gates:",
-                font=('Arial', 10), fg=palette['multi_qubit_gates_title_color'], bg=palette['background_3']).pack()
-
-        # CNOT controls
-        cnot_frame = tk.Frame(multi_gates_frame, bg=palette['background_3'])
-        cnot_frame.pack(pady=2)
-
-        tk.Label(cnot_frame, text="CNOT - Control:", font=('Arial', 9),
-                fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT)
-
-        self.cnot_control_var = tk.IntVar(value=0)
-        self.cnot_control_combo = ttk.Combobox(cnot_frame, textvariable=self.cnot_control_var,
-                                            values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', 9), width=3)
-        self.cnot_control_combo.pack(side=tk.LEFT, padx=2)
-
-        tk.Label(cnot_frame, text="Target:", font=('Arial', 9),
-                fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT, padx=(5, 0))
-
-        self.cnot_target_var = tk.IntVar(value=1 if self.num_qubits > 1 else 0)
-        self.cnot_target_combo = ttk.Combobox(cnot_frame, textvariable=self.cnot_target_var,
-                                            values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', 9), width=3)
-        self.cnot_target_combo.pack(side=tk.LEFT, padx=2)
-
-        # CNOT button using canvas for macOS compatibility
-        cnot_canvas = tk.Canvas(cnot_frame, width=60, height=30,
-                               bg=palette['CNOT_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
-        cnot_canvas.pack(side=tk.LEFT, padx=5)
-
-        cnot_rect_id = cnot_canvas.create_rectangle(2, 2, 58, 28,
-                                                  fill=palette['CNOT_color'], outline=palette['CNOT_color'], width=0)
-        cnot_text_id = cnot_canvas.create_text(30, 15, text="CNOT",
-                                              font=('Arial', 9, 'bold'), fill=palette['background_black'])
-
-        cnot_canvas.bind("<Button-1>", lambda e: self.add_cnot_gate())
-        cnot_canvas.bind("<Enter>", lambda e: (cnot_canvas.itemconfig(cnot_rect_id, fill=palette['button_hover_background']),
-                                              cnot_canvas.itemconfig(cnot_text_id, fill=palette['button_hover_text_color'])))
-        cnot_canvas.bind("<Leave>", lambda e: (cnot_canvas.itemconfig(cnot_rect_id, fill=palette['CNOT_color']),
-                                              cnot_canvas.itemconfig(cnot_text_id, fill=palette['background_black'])))
-        cnot_canvas.configure(cursor='hand2')
-
-        # CZ controls
-        cz_frame = tk.Frame(multi_gates_frame, bg=palette['background_3'])
-        cz_frame.pack(pady=2)
-
-        tk.Label(cz_frame, text="CZ - Control:", font=('Arial', 9),
-                fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT)
-
-        self.cz_control_var = tk.IntVar(value=0)
-        self.cz_control_combo = ttk.Combobox(cz_frame, textvariable=self.cz_control_var,
-                                            values=list(range(self.num_qubits)), state="readonly",
-                                            font=('Arial', 9), width=3)
-        self.cz_control_combo.pack(side=tk.LEFT, padx=2)
-
-        tk.Label(cz_frame, text="Target:", font=('Arial', 9),
-                fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT, padx=(5, 0))
-
-        self.cz_target_var = tk.IntVar(value=1 if self.num_qubits > 1 else 0)
-        self.cz_target_combo = ttk.Combobox(cz_frame, textvariable=self.cz_target_var,
-                                        values=list(range(self.num_qubits)), state="readonly",
-                                        font=('Arial', 9), width=3)
-        self.cz_target_combo.pack(side=tk.LEFT, padx=2)
-
-        # CZ button using canvas for macOS compatibility
-        cz_canvas = tk.Canvas(cz_frame, width=50, height=30,
-                             bg=palette['CZ_gate_title_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
-        cz_canvas.pack(side=tk.LEFT, padx=5)
-
-        cz_rect_id = cz_canvas.create_rectangle(2, 2, 48, 28,
-                                              fill=palette['CZ_gate_title_color'], outline=palette['CZ_gate_title_color'], width=0)
-        cz_text_id = cz_canvas.create_text(25, 15, text="CZ",
-                                          font=('Arial', 9, 'bold'), fill=palette['background_black'])
-
-        cz_canvas.bind("<Button-1>", lambda e: self.add_cz_gate())
-        cz_canvas.bind("<Enter>", lambda e: (cz_canvas.itemconfig(cz_rect_id, fill=palette['button_hover_background']),
-                                            cz_canvas.itemconfig(cz_text_id, fill=palette['button_hover_text_color'])))
-        cz_canvas.bind("<Leave>", lambda e: (cz_canvas.itemconfig(cz_rect_id, fill=palette['CZ_gate_title_color']),
-                                            cz_canvas.itemconfig(cz_text_id, fill=palette['background_black'])))
-        cz_canvas.configure(cursor='hand2')
-
-        # Toffoli controls (if 3+ qubits)
+        # Define which gates to show based on number of qubits
+        multi_gates = []
+        if self.num_qubits >= 2:
+            multi_gates.extend(['CNOT', 'CZ'])
         if self.num_qubits >= 3:
-            toffoli_frame = tk.Frame(multi_gates_frame, bg=palette['background_3'])
-            toffoli_frame.pack(pady=2)
+            multi_gates.append('Toffoli')
 
-            tk.Label(toffoli_frame, text="Toffoli - C1:", font=('Arial', 9),
-                    fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT)
+        if not multi_gates:
+            # Show message if no multi-qubit gates available
+            no_gates_label = tk.Label(container, text="Add more qubits to enable multi-qubit gates",
+                                    font=('Arial', max(9, int(self.screen_width * 0.007))),
+                                    fg=palette['subtitle_color'], bg=palette['background_3'])
+            no_gates_label.place(relx=0.5, rely=0.5, anchor='center')
+            return
 
-            self.toffoli_c1_var = tk.IntVar(value=0)
-            self.toffoli_c1_combo = ttk.Combobox(toffoli_frame, textvariable=self.toffoli_c1_var,
-                                                values=list(range(self.num_qubits)), state="readonly",
-                                                font=('Arial', 9), width=3)
-            self.toffoli_c1_combo.pack(side=tk.LEFT, padx=2)
+        # Calculate relative font sizes
+        button_font_size = max(10, int(self.screen_width * 0.009))
+        desc_font_size = max(7, int(self.screen_width * 0.0055))
 
-            tk.Label(toffoli_frame, text="C2:", font=('Arial', 9),
-                    fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT, padx=(5, 0))
+        # Create responsive grid layout
+        if len(multi_gates) == 1:
+            button_positions = [(0.5, 0.5)]
+        elif len(multi_gates) == 2:
+            button_positions = [(0.3, 0.5), (0.7, 0.5)]
+        else:  # 3 gates
+            button_positions = [(0.2, 0.5), (0.5, 0.5), (0.8, 0.5)]
 
-            self.toffoli_c2_var = tk.IntVar(value=1)
-            self.toffoli_c2_combo = ttk.Combobox(toffoli_frame, textvariable=self.toffoli_c2_var,
-                                                values=list(range(self.num_qubits)), state="readonly",
-                                                font=('Arial', 9), width=3)
-            self.toffoli_c2_combo.pack(side=tk.LEFT, padx=2)
+        for i, gate in enumerate(multi_gates):
+            color = gate_colors.get(gate, '#ffffff')
+            description = gate_descriptions.get(gate, '')
+            relx, rely = button_positions[i]
 
-            tk.Label(toffoli_frame, text="T:", font=('Arial', 9),
-                    fg='#ffffff', bg=palette['background_3']).pack(side=tk.LEFT, padx=(5, 0))
+            # Create button container with relative positioning
+            btn_container = tk.Frame(container, bg=palette['background_4'], relief=tk.RAISED, bd=1)
+            btn_container.place(relx=relx, rely=rely, relwidth=0.25, relheight=0.4, anchor='center')
 
-            self.toffoli_target_var = tk.IntVar(value=2)
-            self.toffoli_target_combo = ttk.Combobox(toffoli_frame, textvariable=self.toffoli_target_var,
-                                                    values=list(range(self.num_qubits)), state="readonly",
-                                                    font=('Arial', 9), width=3)
-            self.toffoli_target_combo.pack(side=tk.LEFT, padx=2)
+            # Canvas button with relative dimensions
+            btn_canvas = tk.Canvas(btn_container, highlightthickness=0, bd=0, bg=color)
+            btn_canvas.place(relx=0.5, rely=0.4, relwidth=0.8, relheight=0.7, anchor='center')
 
-            # Toffoli button using canvas for macOS compatibility
-            toffoli_canvas = tk.Canvas(toffoli_frame, width=70, height=30,
-                                     bg=palette['Toffoli_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
-            toffoli_canvas.pack(side=tk.LEFT, padx=5)
+            # Create button background and text
+            def draw_button(event=None, canvas=btn_canvas, gate_color=color, gate_text=gate):
+                canvas.delete("all")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:  # Only draw if we have valid dimensions
+                    canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
+                    # Adjust font size for multi-qubit gate names
+                    font_size = max(8, int(min(width, height) * 0.15))
+                    canvas.create_text(width//2, height//2, text=gate_text,
+                                    font=('Arial', font_size, 'bold'),
+                                    fill=palette['background_black'], tags="text")
 
-            toffoli_rect_id = toffoli_canvas.create_rectangle(2, 2, 68, 28,
-                                                            fill=palette['Toffoli_color'], outline=palette['Toffoli_color'], width=0)
-            toffoli_text_id = toffoli_canvas.create_text(35, 15, text="Toffoli",
-                                                        font=('Arial', 9, 'bold'), fill=palette['background_black'])
+            # Bind configure event to redraw when size changes
+            btn_canvas.bind('<Configure>', draw_button)
+            # Initial draw after the widget is mapped
+            btn_canvas.after(10, draw_button)
 
-            toffoli_canvas.bind("<Button-1>", lambda e: self.add_toffoli_gate())
-            toffoli_canvas.bind("<Enter>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['button_hover_background']),
-                                                    toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['button_hover_text_color'])))
-            toffoli_canvas.bind("<Leave>", lambda e: (toffoli_canvas.itemconfig(toffoli_rect_id, fill=palette['Toffoli_color']),
-                                                    toffoli_canvas.itemconfig(toffoli_text_id, fill=palette['background_black'])))
-            toffoli_canvas.configure(cursor='hand2')
+            # Click handler
+            def on_button_click(event, g=gate):
+                self.add_multi_qubit_gate(g)
 
+            # Hover effects
+            def on_enter(event, canvas=btn_canvas, gate_color=color):
+                canvas.delete("bg")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(0, 0, width, height, fill=palette['button_hover_background'], outline=palette['button_hover_background'], tags="bg")
+                canvas.configure(cursor='hand2')
+                canvas.tag_lower("bg")
+
+            def on_leave(event, canvas=btn_canvas, gate_color=color):
+                canvas.delete("bg")
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    canvas.create_rectangle(0, 0, width, height, fill=gate_color, outline=gate_color, tags="bg")
+                canvas.configure(cursor='')
+                canvas.tag_lower("bg")
+
+            # Bind events
+            btn_canvas.bind("<Button-1>", on_button_click)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
+
+            # Description label with relative positioning
+            desc_label = tk.Label(btn_container, text=description,
+                                font=('Arial', desc_font_size),
+                                fg=palette['gate_description_color'], bg=palette['background_4'])
+            desc_label.place(relx=0.5, rely=0.87, anchor='center')
 
     def add_single_gate(self, gate):
         """Add a single-qubit gate to the selected qubit"""
-        target_qubit = self.target_qubit_var.get()
+        # If only one qubit, place gate automatically
+        if self.num_qubits == 1:
+            self.placed_gates.append((gate, [0]))
+            self.update_circuit_display()
+            self.play_sound('gate_place', self.play_gate_sound_fallback)
+            return
+        
+        # For multiple qubits, show selection dialog
+        self.show_gate_placement_dialog(gate)
 
-        if target_qubit >= self.num_qubits:
-            self.show_custom_dialog("Warning", "Invalid target qubit selected", "warning")
+    def show_gate_placement_dialog(self, gate):
+        """Show a dialog to select which qubit to place the gate on"""
+        self.play_sound('click')
+
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Place {gate} Gate")
+        dialog.configure(bg=palette['background'])
+
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+
+        # Calculate responsive size
+        dialog_width = int(self.screen_width * 0.4)
+        dialog_height = int(self.screen_height * 0.5)
+        x = (self.screen_width - dialog_width) // 2
+        y = (self.screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        dialog.transient(self.root)
+        try:
+            dialog.grab_set()
+            dialog.focus_force()
+        except tk.TclError:
+            # Window not ready yet, try again after a short delay
+            self.root.after(50, lambda: dialog.grab_set() if dialog.winfo_exists() else None)
+            dialog.focus_force()
+
+        # Border frame
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        # Main frame
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
+        main_frame.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
+
+        # Title bar
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'])
+        title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.15)
+
+        # Title
+        title_font_size = max(12, int(self.screen_width * 0.01))
+        title_label = tk.Label(title_bar, text=f"🎯 Place {gate} Gate on Qubit",
+                            font=('Arial', title_font_size, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_4'])
+        title_label.place(relx=0.05, rely=0.5, anchor='w')
+
+        # Close button
+        close_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0)
+        close_canvas.place(relx=0.9, rely=0.5, relwidth=0.08, relheight=0.6, anchor='center')
+
+        def draw_close_button():
+            close_canvas.delete("all")
+            close_canvas.update_idletasks()
+            width = close_canvas.winfo_width()
+            height = close_canvas.winfo_height()
+            if width > 1 and height > 1:
+                close_canvas.create_rectangle(2, 2, width-2, height-2,
+                                            fill=palette['background_4'], 
+                                            outline=palette['title_color'], width=1, tags="bg")
+                close_canvas.create_text(width//2, height//2, text="✕",
+                                    font=('Arial', int(min(width, height) * 0.4), 'bold'), 
+                                    fill=palette['title_color'], tags="text")
+
+        close_canvas.bind('<Configure>', lambda e: draw_close_button())
+        close_canvas.after(10, draw_close_button)
+        close_canvas.bind("<Button-1>", lambda e: dialog.destroy())
+
+        # Hover effects for close button
+        def close_on_enter(event):
+            close_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            close_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            close_canvas.configure(cursor='hand2')
+
+        def close_on_leave(event):
+            close_canvas.itemconfig("bg", fill=palette['background_4'])
+            close_canvas.itemconfig("text", fill=palette['title_color'])
+            close_canvas.configure(cursor='')
+
+        close_canvas.bind("<Enter>", close_on_enter)
+        close_canvas.bind("<Leave>", close_on_leave)
+
+        # Content area
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
+        content_frame.place(relx=0, rely=0.15, relwidth=1, relheight=0.85)
+
+        # Create grid of qubit buttons for gate placement
+        self.create_gate_placement_grid(content_frame, dialog, gate)
+
+        # Make title bar draggable
+        def start_move(event):
+            dialog.x = event.x_root - dialog.winfo_x()
+            dialog.y = event.y_root - dialog.winfo_y()
+
+        def on_move(event):
+            x = event.x_root - dialog.x
+            y = event.y_root - dialog.y
+            dialog.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_label.bind("<Button-1>", start_move)
+        title_label.bind("<B1-Motion>", on_move)
+
+        # Bind Escape to close
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
+
+    def create_gate_placement_grid(self, parent, dialog, gate):
+        """Create a responsive grid of qubit selection buttons for gate placement"""
+        # Calculate grid dimensions based on number of qubits
+        if self.num_qubits <= 2:
+            cols = 2
+            rows = 1
+        elif self.num_qubits <= 4:
+            cols = 2
+            rows = 2
+        else:
+            cols = 3
+            rows = (self.num_qubits + cols - 1) // cols
+
+        # Create instruction label
+        instruction_font = max(10, int(self.screen_width * 0.008))
+        instruction_label = tk.Label(parent, text=f"Select which qubit to place the {gate} gate on:",
+                                font=('Arial', instruction_font),
+                                fg=palette['subtitle_color'], bg=palette['background_3'])
+        instruction_label.place(relx=0.5, rely=0.1, anchor='center')
+
+        # Create grid of buttons
+        button_font_size = max(12, int(self.screen_width * 0.01))
+        
+        for qubit in range(self.num_qubits):
+            row = qubit // cols
+            col = qubit % cols
+
+            # Calculate button position using relative coordinates
+            button_relx = (col + 0.5) / cols
+            button_rely = 0.3 + (row + 0.5) / rows * 0.6  # Start at 30% down, use 60% of remaining space
+            button_relwidth = 0.8 / cols
+            button_relheight = min(0.4 / rows, 0.15)  # Limit height to prevent oversized buttons
+
+            # Create button frame
+            btn_frame = tk.Frame(parent, bg=palette['background_4'], relief=tk.RAISED, bd=2)
+            btn_frame.place(relx=button_relx, rely=button_rely, 
+                        relwidth=button_relwidth, relheight=button_relheight, anchor='center')
+
+            # Create canvas button
+            btn_canvas = tk.Canvas(btn_frame, bg=palette['background'], highlightthickness=0, bd=0)
+            btn_canvas.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+            def draw_qubit_button(event=None, canvas=btn_canvas, qubit_num=qubit):
+                canvas.delete("all")
+                canvas.update_idletasks()
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    bg_color = palette['background']
+                    text_color = palette['combobox_color']
+                    
+                    canvas.create_rectangle(2, 2, width-2, height-2,
+                                        fill=bg_color, 
+                                        outline=palette['combobox_color'], width=2, tags="bg")
+                    
+                    # Qubit text
+                    qubit_font_size = max(10, int(min(width, height) * 0.3))
+                    canvas.create_text(width//2, height//2, text=f"q{qubit_num}",
+                                    font=('Arial', qubit_font_size, 'bold'), 
+                                    fill=text_color, tags="text")
+
+            btn_canvas.bind('<Configure>', draw_qubit_button)
+            btn_canvas.after(10, draw_qubit_button)
+
+            # Click handler
+            def create_qubit_handler(selected_qubit):
+                def on_qubit_select(event):
+                    # Place the gate on the selected qubit
+                    self.placed_gates.append((gate, [selected_qubit]))
+                    self.update_circuit_display()
+                    self.play_sound('gate_place', self.play_gate_sound_fallback)
+                    dialog.destroy()
+                return on_qubit_select
+
+            btn_canvas.bind("<Button-1>", create_qubit_handler(qubit))
+
+            # Hover effects
+            def create_hover_handlers(canvas, qubit_num):
+                def on_enter(event):
+                    canvas.itemconfig("bg", fill=palette['button_hover_background'])
+                    canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+                    canvas.configure(cursor='hand2')
+
+                def on_leave(event):
+                    canvas.itemconfig("bg", fill=palette['background'])
+                    canvas.itemconfig("text", fill=palette['combobox_color'])
+                    canvas.configure(cursor='')
+
+                return on_enter, on_leave
+
+            on_enter, on_leave = create_hover_handlers(btn_canvas, qubit)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
+
+    def add_multi_qubit_gate(self, gate):
+        """Add a multi-qubit gate with appropriate qubit selection dialogs"""
+        # Check if enough qubits are available
+        required_qubits = 2 if gate in ['CNOT', 'CZ'] else 3
+        
+        if self.num_qubits < required_qubits:
+            self.show_custom_dialog("Warning", 
+                                  f"{gate} gate requires at least {required_qubits} qubits", 
+                                  "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
+        
+        # Show appropriate qubit selection dialogs based on gate type
+        if gate in ['CNOT', 'CZ']:
+            self.show_two_qubit_gate_dialog(gate)
+        elif gate == 'Toffoli':
+            self.show_three_qubit_gate_dialog(gate)
 
-        self.placed_gates.append((gate, [target_qubit]))
-        self.update_circuit_display()
-        self.play_sound('gate_place', self.play_gate_sound_fallback)
+    def show_two_qubit_gate_dialog(self, gate):
+        """Show dialog sequence for selecting two qubits (control and target)"""
+        self.selected_qubits = []
+        self.current_gate = gate
+        
+        # First dialog: Select control qubit
+        self.show_qubit_selection_dialog_multi(
+            gate, 
+            "Control", 
+            f"Select the control qubit for the {gate} gate:",
+            self.on_control_qubit_selected
+        )
 
+    def show_three_qubit_gate_dialog(self, gate):
+        """Show dialog sequence for selecting three qubits (control1, control2, target)"""
+        self.selected_qubits = []
+        self.current_gate = gate
+        
+        # First dialog: Select first control qubit
+        self.show_qubit_selection_dialog_multi(
+            gate,
+            "Control 1",
+            f"Select the first control qubit for the {gate} gate:",
+            self.on_first_control_qubit_selected
+        )
 
-    def add_cnot_gate(self):
-        """Add a CNOT gate"""
-        if self.num_qubits < 2:
-            self.show_custom_dialog("Warning", "CNOT gate requires at least 2 qubits", "warning")
-            self.play_sound('error', self.play_error_sound_fallback)
-            return
+    def show_qubit_selection_dialog_multi(self, gate, selection_type, instruction_text, callback):
+        """Show a qubit selection dialog for multi-qubit gates"""
+        self.play_sound('click')
 
-        control = self.cnot_control_var.get()
-        target = self.cnot_target_var.get()
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"{gate} Gate - {selection_type}")
+        dialog.configure(bg=palette['background'])
 
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+
+        # Calculate responsive size
+        dialog_width = int(self.screen_width * 0.4)
+        dialog_height = int(self.screen_height * 0.5)
+        x = (self.screen_width - dialog_width) // 2
+        y = (self.screen_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        dialog.transient(self.root)
+        try:
+            dialog.grab_set()
+            dialog.focus_force()
+        except tk.TclError:
+            self.root.after(50, lambda: dialog.grab_set() if dialog.winfo_exists() else None)
+            dialog.focus_force()
+
+        # Border frame
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        # Main frame
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
+        main_frame.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
+
+        # Title bar
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'])
+        title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.15)
+
+        # Title
+        title_font_size = max(12, int(self.screen_width * 0.01))
+        title_label = tk.Label(title_bar, text=f"🎯 {gate} Gate - {selection_type}",
+                            font=('Arial', title_font_size, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_4'])
+        title_label.place(relx=0.05, rely=0.5, anchor='w')
+
+        # Close button
+        close_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0)
+        close_canvas.place(relx=0.9, rely=0.5, relwidth=0.08, relheight=0.6, anchor='center')
+
+        def draw_close_button():
+            close_canvas.delete("all")
+            close_canvas.update_idletasks()
+            width = close_canvas.winfo_width()
+            height = close_canvas.winfo_height()
+            if width > 1 and height > 1:
+                close_canvas.create_rectangle(2, 2, width-2, height-2,
+                                            fill=palette['background_4'], 
+                                            outline=palette['title_color'], width=1, tags="bg")
+                close_canvas.create_text(width//2, height//2, text="✕",
+                                    font=('Arial', int(min(width, height) * 0.4), 'bold'), 
+                                    fill=palette['title_color'], tags="text")
+
+        close_canvas.bind('<Configure>', lambda e: draw_close_button())
+        close_canvas.after(10, draw_close_button)
+        close_canvas.bind("<Button-1>", lambda e: dialog.destroy())
+
+        # Hover effects for close button
+        def close_on_enter(event):
+            close_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            close_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            close_canvas.configure(cursor='hand2')
+
+        def close_on_leave(event):
+            close_canvas.itemconfig("bg", fill=palette['background_4'])
+            close_canvas.itemconfig("text", fill=palette['title_color'])
+            close_canvas.configure(cursor='')
+
+        close_canvas.bind("<Enter>", close_on_enter)
+        close_canvas.bind("<Leave>", close_on_leave)
+
+        # Content area
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
+        content_frame.place(relx=0, rely=0.15, relwidth=1, relheight=0.85)
+
+        # Create grid of qubit buttons for multi-qubit gate placement
+        self.create_multi_qubit_selection_grid(content_frame, dialog, gate, instruction_text, callback)
+
+        # Make title bar draggable
+        def start_move(event):
+            dialog.x = event.x_root - dialog.winfo_x()
+            dialog.y = event.y_root - dialog.winfo_y()
+
+        def on_move(event):
+            x = event.x_root - dialog.x
+            y = event.y_root - dialog.y
+            dialog.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_label.bind("<Button-1>", start_move)
+        title_label.bind("<B1-Motion>", on_move)
+
+        # Bind Escape to close
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
+
+    def create_multi_qubit_selection_grid(self, parent, dialog, gate, instruction_text, callback):
+        """Create a responsive grid of qubit selection buttons for multi-qubit gate placement"""
+        # Calculate grid dimensions based on number of qubits
+        if self.num_qubits <= 2:
+            cols = 2
+            rows = 1
+        elif self.num_qubits <= 4:
+            cols = 2
+            rows = 2
+        else:
+            cols = 3
+            rows = (self.num_qubits + cols - 1) // cols
+
+        # Create instruction label
+        instruction_font = max(10, int(self.screen_width * 0.008))
+        instruction_label = tk.Label(parent, text=instruction_text,
+                                font=('Arial', instruction_font),
+                                fg=palette['subtitle_color'], bg=palette['background_3'])
+        instruction_label.place(relx=0.5, rely=0.1, anchor='center')
+
+        # Create grid of buttons
+        button_font_size = max(12, int(self.screen_width * 0.01))
+        
+        for qubit in range(self.num_qubits):
+            row = qubit // cols
+            col = qubit % cols
+
+            # Calculate button position using relative coordinates
+            button_relx = (col + 0.5) / cols
+            button_rely = 0.3 + (row + 0.5) / rows * 0.6
+            button_relwidth = 0.8 / cols
+            button_relheight = min(0.4 / rows, 0.15)
+
+            # Disable already selected qubits
+            is_disabled = hasattr(self, 'selected_qubits') and qubit in self.selected_qubits
+
+            # Create button frame
+            btn_frame = tk.Frame(parent, bg=palette['background_4'], relief=tk.RAISED, bd=2)
+            btn_frame.place(relx=button_relx, rely=button_rely, 
+                        relwidth=button_relwidth, relheight=button_relheight, anchor='center')
+
+            # Create canvas button
+            btn_canvas = tk.Canvas(btn_frame, bg=palette['background'], highlightthickness=0, bd=0)
+            btn_canvas.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+            def draw_qubit_button(event=None, canvas=btn_canvas, qubit_num=qubit, disabled=is_disabled):
+                canvas.delete("all")
+                canvas.update_idletasks()
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    if disabled:
+                        bg_color = palette['background_2']
+                        text_color = palette['gate_description_color']
+                    else:
+                        bg_color = palette['background']
+                        text_color = palette['combobox_color']
+                    
+                    canvas.create_rectangle(2, 2, width-2, height-2,
+                                        fill=bg_color, 
+                                        outline=palette['combobox_color'], width=2, tags="bg")
+                    
+                    # Qubit text
+                    qubit_font_size = max(10, int(min(width, height) * 0.3))
+                    canvas.create_text(width//2, height//2, text=f"q{qubit_num}",
+                                    font=('Arial', qubit_font_size, 'bold'), 
+                                    fill=text_color, tags="text")
+
+            btn_canvas.bind('<Configure>', draw_qubit_button)
+            btn_canvas.after(10, draw_qubit_button)
+
+            if not is_disabled:
+                # Click handler
+                def create_qubit_handler(selected_qubit):
+                    def on_qubit_select(event):
+                        callback(selected_qubit, dialog)
+                    return on_qubit_select
+
+                btn_canvas.bind("<Button-1>", create_qubit_handler(qubit))
+
+                # Hover effects
+                def create_hover_handlers(canvas, qubit_num):
+                    def on_enter(event):
+                        canvas.itemconfig("bg", fill=palette['button_hover_background'])
+                        canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+                        canvas.configure(cursor='hand2')
+
+                    def on_leave(event):
+                        canvas.itemconfig("bg", fill=palette['background'])
+                        canvas.itemconfig("text", fill=palette['combobox_color'])
+                        canvas.configure(cursor='')
+
+                    return on_enter, on_leave
+
+                on_enter, on_leave = create_hover_handlers(btn_canvas, qubit)
+                btn_canvas.bind("<Enter>", on_enter)
+                btn_canvas.bind("<Leave>", on_leave)
+
+    def on_control_qubit_selected(self, qubit, dialog):
+        """Handle control qubit selection for two-qubit gates"""
+        self.selected_qubits.append(qubit)
+        self.play_sound('click')
+        dialog.destroy()
+        
+        # Show second dialog for target qubit
+        self.show_qubit_selection_dialog_multi(
+            self.current_gate,
+            "Target",
+            f"Select the target qubit for the {self.current_gate} gate:",
+            self.on_target_qubit_selected
+        )
+
+    def on_target_qubit_selected(self, qubit, dialog):
+        """Handle target qubit selection for two-qubit gates"""
+        self.selected_qubits.append(qubit)
+        self.play_sound('click')
+        dialog.destroy()
+        
+        # Validate selection and place gate
+        self.validate_and_place_two_qubit_gate()
+
+    def on_first_control_qubit_selected(self, qubit, dialog):
+        """Handle first control qubit selection for three-qubit gates"""
+        self.selected_qubits.append(qubit)
+        self.play_sound('click')
+        dialog.destroy()
+        
+        # Show second dialog for second control qubit
+        self.show_qubit_selection_dialog_multi(
+            self.current_gate,
+            "Control 2",
+            f"Select the second control qubit for the {self.current_gate} gate:",
+            self.on_second_control_qubit_selected
+        )
+
+    def on_second_control_qubit_selected(self, qubit, dialog):
+        """Handle second control qubit selection for three-qubit gates"""
+        self.selected_qubits.append(qubit)
+        self.play_sound('click')
+        dialog.destroy()
+        
+        # Show third dialog for target qubit
+        self.show_qubit_selection_dialog_multi(
+            self.current_gate,
+            "Target",
+            f"Select the target qubit for the {self.current_gate} gate:",
+            self.on_three_qubit_target_selected
+        )
+
+    def on_three_qubit_target_selected(self, qubit, dialog):
+        """Handle target qubit selection for three-qubit gates"""
+        self.selected_qubits.append(qubit)
+        self.play_sound('click')
+        dialog.destroy()
+        
+        # Validate selection and place gate
+        self.validate_and_place_three_qubit_gate()
+
+    def validate_and_place_two_qubit_gate(self):
+        """Validate two-qubit gate selection and place the gate"""
+        control, target = self.selected_qubits
+        
+        # Check if qubits are different
         if control == target:
-            self.show_custom_dialog("Warning", "Control and target qubits must be different", "warning")
+            self.show_custom_dialog("Invalid Selection", 
+                                  "Control and target qubits must be different", 
+                                  "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
-
+        
+        # Check if qubits are valid
         if control >= self.num_qubits or target >= self.num_qubits:
-            self.show_custom_dialog("Warning", "Invalid qubit selection", "warning")
+            self.show_custom_dialog("Invalid Selection", 
+                                  "Invalid qubit selection", 
+                                  "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
-
-        self.placed_gates.append(('CNOT', [control, target]))
+        
+        # Place the gate
+        self.placed_gates.append((self.current_gate, [control, target]))
         self.update_circuit_display()
         self.play_sound('gate_place', self.play_gate_sound_fallback)
 
-
-    def add_cz_gate(self):
-        """Add a CZ gate"""
-        if self.num_qubits < 2:
-            self.show_custom_dialog("Warning", "CZ gate requires at least 2 qubits", "warning")
-            self.play_sound('error', self.play_error_sound_fallback)
-            return
-
-        control = self.cz_control_var.get()
-        target = self.cz_target_var.get()
-
-        if control == target:
-            self.show_custom_dialog("Warning", "Control and target qubits must be different", "warning")
-            self.play_sound('error', self.play_error_sound_fallback)
-            return
-
-        if control >= self.num_qubits or target >= self.num_qubits:
-            self.show_custom_dialog("Warning", "Invalid qubit selection", "warning")
-            self.play_sound('error', self.play_error_sound_fallback)
-            return
-
-        self.placed_gates.append(('CZ', [control, target]))
-        self.update_circuit_display()
-        self.play_sound('gate_place', self.play_gate_sound_fallback)
-
-
-    def add_toffoli_gate(self):
-        """Add a Toffoli gate"""
-        if self.num_qubits < 3:
-            self.show_custom_dialog("Warning", "Toffoli gate requires at least 3 qubits", "warning")
-            self.play_sound('error', self.play_error_sound_fallback)
-            return
-
-        c1 = self.toffoli_c1_var.get()
-        c2 = self.toffoli_c2_var.get()
-        target = self.toffoli_target_var.get()
-
+    def validate_and_place_three_qubit_gate(self):
+        """Validate three-qubit gate selection and place the gate"""
+        c1, c2, target = self.selected_qubits
+        
+        # Check if all qubits are different
         if len(set([c1, c2, target])) != 3:
-            self.show_custom_dialog("Warning", "All three qubits must be different", "warning")
+            self.show_custom_dialog("Invalid Selection", 
+                                  "All three qubits must be different", 
+                                  "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
-
+        
+        # Check if qubits are valid
         if c1 >= self.num_qubits or c2 >= self.num_qubits or target >= self.num_qubits:
-            self.show_custom_dialog("Warning", "Invalid qubit selection", "warning")
+            self.show_custom_dialog("Invalid Selection", 
+                                  "Invalid qubit selection", 
+                                  "warning")
             self.play_sound('error', self.play_error_sound_fallback)
             return
-
-        self.placed_gates.append(('Toffoli', [c1, c2, target]))
+        
+        # Place the gate
+        self.placed_gates.append((self.current_gate, [c1, c2, target]))
         self.update_circuit_display()
         self.play_sound('gate_place', self.play_gate_sound_fallback)
 
@@ -2064,61 +2858,9 @@ class SandboxMode:
 
 
     def update_qubit_selections(self):
-        """Update all qubit selection dropdowns when number of qubits changes"""
-        qubit_range = list(range(self.num_qubits))
-
-        # Update target qubit combo
-        if hasattr(self, 'target_qubit_combo'):
-            self.target_qubit_combo['values'] = qubit_range
-            if self.target_qubit_var.get() >= self.num_qubits:
-                self.target_qubit_var.set(0)
-
-        # Update CNOT controls directly using stored references
-        if hasattr(self, 'cnot_control_combo'):
-            self.cnot_control_combo['values'] = qubit_range
-            if self.cnot_control_var.get() >= self.num_qubits:
-                self.cnot_control_var.set(0)
-
-        if hasattr(self, 'cnot_target_combo'):
-            self.cnot_target_combo['values'] = qubit_range
-            if self.cnot_target_var.get() >= self.num_qubits:
-                self.cnot_target_var.set(1 if self.num_qubits > 1 else 0)
-
-        # Update CZ controls directly using stored references
-        if hasattr(self, 'cz_control_combo'):
-            self.cz_control_combo['values'] = qubit_range
-            if self.cz_control_var.get() >= self.num_qubits:
-                self.cz_control_var.set(0)
-
-        if hasattr(self, 'cz_target_combo'):
-            self.cz_target_combo['values'] = qubit_range
-            if self.cz_target_var.get() >= self.num_qubits:
-                self.cz_target_var.set(1 if self.num_qubits > 1 else 0)
-
-        # Update Toffoli controls directly using stored references
-        if hasattr(self, 'toffoli_c1_combo'):
-            self.toffoli_c1_combo['values'] = qubit_range
-            if self.toffoli_c1_var.get() >= self.num_qubits:
-                self.toffoli_c1_var.set(0)
-
-        if hasattr(self, 'toffoli_c2_combo'):
-            self.toffoli_c2_combo['values'] = qubit_range
-            if self.toffoli_c2_var.get() >= self.num_qubits:
-                self.toffoli_c2_var.set(1 if self.num_qubits > 1 else 0)
-
-        if hasattr(self, 'toffoli_target_combo'):
-            self.toffoli_target_combo['values'] = qubit_range
-            if self.toffoli_target_var.get() >= self.num_qubits:
-                self.toffoli_target_var.set(2 if self.num_qubits > 2 else 0)
-
-        # Handle Toffoli visibility for 3+ qubits
-        self.update_toffoli_visibility()
-
-
-    def update_toffoli_visibility(self):
-        """Show/hide Toffoli controls based on number of qubits"""
-        # This is a simplified approach - in a production app you might want
-        # to rebuild the entire gate panel, but this preserves the existing widgets
+        """Update all qubit selection dropdowns when number of qubits cf there are any remaining issues or missing pieces in the multi-qubit selection syshanges"""
+        # Note: Since we now use dialog-based selection for multi-qubit gates,
+        # this method no longer needs to update multi-qubit gate controls
         pass
 
 
@@ -2194,7 +2936,7 @@ class SandboxMode:
         gate_colors = {
             'H': palette['H_color'], 'X': palette['X_color'], 'Y': palette['Y_color'],
             'Z': palette['Z_color'], 'S': palette['S_color'], 'T': palette['T_color'],
-            'CNOT': palette['CNOT_color'], 'CZ': palette['CZ_color']
+            'CNOT': palette['CNOT_color'], 'CZ': palette['CZ_color'], 'Toffoli': palette['Toffoli_color']
         }
 
         for i, (gate, qubits) in enumerate(self.placed_gates):
@@ -2275,6 +3017,50 @@ class SandboxMode:
                                                        x + 8, target_y + 8,
                                                        fill='#ffffff', outline='#cccccc', width=2)
 
+            elif len(qubits) == 3 and gate == 'Toffoli':
+                # Enhanced three-qubit Toffoli gate
+                control1_qubit, control2_qubit, target_qubit = qubits
+                if (control1_qubit < self.num_qubits and control2_qubit < self.num_qubits and 
+                    target_qubit < self.num_qubits):
+                    
+                    control1_y = (control1_qubit + 1) * qubit_spacing + 20
+                    control2_y = (control2_qubit + 1) * qubit_spacing + 20
+                    target_y = (target_qubit + 1) * qubit_spacing + 20
+                    
+                    # Find the min and max y positions for the connection line
+                    min_y = min(control1_y, control2_y, target_y)
+                    max_y = max(control1_y, control2_y, target_y)
+                    
+                    # Enhanced connection line spanning all qubits
+                    self.circuit_canvas.create_line(x, min_y, x, max_y,
+                                                   fill='#ffffff', width=4)
+                    self.circuit_canvas.create_line(x, min_y, x, max_y,
+                                                   fill=color, width=2)
+                    
+                    # Enhanced control dots with 3D effect
+                    for control_y in [control1_y, control2_y]:
+                        self.circuit_canvas.create_oval(x - 10, control_y - 10,
+                                                       x + 10, control_y + 10,
+                                                       fill=palette['background_black'], outline='')
+                        self.circuit_canvas.create_oval(x - 8, control_y - 8,
+                                                       x + 8, control_y + 8,
+                                                       fill='#ffffff', outline='#cccccc', width=2)
+                    
+                    # Enhanced Toffoli target (same as CNOT target)
+                    self.circuit_canvas.create_oval(x - 17, target_y - 17,
+                                                   x + 17, target_y + 17,
+                                                   fill=palette['background_black'], outline='')
+                    self.circuit_canvas.create_oval(x - 15, target_y - 15,
+                                                   x + 15, target_y + 15,
+                                                   fill='', outline='#ffffff', width=3)
+                    
+                    # X symbol for target
+                    self.circuit_canvas.create_line(x - 8, target_y - 8,
+                                                   x + 8, target_y + 8,
+                                                   fill='#ffffff', width=3)
+                    self.circuit_canvas.create_line(x - 8, target_y + 8,
+                                                   x + 8, target_y - 8,
+                                                   fill='#ffffff', width=3)
 
     def run_circuit(self):
         """Execute the quantum circuit and display results"""
