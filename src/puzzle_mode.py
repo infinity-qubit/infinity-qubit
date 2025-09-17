@@ -314,8 +314,8 @@ class PuzzleMode:
 
         # Back to Main Menu button - top right
         # Canvas-based main menu button for better color control on macOS
-        button_width = max(120, int(self.window_width / 12))
-        button_height = max(35, int(self.window_height / 25))
+        button_width = max(160, int(self.window_width / 12))
+        button_height = max(47, int(self.window_height / 25))
 
         main_menu_canvas = tk.Canvas(header_frame,
                                    width=button_width,
@@ -334,7 +334,7 @@ class PuzzleMode:
         # Add text to button
         main_menu_canvas.create_text(button_width//2, button_height//2,
                                    text="Main Menu",
-                                   font=('Arial', max(10, int(self.window_width / 150)), 'bold'),
+                                   font=('Arial', max(14, int(self.window_width / 150)), 'bold'),
                                    fill=palette['puzzle_mode_button_text_color'],
                                    tags="menu_text")
 
