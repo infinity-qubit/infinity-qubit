@@ -360,32 +360,29 @@ class PuzzleMode:
         info_frame = tk.Frame(parent, bg=palette['background_2'], relief=tk.RAISED, bd=2)
         info_frame.place(relx=0, rely=0, relwidth=1, relheight=0.18)
 
-        # Title
-        info_title = tk.Label(info_frame, text="Level Information",
-                            font=('Arial', max(16, int(self.window_width / 100)), 'bold'),
-                            fg=palette['info_title_color'], bg=palette['background_2'])
-        info_title.place(relx=0.5, rely=0.15, anchor='center')
-
         # Main info container
         info_container = tk.Frame(info_frame, bg=palette['background_2'])
-        info_container.place(relx=0.1, rely=0.35, relwidth=0.8, relheight=0.6)
+        info_container.place(relx=0.1, rely=0.05, relwidth=0.8, relheight=0.9)
 
         # Level details - left side
         level_frame = tk.Frame(info_container, bg=palette['background_3'], relief=tk.RAISED, bd=1)
         level_frame.place(relx=0, rely=0, relwidth=0.48, relheight=1)
 
         self.level_label = tk.Label(level_frame, text="Level: 1",
-                                font=('Arial', max(14, int(self.window_width / 120)), 'bold'),
+                                # Increased font size: was max(14, int(self.window_width / 120)), now max(18, int(self.window_width / 90))
+                                font=('Arial', max(18, int(self.window_width / 90)), 'bold'),
                                 fg=palette['level_counter_color'], bg=palette['background_3'])
         self.level_label.place(relx=0.5, rely=0.15, anchor='center')
 
         self.level_name_label = tk.Label(level_frame, text="Level Name",
-                                    font=('Arial', max(12, int(self.window_width / 130)), 'bold'),
+                                    # Increased font size: was max(12, int(self.window_width / 130)), now max(16, int(self.window_width / 100))
+                                    font=('Arial', max(16, int(self.window_width / 100)), 'bold'),
                                     fg=palette['level_name_color'], bg=palette['background_3'])
         self.level_name_label.place(relx=0.5, rely=0.4, anchor='center')
 
         self.level_description_label = tk.Label(level_frame, text="Description",
-                                            font=('Arial', max(10, int(self.window_width / 150))),
+                                            # Increased font size: was max(10, int(self.window_width / 150)), now max(14, int(self.window_width / 110))
+                                            font=('Arial', max(14, int(self.window_width / 110))),
                                             fg=palette['description_title_color'], bg=palette['background_3'],
                                             wraplength=int(self.window_width * 0.35))
         self.level_description_label.place(relx=0.5, rely=0.75, anchor='center')
@@ -395,17 +392,20 @@ class PuzzleMode:
         stats_frame.place(relx=0.52, rely=0, relwidth=0.48, relheight=1)
 
         self.difficulty_label = tk.Label(stats_frame, text="Difficulty: Beginner",
-                                    font=('Arial', max(12, int(self.window_width / 130)), 'bold'),
+                                    # Increased font size: was max(12, int(self.window_width / 130)), now max(16, int(self.window_width / 100))
+                                    font=('Arial', max(16, int(self.window_width / 100)), 'bold'),
                                     fg=palette['difficulty_title_color'], bg=palette['background_3'])
         self.difficulty_label.place(relx=0.5, rely=0.15, anchor='center')
 
         self.score_label = tk.Label(stats_frame, text="Score: 0",
-                                font=('Arial', max(12, int(self.window_width / 130)), 'bold'),
+                                # Increased font size: was max(12, int(self.window_width / 130)), now max(16, int(self.window_width / 100))
+                                font=('Arial', max(16, int(self.window_width / 100)), 'bold'),
                                 fg=palette['score_counter_color'], bg=palette['background_3'])
         self.score_label.place(relx=0.5, rely=0.4, anchor='center')
 
         self.gates_limit_label = tk.Label(stats_frame, text="Max Gates: 1",
-                                        font=('Arial', max(10, int(self.window_width / 150))),
+                                        # Increased font size: was max(10, int(self.window_width / 150)), now max(14, int(self.window_width / 110))
+                                        font=('Arial', max(14, int(self.window_width / 110))),
                                         fg=palette['max_gates_counter_color'], bg=palette['background_3'])
         self.gates_limit_label.place(relx=0.5, rely=0.65, anchor='center')
 
@@ -611,13 +611,9 @@ class PuzzleMode:
             relwidth = 0.9 if colspan == 2 else 0.425
             relheight = 0.25
 
-            # Container for the button
-            btn_container = tk.Frame(action_frame, bg=palette['background_4'], relief=tk.RAISED, bd=1)
-            btn_container.place(relx=relx, rely=rely, relwidth=relwidth, relheight=relheight)
-
             # Canvas button
-            btn_canvas = tk.Canvas(btn_container, bg=bg_color, highlightthickness=0, bd=0)
-            btn_canvas.place(relx=0.05, rely=0.1, relwidth=0.9, relheight=0.8)
+            btn_canvas = tk.Canvas(action_frame, bg=bg_color, highlightthickness=0, bd=0)
+            btn_canvas.place(relx=relx, rely=rely, relwidth=relwidth, relheight=relheight)
 
             # Button drawing function
             def create_draw_function(canvas, gate_color, gate_text, fg_color):
