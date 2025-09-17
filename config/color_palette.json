@@ -114,10 +114,10 @@
     "stage_name": "puzzle_mode",
     "colors": {
       "_comment_": "Colors used for 'Return to main menu' button",
-      "close_gamemode_button_background": "#00cc66",
+      "close_gamemode_button_background": "#ff6b6b",
       "close_gamemode_button_text_color": "#000000",
       "close_gamemode_button_hover_text_color": "#000000",
-      "return_to_gamemode_button_background": "#ff6b6b",
+      "return_to_gamemode_button_background": "#00cc66",
       "return_to_gamemode_button_text_color": "#ffffff",
       "return_to_gamemode_button_hover_background": "#ff5252",
       "reset_button_background": "#8E8E8E",
