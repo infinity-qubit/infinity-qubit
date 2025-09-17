@@ -514,7 +514,7 @@ class PuzzleMode:
                 self.multi_btn_canvas.configure(bg=palette['background'])
                 draw_single_button()
                 draw_multi_button()
-                self.play_sound('click')
+                self.play_sound('button_click')
 
         def switch_to_multi():
             # Only allow switching if multi-qubit gates are available
@@ -527,7 +527,7 @@ class PuzzleMode:
                 self.single_btn_canvas.configure(bg=palette['background'])
                 draw_single_button()
                 draw_multi_button()
-                self.play_sound('click')
+                self.play_sound('button_click')
 
         # Bind events
         self.single_btn_canvas.bind('<Configure>', lambda e: draw_single_button())
@@ -784,14 +784,14 @@ class PuzzleMode:
 
             # Calculate relative positions
             relx = col * 0.33 + 0.165  # Center each button in its column
-            rely = row * 0.25 + 0.15   # Space rows evenly
+            rely = row * 0.25 + 0.25   # Space rows evenly
 
             color = gate_colors.get(gate, '#ffffff')
             description = gate_descriptions.get(gate, '')
 
             # Create canvas button using helper method
             self.create_canvas_gate_button(self.multi_frame, gate, color, description,
-                                         relx, rely, 0.28, 0.2)
+                                         relx, rely, 0.32, 0.42)
 
 
     def redraw_gate_buttons(self):
@@ -1170,11 +1170,217 @@ class PuzzleMode:
             gate_info = {'gate': gate, 'qubits': [0]}
             self.placed_gates.append(gate_info)
         else:
-            # Multiple qubits, ask user to select target
-            target = self.ask_qubit_selection("Select target qubit:", num_qubits)
-            if target is not None:
-                gate_info = {'gate': gate, 'qubits': [target]}
-                self.placed_gates.append(gate_info)
+            # Multiple qubits, show gate placement dialog
+            self.show_gate_placement_dialog(gate)
+
+
+    def show_gate_placement_dialog(self, gate):
+        """Show a dialog to select which qubit to place the gate on (matching sandbox_mode)"""
+        self.play_sound('button_click')
+
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Place {gate} Gate")
+        dialog.configure(bg=palette['background'])
+
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+
+        # Calculate responsive size (same as sandbox mode)
+        dialog_width = int(self.window_width * 0.4)
+        dialog_height = int(self.window_height * 0.5)
+        x = (self.window_width - dialog_width) // 2
+        y = (self.window_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        dialog.transient(self.root)
+        try:
+            dialog.grab_set()
+            dialog.focus_force()
+        except tk.TclError:
+            # Window not ready yet, try again after a short delay (same as sandbox mode)
+            self.root.after(50, lambda: dialog.grab_set() if dialog.winfo_exists() else None)
+            dialog.focus_force()
+
+        # Border frame (same as sandbox mode)
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        # Main frame (same as sandbox mode)
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
+        main_frame.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
+
+        # Title bar (same as sandbox mode)
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'])
+        title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.15)
+
+        # Title (matching sandbox mode exactly)
+        title_font_size = max(12, int(self.window_width * 0.01))
+        title_label = tk.Label(title_bar, text=f"🎯 Place {gate} Gate on Qubit",
+                            font=('Arial', title_font_size, 'bold'),
+                            fg=palette['title_color'], bg=palette['background_4'])
+        title_label.place(relx=0.05, rely=0.5, anchor='w')
+
+        # Close button (matching sandbox mode exactly)
+        close_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0)
+        close_canvas.place(relx=0.9, rely=0.5, relwidth=0.08, relheight=0.6, anchor='center')
+
+        def draw_close_button():
+            close_canvas.delete("all")
+            close_canvas.update_idletasks()
+            width = close_canvas.winfo_width()
+            height = close_canvas.winfo_height()
+            if width > 1 and height > 1:
+                close_canvas.create_rectangle(2, 2, width-2, height-2,
+                                            fill=palette['background_4'], 
+                                            outline=palette['title_color'], width=1, tags="bg")
+                close_canvas.create_text(width//2, height//2, text="✕",
+                                    font=('Arial', int(min(width, height) * 0.4), 'bold'), 
+                                    fill=palette['title_color'], tags="text")
+
+        close_canvas.bind('<Configure>', lambda e: draw_close_button())
+        close_canvas.after(10, draw_close_button)
+        close_canvas.bind("<Button-1>", lambda e: dialog.destroy())
+
+        # Hover effects for close button (matching sandbox mode)
+        def close_on_enter(event):
+            close_canvas.itemconfig("bg", fill=palette['button_hover_background'])
+            close_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+            close_canvas.configure(cursor='hand2')
+
+        def close_on_leave(event):
+            close_canvas.itemconfig("bg", fill=palette['background_4'])
+            close_canvas.itemconfig("text", fill=palette['title_color'])
+            close_canvas.configure(cursor='')
+
+        close_canvas.bind("<Enter>", close_on_enter)
+        close_canvas.bind("<Leave>", close_on_leave)
+
+        # Content area (same as sandbox mode)
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
+        content_frame.place(relx=0, rely=0.15, relwidth=1, relheight=0.85)
+
+        # Create grid of qubit buttons for gate placement (same method as sandbox mode)
+        self.create_gate_placement_grid(content_frame, dialog, gate)
+
+        # Make title bar draggable (same as sandbox mode)
+        def start_move(event):
+            dialog.x = event.x_root - dialog.winfo_x()
+            dialog.y = event.y_root - dialog.winfo_y()
+
+        def on_move(event):
+            x = event.x_root - dialog.x
+            y = event.y_root - dialog.y
+            dialog.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_label.bind("<Button-1>", start_move)
+        title_label.bind("<B1-Motion>", on_move)
+
+        # Bind Escape to close
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
+
+    def create_gate_placement_grid(self, parent, dialog, gate):
+        """Create a responsive grid of qubit selection buttons matching sandbox mode style"""
+        level = self.levels[self.current_level]
+        num_qubits = level['qubits']
+
+        # Calculate grid dimensions based on number of qubits (same as sandbox mode)
+        if num_qubits <= 2:
+            cols = 2
+            rows = 1
+        elif num_qubits <= 4:
+            cols = 2
+            rows = 2
+        else:
+            cols = 3
+            rows = (num_qubits + cols - 1) // cols
+
+        # Create instruction label (matching sandbox mode)
+        instruction_font = max(10, int(self.window_width * 0.008))
+        instruction_label = tk.Label(parent, text=f"Select which qubit to place the {gate} gate on:",
+                                font=('Arial', instruction_font),
+                                fg=palette['subtitle_color'], bg=palette['background_3'])
+        instruction_label.place(relx=0.5, rely=0.1, anchor='center')
+
+        def on_qubit_selected(qubit_index):
+            # Add the gate to the selected qubit
+            gate_info = {'gate': gate, 'qubits': [qubit_index]}
+            self.placed_gates.append(gate_info)
+            self.draw_circuit()
+            dialog.destroy()
+
+        # Create grid of buttons (matching sandbox mode exactly)
+        button_font_size = max(12, int(self.window_width * 0.01))
+        
+        for qubit in range(num_qubits):
+            row = qubit // cols
+            col = qubit % cols
+
+            # Calculate button position using relative coordinates (same as sandbox mode)
+            button_relx = (col + 0.5) / cols
+            button_rely = 0.3 + (row + 0.5) / rows * 0.6  # Start at 30% down, use 60% of remaining space
+            button_relwidth = 0.8 / cols
+            button_relheight = min(0.4 / rows, 0.15)  # Limit height to prevent oversized buttons
+
+            # Create button frame (matching sandbox mode)
+            btn_frame = tk.Frame(parent, bg=palette['background_4'], relief=tk.RAISED, bd=2)
+            btn_frame.place(relx=button_relx, rely=button_rely, 
+                        relwidth=button_relwidth, relheight=button_relheight, anchor='center')
+
+            # Create canvas button (matching sandbox mode)
+            btn_canvas = tk.Canvas(btn_frame, bg=palette['background'], highlightthickness=0, bd=0)
+            btn_canvas.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+            def draw_qubit_button(event=None, canvas=btn_canvas, qubit_num=qubit):
+                canvas.delete("all")
+                canvas.update_idletasks()
+                width = canvas.winfo_width()
+                height = canvas.winfo_height()
+                if width > 1 and height > 1:
+                    bg_color = palette['background']
+                    text_color = palette['combobox_color']
+                    
+                    canvas.create_rectangle(2, 2, width-2, height-2,
+                                        fill=bg_color, 
+                                        outline=palette['combobox_color'], width=2, tags="bg")
+                    
+                    # Qubit text (matching sandbox mode)
+                    qubit_font_size = max(10, int(min(width, height) * 0.3))
+                    canvas.create_text(width//2, height//2, text=f"q{qubit_num}",
+                                    font=('Arial', qubit_font_size, 'bold'), 
+                                    fill=text_color, tags="text")
+
+            btn_canvas.bind('<Configure>', draw_qubit_button)
+            btn_canvas.after(10, draw_qubit_button)
+
+            # Click handler (matching sandbox mode)
+            def create_qubit_handler(selected_qubit):
+                def on_qubit_select(event):
+                    on_qubit_selected(selected_qubit)
+                return on_qubit_select
+
+            btn_canvas.bind("<Button-1>", create_qubit_handler(qubit))
+
+            # Hover effects (matching sandbox mode exactly)
+            def create_hover_handlers(canvas, qubit_num):
+                def on_enter(event):
+                    canvas.itemconfig("bg", fill=palette['button_hover_background'])
+                    canvas.itemconfig("text", fill=palette['button_hover_text_color'])
+                    canvas.configure(cursor='hand2')
+
+                def on_leave(event):
+                    canvas.itemconfig("bg", fill=palette['background'])
+                    canvas.itemconfig("text", fill=palette['combobox_color'])
+                    canvas.configure(cursor='')
+
+                return on_enter, on_leave
+
+            on_enter, on_leave = create_hover_handlers(btn_canvas, qubit)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
 
 
     def add_two_qubit_gate(self, gate):
@@ -1298,59 +1504,256 @@ class PuzzleMode:
 
 
     def ask_qubit_selection(self, prompt, num_qubits, available_qubits=None):
-        """Ask user to select a qubit with no decorations dialog"""
+        """Ask user to select a qubit with modern styled dialog"""
         if available_qubits is None:
             available_qubits = list(range(num_qubits))
 
         if len(available_qubits) == 1:
             return available_qubits[0]
 
-        # Create a simple selection dialog without decorations
+        self.play_sound('button_click')
+
+        # Create modern dialog
         dialog = tk.Toplevel(self.root)
         dialog.title("Select Qubit")
-        dialog.overrideredirect(True)  # Remove window decorations
-        dialog.geometry("300x150")
-        dialog.configure(bg=palette['background_2'])
-        dialog.transient(self.root)
-        dialog.grab_set()
+        dialog.configure(bg=palette['background'])
 
-        # Center the dialog on screen
-        dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() - 300) // 2
-        y = (dialog.winfo_screenheight() - 150) // 2
-        dialog.geometry(f"300x150+{x}+{y}")
+        # Make dialog fullscreen-compatible and always on top
+        dialog.overrideredirect(True)
+        dialog.attributes('-topmost', True)
+
+        # Calculate responsive size
+        dialog_width = int(self.window_width * 0.4)
+        dialog_height = int(self.window_height * 0.5)
+        x = (self.window_width - dialog_width) // 2
+        y = (self.window_height - dialog_height) // 2
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        dialog.transient(self.root)
+        try:
+            dialog.grab_set()
+            dialog.focus_force()
+        except tk.TclError:
+            # Handle grab_set errors gracefully
+            dialog.lift()
+            dialog.focus_force()
 
         result = [None]
 
-        tk.Label(dialog, text=prompt, font=('Arial', 12),
-                fg=palette['prompt_text_color'], bg=palette['background_2']).pack(pady=10)
+        # Border frame
+        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
+        border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        button_frame = tk.Frame(dialog, bg=palette['background_2'])
-        button_frame.pack(pady=10)
+        # Main frame
+        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
+        main_frame.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
+
+        # Title bar
+        title_bar = tk.Frame(main_frame, bg=palette['background_4'])
+        title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.15)
+
+        # Title
+        title_label = tk.Label(title_bar, text="🎯 Select Qubit",
+                            font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
+                            fg=palette['title_color'], bg=palette['background_4'])
+        title_label.place(relx=0.05, rely=0.3, anchor='w')
+
+        # Close button
+        close_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0, width=40, height=30)
+        close_canvas.place(relx=0.92, rely=0.3, anchor='center')
+
+        def draw_close_button():
+            close_canvas.delete("all")
+            close_canvas.create_text(20, 15, text="✕", 
+                                   font=('Arial', 16, 'bold'), 
+                                   fill=palette['title_color'])
+
+        def close_dialog():
+            result[0] = None
+            dialog.destroy()
+
+        draw_close_button()
+        close_canvas.bind("<Button-1>", lambda e: close_dialog())
+
+        # Hover effects for close button
+        def close_on_enter(event):
+            close_canvas.delete("all")
+            close_canvas.create_text(20, 15, text="✕", 
+                                   font=('Arial', 16, 'bold'), 
+                                   fill=palette['button_hover_background'])
+
+        def close_on_leave(event):
+            draw_close_button()
+
+        close_canvas.bind("<Enter>", close_on_enter)
+        close_canvas.bind("<Leave>", close_on_leave)
+
+        # Content area
+        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
+        content_frame.place(relx=0.05, rely=0.2, relwidth=0.9, relheight=0.75)
+
+        # Instruction text
+        instruction_label = tk.Label(content_frame, text=prompt,
+                                   font=('Arial', max(12, int(self.window_width / 120))),
+                                   fg=palette['subtitle_color'], bg=palette['background_3'])
+        instruction_label.place(relx=0.5, rely=0.1, anchor='center')
+
+        # Create grid container
+        grid_frame = tk.Frame(content_frame, bg=palette['background_3'])
+        grid_frame.place(relx=0.1, rely=0.25, relwidth=0.8, relheight=0.6)
+
+        # Calculate grid dimensions
+        cols = min(4, len(available_qubits))
+        rows = (len(available_qubits) + cols - 1) // cols
 
         def select_qubit(qubit):
             result[0] = qubit
             dialog.destroy()
 
-        for qubit in available_qubits:
-            canvas_btn = self.create_canvas_dialog_button(
-                button_frame, f"Qubit {qubit}",
-                lambda q=qubit: select_qubit(q),
-                palette['qubit_selection_button_background'],
-                palette['qubit_selection_button_text_color'],
-                width=80, height=35, font_size=10
-            )
-            canvas_btn.pack(side=tk.LEFT, padx=5)
+        # Create buttons for each available qubit
+        for idx, qubit in enumerate(available_qubits):
+            row = idx // cols
+            col = idx % cols
+            
+            # Calculate relative positions
+            relx = col / cols + (1 / cols) * 0.5
+            rely = row / rows + (1 / rows) * 0.5
+            button_width = 0.8 / cols
+            button_height = 0.8 / rows
 
-        # Cancel button
-        cancel_canvas = self.create_canvas_dialog_button(
-            button_frame, "Cancel",
-            dialog.destroy,
-            palette['cancel_selection_button_background'],
-            palette['cancel_selection_button_text_color'],
-            width=80, height=35, font_size=10
-        )
-        cancel_canvas.pack(side=tk.LEFT, padx=5)
+            # Create button container
+            btn_container = tk.Frame(grid_frame, bg=palette['background_4'], relief=tk.RAISED, bd=2)
+            btn_container.place(relx=relx, rely=rely, anchor='center', 
+                              relwidth=button_width * 0.8, relheight=button_height * 0.7)
+
+            # Create canvas button
+            btn_canvas = tk.Canvas(btn_container, bg=palette['qubit_selection_button_background'], 
+                                 highlightthickness=0, bd=0)
+            btn_canvas.place(relx=0.5, rely=0.4, anchor='center', relwidth=0.9, relheight=0.7)
+
+            # Draw button content
+            def create_draw_function(canvas, qubit_num):
+                def draw_button(event=None):
+                    canvas.delete("all")
+                    width = canvas.winfo_width()
+                    height = canvas.winfo_height()
+                    if width > 1 and height > 1:
+                        canvas.create_rectangle(0, 0, width, height, 
+                                              fill=palette['qubit_selection_button_background'], 
+                                              outline=palette['qubit_selection_button_background'])
+                        canvas.create_text(width//2, height//2, text=f"Qubit {qubit_num}",
+                                         font=('Arial', max(10, int(self.window_width / 140)), 'bold'),
+                                         fill=palette['qubit_selection_button_text_color'])
+                return draw_button
+
+            draw_func = create_draw_function(btn_canvas, qubit)
+            btn_canvas.bind('<Configure>', draw_func)
+            btn_canvas.after(10, draw_func)
+
+            # Click handler
+            def create_click_handler(qubit_val):
+                def on_click(event):
+                    select_qubit(qubit_val)
+                return on_click
+
+            click_handler = create_click_handler(qubit)
+            btn_canvas.bind("<Button-1>", click_handler)
+
+            # Hover effects
+            def create_hover_handlers(canvas, qubit_num):
+                def on_enter(event):
+                    canvas.delete("all")
+                    width = canvas.winfo_width()
+                    height = canvas.winfo_height()
+                    if width > 1 and height > 1:
+                        canvas.create_rectangle(0, 0, width, height, 
+                                              fill=palette['button_hover_background'], 
+                                              outline=palette['button_hover_background'])
+                        canvas.create_text(width//2, height//2, text=f"Qubit {qubit_num}",
+                                         font=('Arial', max(10, int(self.window_width / 140)), 'bold'),
+                                         fill=palette['button_hover_text_color'])
+                    canvas.configure(cursor='hand2')
+
+                def on_leave(event):
+                    draw_func()
+                    canvas.configure(cursor='')
+
+                return on_enter, on_leave
+
+            on_enter, on_leave = create_hover_handlers(btn_canvas, qubit)
+            btn_canvas.bind("<Enter>", on_enter)
+            btn_canvas.bind("<Leave>", on_leave)
+
+            # Label below button
+            label = tk.Label(btn_container, text=f"|q{qubit}⟩",
+                           font=('Arial', max(8, int(self.window_width / 180))),
+                           fg=palette['gate_description_color'], bg=palette['background_4'])
+            label.place(relx=0.5, rely=0.85, anchor='center')
+
+        # Cancel button at the bottom
+        cancel_frame = tk.Frame(content_frame, bg=palette['background_3'])
+        cancel_frame.place(relx=0.5, rely=0.9, anchor='center', relwidth=0.3, relheight=0.08)
+
+        cancel_canvas = tk.Canvas(cancel_frame, bg=palette['cancel_selection_button_background'], 
+                                highlightthickness=0, bd=0)
+        cancel_canvas.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.8, relheight=0.8)
+
+        def draw_cancel_button():
+            cancel_canvas.delete("all")
+            width = cancel_canvas.winfo_width()
+            height = cancel_canvas.winfo_height()
+            if width > 1 and height > 1:
+                cancel_canvas.create_rectangle(0, 0, width, height, 
+                                             fill=palette['cancel_selection_button_background'], 
+                                             outline=palette['cancel_selection_button_background'])
+                cancel_canvas.create_text(width//2, height//2, text="Cancel",
+                                        font=('Arial', max(10, int(self.window_width / 140)), 'bold'),
+                                        fill=palette['cancel_selection_button_text_color'])
+
+        cancel_canvas.bind('<Configure>', lambda e: draw_cancel_button())
+        cancel_canvas.after(10, draw_cancel_button)
+        cancel_canvas.bind("<Button-1>", lambda e: close_dialog())
+
+        # Cancel button hover effects
+        def cancel_on_enter(event):
+            cancel_canvas.delete("all")
+            width = cancel_canvas.winfo_width()
+            height = cancel_canvas.winfo_height()
+            if width > 1 and height > 1:
+                cancel_canvas.create_rectangle(0, 0, width, height, 
+                                             fill=palette['button_hover_background'], 
+                                             outline=palette['button_hover_background'])
+                cancel_canvas.create_text(width//2, height//2, text="Cancel",
+                                        font=('Arial', max(10, int(self.window_width / 140)), 'bold'),
+                                        fill=palette['button_hover_text_color'])
+            cancel_canvas.configure(cursor='hand2')
+
+        def cancel_on_leave(event):
+            draw_cancel_button()
+            cancel_canvas.configure(cursor='')
+
+        cancel_canvas.bind("<Enter>", cancel_on_enter)
+        cancel_canvas.bind("<Leave>", cancel_on_leave)
+
+        # Make title bar draggable
+        def start_move(event):
+            dialog.x = event.x
+            dialog.y = event.y
+
+        def on_move(event):
+            deltax = event.x - dialog.x
+            deltay = event.y - dialog.y
+            x = dialog.winfo_x() + deltax
+            y = dialog.winfo_y() + deltay
+            dialog.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", on_move)
+        title_label.bind("<Button-1>", start_move)
+        title_label.bind("<B1-Motion>", on_move)
+
+        # Bind Escape to close
+        dialog.bind('<Escape>', lambda e: close_dialog())
 
         dialog.wait_window()
         return result[0]
@@ -1566,6 +1969,30 @@ class PuzzleMode:
                     abs(state_data[1] - expected_1_state) < tolerance)
 
         # Two qubit states
+        elif target_state == '|00⟩' and level['qubits'] == 2:
+            # |00⟩ state: [1, 0, 0, 0]
+            return (abs(state_data[0]) > 0.99 and
+                    abs(state_data[1]) < tolerance and abs(state_data[2]) < tolerance and
+                    abs(state_data[3]) < tolerance and
+                    abs(np.real(state_data[0]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[0])) < tolerance)
+
+        elif target_state == '|01⟩' and level['qubits'] == 2:
+            # |01⟩ state: [0, 1, 0, 0]
+            return (abs(state_data[1]) > 0.99 and
+                    abs(state_data[0]) < tolerance and abs(state_data[2]) < tolerance and
+                    abs(state_data[3]) < tolerance and
+                    abs(np.real(state_data[1]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[1])) < tolerance)
+
+        elif target_state == '|10⟩' and level['qubits'] == 2:
+            # |10⟩ state: [0, 0, 1, 0]
+            return (abs(state_data[2]) > 0.99 and
+                    abs(state_data[0]) < tolerance and abs(state_data[1]) < tolerance and
+                    abs(state_data[3]) < tolerance and
+                    abs(np.real(state_data[2]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[2])) < tolerance)
+
         elif target_state == '|11⟩' and level['qubits'] == 2:
             # |11⟩ state: [0, 0, 0, 1]
             return (abs(state_data[3]) > 0.99 and
@@ -1641,6 +2068,61 @@ class PuzzleMode:
                     abs(np.imag(state_data[2])) < tolerance)
 
         # Three qubit states
+        elif target_state == '|000⟩' and level['qubits'] == 3:
+            # |000⟩ state: [1,0,0,0,0,0,0,0]
+            return (abs(state_data[0]) > 0.99 and
+                    all(abs(state_data[i]) < tolerance for i in range(1, 8)) and
+                    abs(np.real(state_data[0]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[0])) < tolerance)
+
+        elif target_state == '|001⟩' and level['qubits'] == 3:
+            # |001⟩ state: [0,1,0,0,0,0,0,0]
+            return (abs(state_data[1]) > 0.99 and
+                    abs(state_data[0]) < tolerance and
+                    all(abs(state_data[i]) < tolerance for i in range(2, 8)) and
+                    abs(np.real(state_data[1]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[1])) < tolerance)
+
+        elif target_state == '|010⟩' and level['qubits'] == 3:
+            # |010⟩ state: [0,0,1,0,0,0,0,0]
+            return (abs(state_data[2]) > 0.99 and
+                    abs(state_data[0]) < tolerance and abs(state_data[1]) < tolerance and
+                    all(abs(state_data[i]) < tolerance for i in range(3, 8)) and
+                    abs(np.real(state_data[2]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[2])) < tolerance)
+
+        elif target_state == '|011⟩' and level['qubits'] == 3:
+            # |011⟩ state: [0,0,0,1,0,0,0,0]
+            return (abs(state_data[3]) > 0.99 and
+                    all(abs(state_data[i]) < tolerance for i in range(3)) and
+                    all(abs(state_data[i]) < tolerance for i in range(4, 8)) and
+                    abs(np.real(state_data[3]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[3])) < tolerance)
+
+        elif target_state == '|100⟩' and level['qubits'] == 3:
+            # |100⟩ state: [0,0,0,0,1,0,0,0]
+            return (abs(state_data[4]) > 0.99 and
+                    all(abs(state_data[i]) < tolerance for i in range(4)) and
+                    all(abs(state_data[i]) < tolerance for i in range(5, 8)) and
+                    abs(np.real(state_data[4]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[4])) < tolerance)
+
+        elif target_state == '|101⟩' and level['qubits'] == 3:
+            # |101⟩ state: [0,0,0,0,0,1,0,0]
+            return (abs(state_data[5]) > 0.99 and
+                    all(abs(state_data[i]) < tolerance for i in range(5)) and
+                    all(abs(state_data[i]) < tolerance for i in range(6, 8)) and
+                    abs(np.real(state_data[5]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[5])) < tolerance)
+
+        elif target_state == '|110⟩' and level['qubits'] == 3:
+            # |110⟩ state: [0,0,0,0,0,0,1,0]
+            return (abs(state_data[6]) > 0.99 and
+                    all(abs(state_data[i]) < tolerance for i in range(6)) and
+                    abs(state_data[7]) < tolerance and
+                    abs(np.real(state_data[6]) - 1.0) < tolerance and
+                    abs(np.imag(state_data[6])) < tolerance)
+
         elif target_state == '|111⟩' and level['qubits'] == 3:
             # |111⟩ state: [0,0,0,0,0,0,0,1]
             return (abs(state_data[7]) > 0.99 and
