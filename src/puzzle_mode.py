@@ -359,7 +359,7 @@ class PuzzleMode:
 
         # Add text to levels button
         levels_canvas.create_text(levels_button_width//2, levels_button_height//2,
-                                text="🎯 Levels",
+                                text="Levels",
                                 font=('Arial', max(14, int(self.window_width / 150)), 'bold'),
                                 fill=palette['puzzle_mode_button_text_color'],
                                 tags="levels_text")
@@ -1966,7 +1966,7 @@ class PuzzleMode:
 
         # Title
         title_font_size = max(16, int(self.window_width * 0.012))
-        title_label = tk.Label(title_bar, text="🎯 Select Level to Play",
+        title_label = tk.Label(title_bar, text="Select Level to Play",
                             font=('Arial', title_font_size, 'bold'),
                             fg=palette['title_color'], bg=palette['background_4'])
         title_label.place(relx=0.05, rely=0.5, anchor='w')
