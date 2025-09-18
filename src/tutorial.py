@@ -38,9 +38,9 @@ class TutorialWindow:
 
         # Add progress tracking with default values
         self.user_progress = {
-            'current_step': 0,  # 0=bit intro, 1=qubit intro, 2=gates
+            'current_step': 0,  # 0=bit intro, 1=logic gates, 2=qubit intro, 3=quantum gates
             'completed_gates': [],
-            'unlocked_gates': ['H'],  # Start with only H gate unlocked
+            'unlocked_gates': ['H'],
             'achievements': []
         }
 
@@ -74,7 +74,7 @@ class TutorialWindow:
         self.window.overrideredirect(True)
         self.window.geometry(f"{screen_width}x{screen_height}+0+0")
         self.window.configure(bg=palette['background'])
-        self.window.resizable(False, False)  # Fixed size window
+        self.window.resizable(False, False)
 
         # Store dimensions (use full screen)
         self.window_width = screen_width
@@ -83,13 +83,6 @@ class TutorialWindow:
         # Make window visible and focused immediately
         self.window.lift()
         self.window.focus_force()
-
-        # Handle window close event
-        self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-        # Handle ESC key to exit fullscreen
-        self.window.bind('<Escape>', lambda e: self.on_closing())
-
 
         # Gate information
         self.gate_info = {
@@ -160,7 +153,7 @@ class TutorialWindow:
         }
 
         # Start with intro instead of main UI
-        if self.user_progress['current_step'] < 2:
+        if self.user_progress['current_step'] < 3:
             self.show_intro_step()
         else:
             self.setup_ui()
@@ -208,8 +201,8 @@ class TutorialWindow:
 
     def start_gates_tutorial(self):
         """Start the gates tutorial"""
-        self.user_progress['current_step'] = 2
-        self.save_progress()  # Save after starting gates
+        self.user_progress['current_step'] = 3
+        self.save_progress()
         self.setup_ui()
 
 
@@ -226,12 +219,14 @@ class TutorialWindow:
         if self.user_progress['current_step'] == 0:
             self.show_bit_explanation()
         elif self.user_progress['current_step'] == 1:
+            self.show_logic_gates_explanation()
+        elif self.user_progress['current_step'] == 2:
             self.show_qubit_explanation()
 
 
     def show_bit_explanation(self):
         """Step 1 - What's a bit?"""
-        # Clear window
+        # Clear window EXCEPT background
         for widget in self.window.winfo_children():
             widget.destroy()
 
@@ -243,96 +238,95 @@ class TutorialWindow:
         title = tk.Label(main_frame, text="Step 1 — What's a bit?",
                         font=('Arial', max(24, int(self.window_width / 60)), 'bold'),
                         fg=palette['main_title_color'], bg=palette['background'])
-        title.place(relx=0.5, rely=0.1, anchor='center')
+        title.place(relx=0.5, rely=0.08, anchor='center')
 
         # Explanation text
         explanation = """A bit is the smallest piece of information a computer understands.
 
-It can only be 0 or 1 — like an on/off switch or a light bulb that's either off (0) or on (1).
+    It can only be 0 or 1 — like an on/off switch or a light bulb that's either off (0) or on (1).
 
-When you watch a video, play a game, or open an app, your computer is just working with billions of these 0s and 1s."""
+    When you watch a video, play a game, or open an app, your computer is just working with billions of these 0s and 1s."""
 
         text_label = tk.Label(main_frame, text=explanation,
-                             font=('Arial', max(14, int(self.window_width / 100))),
-                             fg=palette['explanation_text_color'], bg=palette['background'],
-                             wraplength=int(self.window_width * 0.7), justify=tk.CENTER)
-        text_label.place(relx=0.5, rely=0.35, anchor='center')
+                            font=('Arial', max(14, int(self.window_width / 100))),
+                            fg=palette['explanation_text_color'], bg=palette['background'],
+                            wraplength=int(self.window_width * 0.7), justify=tk.CENTER)
+        text_label.place(relx=0.5, rely=0.25, anchor='center')
+
+        # Analogy section
+        analogy_text = """Analogy: Imagine a coin lying flat on a table. If heads = 1 and tails = 0,
+    then the coin represents a bit — but it can only show one face at a time."""
+
+        analogy_label = tk.Label(main_frame, text=analogy_text,
+                                font=('Arial', max(14, int(self.window_width / 100)), 'italic'),
+                                fg=palette['gate_color'], bg=palette['background'],
+                                wraplength=int(self.window_width * 0.8), justify=tk.CENTER)
+        analogy_label.place(relx=0.5, rely=0.4, anchor='center')
 
         # Visual demonstration area
         visual_frame = tk.Frame(main_frame, bg=palette['background_2'], relief=tk.RAISED, bd=2)
-        visual_frame.place(relx=0.2, rely=0.55, relwidth=0.6, relheight=0.25)
+        visual_frame.place(relx=0.2, rely=0.5, relwidth=0.6, relheight=0.25)
 
         # Interactive bit demonstration
         self.create_bit_demo(visual_frame)
 
-        # Analogy section
-        analogy_text = """Analogy: Imagine a coin lying flat on a table. If heads = 1 and tails = 0,
-then the coin represents a bit — but it can only show one face at a time."""
+        # Next button - UPDATED TEXT
+        next_canvas = tk.Canvas(main_frame, width=350, height=70,
+                            bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+        next_canvas.place(relx=0.5, rely=0.85, anchor='center')
 
-        analogy_label = tk.Label(main_frame, text=analogy_text,
-                                font=('Arial', max(12, int(self.window_width / 120)), 'italic'),
-                                fg=palette['gate_color'], bg=palette['background'],
-                                wraplength=int(self.window_width * 0.8), justify=tk.CENTER)
-        analogy_label.place(relx=0.5, rely=0.85, anchor='center')
-
-        # Next button using canvas for macOS compatibility
-        next_canvas = tk.Canvas(main_frame, width=250, height=50,
-                               bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
-        next_canvas.place(relx=0.5, rely=0.95, anchor='center')
-
-        next_rect_id = next_canvas.create_rectangle(2, 2, 248, 48,
-                                                  fill=palette['gate_color'], outline=palette['gate_color'], width=0)
-        next_text_id = next_canvas.create_text(125, 25, text="Next: What's a Qubit? →",
-                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
-                                              fill=palette['background_3'])
+        next_rect_id = next_canvas.create_rectangle(2, 2, 348, 68,
+                                                fill=palette['gate_color'], outline=palette['gate_color'], width=0)
+        next_text_id = next_canvas.create_text(175, 35, text="Next: Learn Logic Gates →",  # UPDATED
+                                            font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
+                                            fill=palette['background_3'])
 
         next_canvas.bind("<Button-1>", lambda e: self.next_intro_step())
         next_canvas.bind("<Enter>", lambda e: (next_canvas.itemconfig(next_rect_id, fill=palette['gate_button_active_background']),
-                                              next_canvas.itemconfig(next_text_id, fill=palette['background_3'])))
+                                            next_canvas.itemconfig(next_text_id, fill=palette['background_3'])))
         next_canvas.bind("<Leave>", lambda e: (next_canvas.itemconfig(next_rect_id, fill=palette['gate_color']),
-                                              next_canvas.itemconfig(next_text_id, fill=palette['background_3'])))
+                                            next_canvas.itemconfig(next_text_id, fill=palette['background_3'])))
         next_canvas.configure(cursor='hand2')
 
 
     def create_bit_demo(self, parent):
         """Create interactive bit demonstration"""
         demo_title = tk.Label(parent, text="Interactive Bit Demo",
-                             font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
-                             fg=palette['main_title_color'], bg=palette['background_2'])
-        demo_title.place(relx=0.5, rely=0.1, anchor='center')
+                            font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
+                            fg=palette['main_title_color'], bg=palette['background_2'])
+        demo_title.place(relx=0.5, rely=0.15, anchor='center')  # Moved down slightly from 0.1
 
         # Bit state display
         self.bit_state = 0
         self.bit_display = tk.Label(parent, text="0",
-                                   font=('Arial', 48, 'bold'),
-                                   fg=palette['background_3'], bg=palette['gate_color' if self.bit_state else 'gate_color'],
-                                   width=3, height=1, relief=tk.RAISED, bd=3)
-        self.bit_display.place(relx=0.3, rely=0.5, anchor='center')
+                                font=('Arial', 48, 'bold'),
+                                fg=palette['background_3'], bg=palette['gate_color' if self.bit_state else 'gate_color'],
+                                width=3, height=1, relief=tk.RAISED, bd=3)
+        self.bit_display.place(relx=0.3, rely=0.45, anchor='center')  # Moved down from 0.4
 
-        # Flip button
-        # Flip bit button using canvas for macOS compatibility
-        flip_canvas = tk.Canvas(parent, width=100, height=40,
-                               bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
-        flip_canvas.place(relx=0.7, rely=0.5, anchor='center')
+        # Flip button - INCREASED SIZE for touchscreen
+        flip_canvas = tk.Canvas(parent, width=150, height=60,  # Increased from 100x40
+                            bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+        flip_canvas.place(relx=0.7, rely=0.45, anchor='center')  # Moved down from 0.4
 
-        flip_rect_id = flip_canvas.create_rectangle(2, 2, 98, 38,
-                                                  fill=palette['gate_color'], outline=palette['gate_color'], width=0)
-        flip_text_id = flip_canvas.create_text(50, 20, text="Flip Bit",
-                                              font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
-                                              fill=palette['background_3'])
+        flip_rect_id = flip_canvas.create_rectangle(2, 2, 148, 58,  # Updated coordinates
+                                                fill=palette['gate_color'], outline=palette['gate_color'], width=0)
+        flip_text_id = flip_canvas.create_text(75, 30, text="Flip Bit",  # Updated center coordinates
+                                            font=('Arial', max(16, int(self.window_width / 100)), 'bold'),  # Increased font size
+                                            fill=palette['background_3'])
 
         flip_canvas.bind("<Button-1>", lambda e: self.flip_bit())
         flip_canvas.bind("<Enter>", lambda e: (flip_canvas.itemconfig(flip_rect_id, fill=palette['button_hover_background']),
-                                              flip_canvas.itemconfig(flip_text_id, fill=palette['button_hover_text_color'])))
+                                            flip_canvas.itemconfig(flip_text_id, fill=palette['button_hover_text_color'])))
         flip_canvas.bind("<Leave>", lambda e: (flip_canvas.itemconfig(flip_rect_id, fill=palette['gate_color']),
-                                              flip_canvas.itemconfig(flip_text_id, fill=palette['background_3'])))
+                                            flip_canvas.itemconfig(flip_text_id, fill=palette['background_3'])))
         flip_canvas.configure(cursor='hand2')
 
-        # State label
+        # State label - INCREASED SIZE and moved down
         self.bit_label = tk.Label(parent, text="State: OFF",
-                                 font=('Arial', max(10, int(self.window_width / 150))),
-                                 fg=palette['explanation_text_color'], bg=palette['background_2'])
-        self.bit_label.place(relx=0.5, rely=0.8, anchor='center')
+                                font=('Arial', max(16, int(self.window_width / 100))),  # Increased from max(10, ...)
+                                fg=palette['explanation_text_color'], bg=palette['background_2'])
+        self.bit_label.place(relx=0.5, rely=0.75, anchor='center')  # Moved down from 0.7
 
 
     def flip_bit(self):
@@ -342,6 +336,411 @@ then the coin represents a bit — but it can only show one face at a time."""
                                   bg=palette['gate_color'] if self.bit_state else palette['gate_color'])
         self.bit_label.configure(text=f"State: {'ON' if self.bit_state else 'OFF'}")
         self.play_sound('button_click')
+
+
+    def show_logic_gates_explanation(self):
+        """Step 2 - Logic Gates (Classical Computing)"""
+        # Clear window EXCEPT background
+        for widget in self.window.winfo_children():
+            widget.destroy()
+
+        # Main container
+        main_frame = tk.Frame(self.window, bg=palette['background'])
+        main_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        # Title
+        title = tk.Label(main_frame, text="Step 2 — Logic Gates (Classical Computing)",
+                        font=('Arial', max(24, int(self.window_width / 60)), 'bold'),
+                        fg=palette['main_title_color'], bg=palette['background'])
+        title.place(relx=0.5, rely=0.06, anchor='center')
+
+        # Explanation text
+        explanation = """Now that you understand bits, let's explore how computers use them with logic gates.
+
+    Logic gates are the building blocks of all digital circuits. They take bits as input and produce bits as output.
+
+    You probably remember these from school, but let's refresh your memory!"""
+
+        text_label = tk.Label(main_frame, text=explanation,
+                            font=('Arial', max(14, int(self.window_width / 100))),
+                            fg=palette['explanation_text_color'], bg=palette['background'],
+                            wraplength=int(self.window_width * 0.8), justify=tk.CENTER)
+        text_label.place(relx=0.5, rely=0.18, anchor='center')
+
+        # Logic gates demonstration area
+        demo_frame = tk.Frame(main_frame, bg=palette['background_2'], relief=tk.RAISED, bd=2)
+        demo_frame.place(relx=0.1, rely=0.32, relwidth=0.8, relheight=0.45)
+
+        self.create_logic_gates_demo(demo_frame)
+
+        # Navigation buttons
+        # Back button
+        back_canvas = tk.Canvas(main_frame, width=120, height=50,
+                            bg=palette['background_2'], highlightthickness=0, relief=tk.FLAT, bd=0)
+        back_canvas.place(relx=0.25, rely=0.92, anchor='center')
+
+        back_rect_id = back_canvas.create_rectangle(2, 2, 118, 48,
+                                                fill=palette['background_2'], outline=palette['background_2'], width=0)
+        back_text_id = back_canvas.create_text(60, 25, text="← Back",
+                                            font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
+                                            fill=palette['explanation_text_color'])
+
+        back_canvas.bind("<Button-1>", lambda e: self.prev_intro_step())
+        back_canvas.bind("<Enter>", lambda e: (back_canvas.itemconfig(back_rect_id, fill=palette['button_hover_background']),
+                                            back_canvas.itemconfig(back_text_id, fill=palette['button_hover_text_color'])))
+        back_canvas.bind("<Leave>", lambda e: (back_canvas.itemconfig(back_rect_id, fill=palette['background_2']),
+                                            back_canvas.itemconfig(back_text_id, fill=palette['explanation_text_color'])))
+        back_canvas.configure(cursor='hand2')
+
+        # Next button
+        next_canvas = tk.Canvas(main_frame, width=280, height=60,
+                            bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+        next_canvas.place(relx=0.75, rely=0.92, anchor='center')
+
+        next_rect_id = next_canvas.create_rectangle(2, 2, 278, 58,
+                                                fill=palette['gate_color'], outline=palette['gate_color'], width=0)
+        next_text_id = next_canvas.create_text(140, 30, text="Next: Enter the Qubit →",
+                                            font=('Arial', max(12, int(self.window_width / 120)), 'bold'),
+                                            fill=palette['background_3'])
+
+        next_canvas.bind("<Button-1>", lambda e: self.next_intro_step())
+        next_canvas.bind("<Enter>", lambda e: (next_canvas.itemconfig(next_rect_id, fill=palette['button_hover_background']),
+                                            next_canvas.itemconfig(next_text_id, fill=palette['button_hover_text_color'])))
+        next_canvas.bind("<Leave>", lambda e: (next_canvas.itemconfig(next_rect_id, fill=palette['gate_color']),
+                                            next_canvas.itemconfig(next_text_id, fill=palette['background_3'])))
+        next_canvas.configure(cursor='hand2')
+
+
+    def create_logic_gates_demo(self, parent):
+        """Create interactive logic gates demonstration with improved layout"""
+        demo_title = tk.Label(parent, text="Interactive Logic Gates Demo",
+                            font=('Arial', max(16, int(self.window_width / 80)), 'bold'),
+                            fg=palette['main_title_color'], bg=palette['background_2'])
+        demo_title.place(relx=0.5, rely=0.08, anchor='center')
+
+        # Initialize gate states
+        self.input_a = 0
+        self.input_b = 0
+        self.selected_gate = None
+        self.gate_selected = False
+        self.output_computed = False
+
+        # Gate selection section - LEFT SIDE ONLY
+        gate_frame = tk.Frame(parent, bg=palette['background_2'])
+        gate_frame.place(relx=0.05, rely=0.2, relwidth=0.25, relheight=0.7)
+
+        tk.Label(gate_frame, text="Choose Logic Gate:\n",
+                font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
+                fg=palette['main_title_color'], bg=palette['background_2']).place(relx=0.5, rely=0.1, anchor='center')
+
+        # Gate buttons - vertical layout with MAXIMUM SPACING
+        gates = ["AND", "OR", "XOR", "NOT"]
+        self.gate_buttons = {}
+
+        for i, gate in enumerate(gates):
+            gate_canvas = tk.Canvas(gate_frame, width=200, height=80,  # Keep the bigger size
+                                bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            gate_canvas.place(relx=0.5, rely=0.25 + i * 0.22, anchor='center')  # INCREASED spacing from 0.2 to 0.22
+
+            gate_rect = gate_canvas.create_rectangle(2, 2, 198, 78,
+                                                fill=palette['gate_color'], outline=palette['gate_color'], width=0)
+            gate_text = gate_canvas.create_text(100, 40, text=gate,
+                                            font=('Arial', max(18, int(self.window_width / 80)), 'bold'),
+                                            fill=palette['background_3'])
+
+            # Store references for later highlighting
+            self.gate_buttons[gate] = {'canvas': gate_canvas, 'rect': gate_rect, 'text': gate_text}
+
+            gate_canvas.bind("<Button-1>", lambda e, g=gate: self.select_gate_new(g))
+            gate_canvas.bind("<Enter>", lambda e, canvas=gate_canvas, rect=gate_rect, text=gate_text:
+                            (canvas.itemconfig(rect, fill=palette['button_hover_background']),
+                            canvas.itemconfig(text, fill=palette['button_hover_text_color'])))
+            gate_canvas.bind("<Leave>", lambda e, canvas=gate_canvas, rect=gate_rect, text=gate_text, g=gate:
+                            self.restore_gate_color(g, canvas, rect, text))
+            gate_canvas.configure(cursor='hand2')
+
+        # Dynamic content area - RIGHT SIDE (initially empty)
+        self.dynamic_frame = tk.Frame(parent, bg=palette['background_2'])
+        self.dynamic_frame.place(relx=0.35, rely=0.2, relwidth=0.6, relheight=0.7)
+
+        # Show initial instruction
+        self.show_initial_instruction()
+
+
+    def restore_gate_color(self, gate, canvas, rect, text):
+        """Restore gate color based on selection state"""
+        if self.selected_gate == gate:
+            # Keep selected color with WHITE text
+            canvas.itemconfig(rect, fill=palette['gate_button_active_background'])
+            canvas.itemconfig(text, fill='white')  # CHANGED: Use white for selected text
+        else:
+            # Restore normal color
+            canvas.itemconfig(rect, fill=palette['gate_color'])
+            canvas.itemconfig(text, fill=palette['background_3'])
+
+
+    def show_initial_instruction(self):
+        """Show initial instruction when no gate is selected"""
+        for widget in self.dynamic_frame.winfo_children():
+            widget.destroy()
+
+        instruction_label = tk.Label(self.dynamic_frame,
+                                    text="← Select a logic gate\nto begin exploring!",
+                                    font=('Arial', max(16, int(self.window_width / 90)), 'italic'),
+                                    fg=palette['explanation_text_color'], bg=palette['background_2'],
+                                    justify=tk.CENTER)
+        instruction_label.place(relx=0.15, rely=0.5, anchor='center')
+
+
+    def select_gate_new(self, gate):
+        """Select logic gate and show inputs"""
+        self.selected_gate = gate
+        self.gate_selected = True
+        self.output_computed = False
+        self.play_sound('button_click')
+
+        # Update gate button appearance
+        self.update_gate_buttons()
+
+        # Show inputs for selected gate
+        self.show_gate_inputs()
+
+
+    def update_gate_buttons(self):
+        """Update gate button colors to show selection"""
+        for gate, button_info in self.gate_buttons.items():
+            if gate == self.selected_gate:
+                # Highlight selected gate with WHITE text for better visibility
+                button_info['canvas'].itemconfig(button_info['rect'], fill=palette['gate_button_active_background'])
+                button_info['canvas'].itemconfig(button_info['text'], fill='white')  # CHANGED: Use  white for selected text
+            else:
+                # Normal color for unselected gates
+                button_info['canvas'].itemconfig(button_info['rect'], fill=palette['gate_color'])
+                button_info['canvas'].itemconfig(button_info['text'], fill=palette['background_3'])
+
+
+    def show_gate_inputs(self):
+        """Show input controls after gate selection"""
+        # Clear dynamic area
+        for widget in self.dynamic_frame.winfo_children():
+            widget.destroy()
+
+        # Title for current gate - MOVED FURTHER LEFT TO CENTER IN DEMO BOX
+        gate_title = tk.Label(self.dynamic_frame, text=f"{self.selected_gate} Gate Inputs",
+                            font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
+                            fg=palette['main_title_color'], bg=palette['background_2'])
+        gate_title.place(relx=0.25, rely=0.08, anchor='center')
+
+        # Input A section - MOVED FURTHER LEFT
+        input_a_frame = tk.Frame(self.dynamic_frame, bg=palette['background_2'])
+        if self.selected_gate != "NOT":
+            # For two-input gates: position Input A further left
+            input_a_frame.place(relx=0.05, rely=0.25, relwidth=0.2, relheight=0.35)
+        else:
+            # For NOT gate: center Input A further left
+            input_a_frame.place(relx=0.15, rely=0.25, relwidth=0.2, relheight=0.35)
+
+        # MOVED INPUT A DISPLAY HIGHER TO CREATE SEPARATION
+        self.input_a_display = tk.Label(input_a_frame, text=str(self.input_a),
+                                    font=('Arial', 32, 'bold'),
+                                    fg=palette['background_3'], bg=palette['gate_color'],
+                                    width=2, height=1, relief=tk.RAISED, bd=2)
+        self.input_a_display.place(relx=0.5, rely=0.25, anchor='center')  # MOVED UP from 0.35 to 0.25
+
+        # Input A toggle button - MOVED UP TO PREVENT CUTOFF
+        toggle_a_canvas = tk.Canvas(input_a_frame, width=120, height=50,  # INCREASED from 80x35 to 120x50
+                                bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+        toggle_a_canvas.place(relx=0.5, rely=0.82, anchor='center')  # MOVED UP from 0.9 to 0.82
+
+        toggle_a_rect = toggle_a_canvas.create_rectangle(2, 2, 118, 48,  # UPDATED coordinates
+                                                        fill=palette['gate_color'], outline=palette['gate_color'], width=0)
+        toggle_a_text = toggle_a_canvas.create_text(60, 25, text="Toggle",  # UPDATED center coordinates
+                                                font=('Arial', max(14, int(self.window_width / 120)), 'bold'),  # INCREASED font size
+                                                fill=palette['background_3'])
+
+        toggle_a_canvas.bind("<Button-1>", lambda e: self.toggle_input_a_new())
+        toggle_a_canvas.bind("<Enter>", lambda e: (toggle_a_canvas.itemconfig(toggle_a_rect, fill=palette['button_hover_background']),
+                                                toggle_a_canvas.itemconfig(toggle_a_text, fill=palette['button_hover_text_color'])))
+        toggle_a_canvas.bind("<Leave>", lambda e: (toggle_a_canvas.itemconfig(toggle_a_rect, fill=palette['gate_color']),
+                                                toggle_a_canvas.itemconfig(toggle_a_text, fill=palette['background_3'])))
+        toggle_a_canvas.configure(cursor='hand2')
+
+        # Input B section (only for gates that need 2 inputs) - MOVED FURTHER LEFT
+        if self.selected_gate != "NOT":
+            input_b_frame = tk.Frame(self.dynamic_frame, bg=palette['background_2'])
+            input_b_frame.place(relx=0.25, rely=0.25, relwidth=0.2, relheight=0.35)
+
+            # MOVED INPUT B DISPLAY HIGHER TO CREATE SEPARATION
+            self.input_b_display = tk.Label(input_b_frame, text=str(self.input_b),
+                                        font=('Arial', 32, 'bold'),
+                                        fg=palette['background_3'], bg=palette['gate_color'],
+                                        width=2, height=1, relief=tk.RAISED, bd=2)
+            self.input_b_display.place(relx=0.5, rely=0.25, anchor='center')  # MOVED UP from 0.35 to 0.25
+
+            # Input B toggle button - MOVED UP TO PREVENT CUTOFF
+            toggle_b_canvas = tk.Canvas(input_b_frame, width=120, height=50,  # INCREASED from 80x35 to 120x50
+                                    bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+            toggle_b_canvas.place(relx=0.5, rely=0.82, anchor='center')  # MOVED UP from 0.9 to 0.82
+
+            toggle_b_rect = toggle_b_canvas.create_rectangle(2, 2, 118, 48,  # UPDATED coordinates
+                                                            fill=palette['gate_color'], outline=palette['gate_color'], width=0)
+            toggle_b_text = toggle_b_canvas.create_text(60, 25, text="Toggle",  # UPDATED center coordinates
+                                                    font=('Arial', max(14, int(self.window_width / 120)), 'bold'),  # INCREASED font size
+                                                    fill=palette['background_3'])
+
+            toggle_b_canvas.bind("<Button-1>", lambda e: self.toggle_input_b_new())
+            toggle_b_canvas.bind("<Enter>", lambda e: (toggle_b_canvas.itemconfig(toggle_b_rect, fill=palette['button_hover_background']),
+                                                    toggle_b_canvas.itemconfig(toggle_b_text, fill=palette['button_hover_text_color'])))
+            toggle_b_canvas.bind("<Leave>", lambda e: (toggle_b_canvas.itemconfig(toggle_b_rect, fill=palette['gate_color']),
+                                                    toggle_b_canvas.itemconfig(toggle_b_text, fill=palette['background_3'])))
+            toggle_b_canvas.configure(cursor='hand2')
+
+        # Compute button - MOVED EVEN LOWER
+        compute_canvas = tk.Canvas(self.dynamic_frame, width=200, height=70,  # INCREASED from 150x50 to 200x70
+                                bg=palette['gate_color'], highlightthickness=0, relief=tk.FLAT, bd=0)
+        compute_canvas.place(relx=0.25, rely=0.8, anchor='center')  # MOVED DOWN from 0.75 to 0.8
+
+        compute_rect = compute_canvas.create_rectangle(2, 2, 198, 68,  # UPDATED coordinates
+                                                    fill=palette['gate_color'], outline=palette['gate_color'], width=0)
+        compute_text = compute_canvas.create_text(100, 35, text="Compute",  # UPDATED center coordinates
+                                                font=('Arial', max(18, int(self.window_width / 90)), 'bold'),  # INCREASED font size
+                                                fill=palette['background_3'])
+
+        compute_canvas.bind("<Button-1>", lambda e: self.compute_output())
+        compute_canvas.bind("<Enter>", lambda e: (compute_canvas.itemconfig(compute_rect, fill=palette['button_hover_background']),
+                                                compute_canvas.itemconfig(compute_text, fill=palette['button_hover_text_color'])))
+        compute_canvas.bind("<Leave>", lambda e: (compute_canvas.itemconfig(compute_rect, fill=palette['gate_color']),
+                                                compute_canvas.itemconfig(compute_text, fill=palette['background_3'])))
+        compute_canvas.configure(cursor='hand2')
+
+
+    def toggle_input_a_new(self):
+        """Toggle input A and reset output"""
+        self.input_a = 1 - self.input_a
+        self.input_a_display.configure(text=str(self.input_a))
+        self.output_computed = False
+        self.play_sound('button_click')
+
+
+    def toggle_input_b_new(self):
+        """Toggle input B and reset output"""
+        self.input_b = 1 - self.input_b
+        if hasattr(self, 'input_b_display'):
+            self.input_b_display.configure(text=str(self.input_b))
+        self.output_computed = False
+        self.play_sound('button_click')
+
+
+    def compute_output(self):
+        """Compute and display the output with truth table"""
+        if not self.selected_gate:
+            return
+
+        # Calculate output
+        if self.selected_gate == "AND":
+            output = self.input_a & self.input_b
+            truth_data = [
+                ["Input 1", "Input 2", "Output"],
+                ["0", "0", "0"],
+                ["0", "1", "0"],
+                ["1", "0", "0"],
+                ["1", "1", "1"]
+            ]
+        elif self.selected_gate == "OR":
+            output = self.input_a | self.input_b
+            truth_data = [
+                ["Input 1", "Input 2", "Output"],
+                ["0", "0", "0"],
+                ["0", "1", "1"],
+                ["1", "0", "1"],
+                ["1", "1", "1"]
+            ]
+        elif self.selected_gate == "XOR":
+            output = self.input_a ^ self.input_b
+            truth_data = [
+                ["Input 1", "Input 2", "Output"],
+                ["0", "0", "0"],
+                ["0", "1", "1"],
+                ["1", "0", "1"],
+                ["1", "1", "0"]
+            ]
+        elif self.selected_gate == "NOT":
+            output = 1 - self.input_a
+            truth_data = [
+                ["Input 1", "Output"],
+                ["0", "1"],
+                ["1", "0"]
+            ]
+        else:
+            output = 0
+            truth_data = []
+
+        self.output_computed = True
+        self.play_sound('success')
+
+        # Show output and truth table
+        self.show_output_and_truth_table(output, truth_data)
+
+
+    def show_output_and_truth_table(self, output, truth_data):
+        """Display output and formatted truth table"""
+        # Output section - MOVED UP AND RIGHT TO ALIGN WITH OTHER TITLES
+        output_frame = tk.Frame(self.dynamic_frame, bg=palette['background_2'])
+        output_frame.place(relx=0.65, rely=0.01, relwidth=0.2, relheight=0.25)  # Moved further right and higher
+
+        tk.Label(output_frame, text="Output:",
+                font=('Arial', max(14, int(self.window_width / 100)), 'bold'),
+                fg=palette['main_title_color'], bg=palette['background_2']).place(relx=0.5, rely=0.15, anchor='center')  # Moved higher
+
+        output_display = tk.Label(output_frame, text=str(output),
+                                font=('Arial', 42, 'bold'),
+                                fg=palette['background_3'], bg=palette['gate_color'],
+                                width=2, height=1, relief=tk.RAISED, bd=3)
+        output_display.place(relx=0.5, rely=0.7, anchor='center')
+
+        # Truth table section - MOVED FURTHER RIGHT TO CENTER WITH OUTPUT
+        table_frame = tk.Frame(self.dynamic_frame, bg=palette['background_3'], relief=tk.RAISED, bd=2)
+        table_frame.place(relx=0.55, rely=0.28, relwidth=0.4, relheight=0.65)  # Moved right from 0.45 to 0.55, reduced width from 0.5 to 0.4
+
+        # Create actual table
+        self.create_truth_table(table_frame, truth_data)
+
+
+    def create_truth_table(self, parent, truth_data):
+        """Create a properly formatted truth table"""
+        if not truth_data:
+            return
+
+        # Calculate table dimensions
+        rows = len(truth_data)
+        cols = len(truth_data[0])
+
+        # Table container - REPOSITIONED MUCH LOWER FOR BETTER VISIBILITY
+        table_container = tk.Frame(parent, bg=palette['background_3'])
+        table_container.place(relx=0.5, rely=0.4, anchor='center')  # Moved down from 0.45 to 0.4 and centered properly
+
+        # Create table cells with BIGGER SIZE for better visibility
+        for row_idx, row_data in enumerate(truth_data):
+            for col_idx, cell_data in enumerate(row_data):
+                # Header row styling - FIXED: Only apply to actual header row
+                if row_idx == 0:
+                    cell_bg = palette['gate_color']
+                    cell_fg = palette['background_3']
+                    font_weight = 'bold'
+                    font_size = max(14, int(self.window_width / 110))  # INCREASED font size even more
+                else:
+                    # Data row styling - FIXED: Default styling for all data rows
+                    cell_bg = palette['background_2']
+                    cell_fg = palette['explanation_text_color']
+                    font_weight = 'normal'
+                    font_size = max(13, int(self.window_width / 120))  # INCREASED font size even more
+
+                # Create cell with EVEN BIGGER SIZE for better visibility
+                cell = tk.Label(table_container, text=cell_data,
+                            font=('Arial', font_size, font_weight),
+                            fg=cell_fg, bg=cell_bg,
+                            width=7, height=1, relief=tk.RAISED, bd=2)  # INCREASED width from 8 to 10, height from 2 to 3, border from 1 to 2
+                cell.grid(row=row_idx, column=col_idx, padx=3, pady=3)  # INCREASED padding from 2 to 3
 
 
     def show_qubit_explanation(self):
@@ -1098,36 +1497,6 @@ While spinning, it's kind of both heads and tails until you catch it and look.""
                     self.window.destroy()
             else:
                 self.window.destroy()
-
-
-    def on_closing(self):
-        """Handle window close event"""
-        self.play_sound('button_click')
-        if self.return_callback:
-            try:
-                # Create main menu FIRST
-                from game_mode_selection import GameModeSelection
-                selection_window = GameModeSelection()
-
-                # Make sure new window is visible
-                selection_window.root.update()
-                selection_window.root.lift()
-                selection_window.root.focus_force()
-
-                # THEN destroy current window
-                self.window.destroy()
-
-                # Start the main menu mainloop
-                selection_window.run()
-
-            except ImportError as e:
-                print(f"Error importing game mode selection: {e}")
-                self.window.destroy()
-            except Exception as e:
-                print(f"Error returning to main menu: {e}")
-                self.window.destroy()
-        else:
-            self.window.destroy()
 
 
     def create_enhanced_gate_button(self, parent, gate, relx, rely):
