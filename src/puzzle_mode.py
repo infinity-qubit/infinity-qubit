@@ -81,8 +81,24 @@ class PuzzleMode:
 
     def save_progress(self):
         """Save current progress to a file."""
+
+        if not os.path.exists(self.SAVE_FILE):
+            try:
+                with open(self.SAVE_FILE, "w") as f:
+                    default_data = {
+                        "current_level": self.current_level,
+                        "score": self.score,
+                        "placed_gates": self.placed_gates
+                    }
+                    json.dump(default_data, f)
+                print("✅ Created new save file.")
+            except Exception as e:
+                print(f"❌ Could not create save file: {e}")
+            return
+
         try:
             with open(self.SAVE_FILE, "r+") as f:
+                f.seek(0)
                 data = json.load(f)
                 old_current_level = data.get('current_level', 0)
                 # Save progress to file only if current_level is greater or equal than old current level
