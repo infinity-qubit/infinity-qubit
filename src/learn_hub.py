@@ -216,13 +216,13 @@ class LearnHub:
         # Create simplified header with internal padding
         self.create_animated_header(content_frame)
 
-        # Create a container to center the notebook with relative padding
+        # Create a container for the notebook spanning full width
         notebook_container = tk.Frame(content_frame, bg=palette['background_3'])
         notebook_container.pack(fill=tk.BOTH, expand=True,
-                            padx=int(self.screen_width * 0.02),
+                            padx=0,  # No horizontal padding for full width
                             pady=(0, int(self.screen_height * 0.02)))
 
-        # Create notebook for tabs - centered
+        # Create notebook for tabs - full width
         self.notebook = ttk.Notebook(notebook_container)
         self.notebook.pack(expand=True, fill=tk.BOTH)
 
@@ -239,6 +239,9 @@ class LearnHub:
         self.create_career_tab()
         self.create_resources_tab()
         
+        # Force equal distribution of tabs after creation
+        self.configure_equal_tab_distribution()
+        
         # Bind tab change to handle scrolling
         self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_change)
         
@@ -246,7 +249,7 @@ class LearnHub:
         self.scroll_indicator = tk.Label(
             content_frame, 
             text="↓ Drag to scroll content ↓",
-            font=('Arial', 10, 'italic'),
+            font=('Arial', 16, 'italic'),
             fg=palette['subtitle_color'],
             bg=palette['background_3']
         )
@@ -371,7 +374,7 @@ class LearnHub:
     def create_community_tab(self):
         """Community & Discussion tab: integrated information instead of external links"""
         community_frame = ttk.Frame(self.notebook)
-        self.notebook.add(community_frame, text=" Community & Discussion")
+        self.notebook.add(community_frame, text="Community")
 
         main_container = tk.Frame(community_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
@@ -379,7 +382,7 @@ class LearnHub:
         # Centered title
         title_frame = tk.Frame(main_container, bg=palette['background_3'])
         title_frame.pack(fill=tk.X, pady=10)
-        tk.Label(title_frame, text="Quantum Computing Communities", font=('Arial', 18, 'bold'), 
+        tk.Label(title_frame, text="Quantum Computing Communities", font=('Arial', 36, 'bold'), 
                  fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
         
         # Create a frame with scrollbar for better tablet usability
@@ -417,7 +420,7 @@ class LearnHub:
         canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
         
         # Store canvas in dictionary for tab switching
-        self.tab_scrolling[" Community & Discussion"] = canvas
+        self.tab_scrolling["Community"] = canvas
         
         # Bind canvas resize to adjust content width
         def on_canvas_resize(event):
@@ -461,22 +464,22 @@ class LearnHub:
             card.pack(fill=tk.X, pady=15, padx=20)
             
             # Card title
-            tk.Label(card, text=community["name"], font=('Arial', 18, 'bold'), 
+            tk.Label(card, text=community["name"], font=('Arial', 32, 'bold'), 
                     fg="#00ff88", bg=palette['background_3']).pack(anchor="center", pady=10)
             
             # Card description
-            tk.Label(card, text=community["description"], font=('Arial', 13), 
+            tk.Label(card, text=community["description"], font=('Arial', 22), 
                     fg=palette['subtitle_color'], bg=palette['background_3'], 
-                    wraplength=600, justify=tk.CENTER).pack(anchor="center", pady=5)
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center", pady=5)
             
             # Members info
-            tk.Label(card, text=f"Members: {community['members']}", font=('Arial', 12), 
+            tk.Label(card, text=f"Members: {community['members']}", font=('Arial', 20), 
                     fg=palette['description_label_color'], bg=palette['background_3']).pack(anchor="center", pady=5)
             
             # Topics info
-            tk.Label(card, text=f"Topics: {community['topics']}", font=('Arial', 12), 
+            tk.Label(card, text=f"Topics: {community['topics']}", font=('Arial', 20), 
                     fg=palette['description_label_color'], bg=palette['background_3'],
-                    wraplength=600, justify=tk.CENTER).pack(anchor="center", pady=5)
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center", pady=5)
             
             # Add separator except for last item
             if i < len(communities) - 1:
@@ -485,7 +488,7 @@ class LearnHub:
     def create_news_tab(self):
         """Latest News & Research tab: integrated information instead of external links"""
         news_frame = ttk.Frame(self.notebook)
-        self.notebook.add(news_frame, text=" News & Research")
+        self.notebook.add(news_frame, text="News & Research")
 
         main_container = tk.Frame(news_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
@@ -493,7 +496,7 @@ class LearnHub:
         # Centered title
         title_frame = tk.Frame(main_container, bg=palette['background_3'])
         title_frame.pack(fill=tk.X, pady=10)
-        tk.Label(title_frame, text="Latest Quantum Computing News", font=('Arial', 18, 'bold'), 
+        tk.Label(title_frame, text="Latest Quantum Computing News", font=('Arial', 36, 'bold'), 
                  fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
         
         # Create a frame with scrollbar for better tablet usability
@@ -534,7 +537,7 @@ class LearnHub:
         canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
         
         # Store canvas in dictionary for tab switching
-        self.tab_scrolling[" News & Research"] = canvas
+        self.tab_scrolling["News & Research"] = canvas
         
         # Bind canvas resize to adjust content width
         def on_canvas_resize(event):
@@ -592,12 +595,12 @@ class LearnHub:
             header.pack(fill=tk.X)
             
             # Title centered
-            tk.Label(header, text=article["title"], font=('Arial', 16, 'bold'), 
+            tk.Label(header, text=article["title"], font=('Arial', 28, 'bold'), 
                     fg="#4ecdc4", bg=palette['background_3'], 
-                    wraplength=600, justify=tk.CENTER).pack(anchor="center", pady=5)
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center", pady=5)
             
             # Date centered
-            tk.Label(header, text=article["date"], font=('Arial', 11, 'italic'), 
+            tk.Label(header, text=article["date"], font=('Arial', 20, 'italic'), 
                     fg=palette['description_label_color'], bg=palette['background_3']).pack(anchor="center")
             
             # Source and category in separate sections with larger touch targets
@@ -609,21 +612,21 @@ class LearnHub:
             category_inner.pack(anchor="center")
             
             # Category tag - larger and more prominent
-            category_label = tk.Label(category_inner, text=article["category"], font=('Arial', 11, 'bold'), 
-                                     fg="#FFFFFF", bg="#5151A2", padx=12, pady=4)
+            category_label = tk.Label(category_inner, text=article["category"], font=('Arial', 20, 'bold'), 
+                                     fg="#FFFFFF", bg="#5151A2", padx=18, pady=8)
             category_label.pack(side=tk.LEFT, padx=10)
             
             # Source
-            tk.Label(category_inner, text=f"Source: {article['source']}", font=('Arial', 11), 
-                    fg=palette['description_label_color'], bg=palette['background_3'], padx=5, pady=4).pack(side=tk.LEFT)
+            tk.Label(category_inner, text=f"Source: {article['source']}", font=('Arial', 20), 
+                    fg=palette['description_label_color'], bg=palette['background_3'], padx=8, pady=8).pack(side=tk.LEFT)
             
             # Summary - centered text
             summary_frame = tk.Frame(frame, bg=palette['background_3'], padx=20, pady=15)
             summary_frame.pack(fill=tk.X)
             
-            tk.Label(summary_frame, text=article["summary"], font=('Arial', 12), 
+            tk.Label(summary_frame, text=article["summary"], font=('Arial', 22), 
                     fg=palette['subtitle_color'], bg=palette['background_3'], 
-                    wraplength=600, justify=tk.CENTER).pack(anchor="center")
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center")
             
             # Bottom padding for better touch
             tk.Frame(frame, height=10, bg=palette['background_3']).pack(fill=tk.X)
@@ -637,7 +640,7 @@ class LearnHub:
     def create_projects_tab(self):
         """Project Ideas & Challenges tab: integrated project information instead of just ideas"""
         projects_frame = ttk.Frame(self.notebook)
-        self.notebook.add(projects_frame, text=" Projects & Challenges")
+        self.notebook.add(projects_frame, text="Projects")
 
         main_container = tk.Frame(projects_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
@@ -645,7 +648,7 @@ class LearnHub:
         # Centered title
         title_frame = tk.Frame(main_container, bg=palette['background_3'])
         title_frame.pack(fill=tk.X, pady=10)
-        tk.Label(title_frame, text="Quantum Computing Projects & Challenges", font=('Arial', 18, 'bold'), 
+        tk.Label(title_frame, text="Quantum Computing Projects & Challenges", font=('Arial', 36, 'bold'), 
                  fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
         
         # Create a frame with scrollbar for better tablet usability
@@ -686,7 +689,7 @@ class LearnHub:
         canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
         
         # Store canvas in dictionary for tab switching
-        self.tab_scrolling[" Projects & Challenges"] = canvas
+        self.tab_scrolling["Projects"] = canvas
         
         # Bind canvas resize to adjust content width
         def on_canvas_resize(event):
@@ -785,7 +788,7 @@ class LearnHub:
             header.pack(fill=tk.X)
             
             # Title centered
-            tk.Label(header, text=project["title"], font=('Arial', 16, 'bold'), 
+            tk.Label(header, text=project["title"], font=('Arial', 28, 'bold'), 
                     fg=palette['enhanced_title_color'], bg=palette['background_3']).pack(anchor="center", pady=5)
             
             # Difficulty and time info - centered
@@ -794,26 +797,26 @@ class LearnHub:
             
             # Difficulty badge - larger for touch
             difficulty_label = tk.Label(info_frame, text=project["difficulty"], 
-                                      font=('Arial', 12, 'bold'), 
+                                      font=('Arial', 20, 'bold'), 
                                       fg="white", bg=border_color, 
-                                      padx=12, pady=4)
+                                      padx=16, pady=8)
             difficulty_label.pack(side=tk.LEFT, padx=5)
             
             # Time estimate - larger for touch
             tk.Label(info_frame, text=f"Time: {project['time']}", 
-                    font=('Arial', 11), 
+                    font=('Arial', 18), 
                     fg=palette['description_label_color'], 
                     bg=palette['background_3'],
-                    padx=5, pady=4).pack(side=tk.LEFT)
+                    padx=8, pady=8).pack(side=tk.LEFT)
             
             # Description - centered
             desc_frame = tk.Frame(card, bg=palette['background_3'], padx=20, pady=10)
             desc_frame.pack(fill=tk.X)
             
             tk.Label(desc_frame, text=project["description"], 
-                    font=('Arial', 12), 
+                    font=('Arial', 20), 
                     fg=palette['subtitle_color'], bg=palette['background_3'], 
-                    wraplength=600, justify=tk.CENTER).pack(anchor="center")
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center")
             
             # Tools section - centered
             tools_frame = tk.Frame(card, bg=palette['background_3'], padx=20, pady=10)
@@ -823,11 +826,11 @@ class LearnHub:
             tools_container.pack(anchor="center")
             
             tk.Label(tools_container, text="Tools:", 
-                    font=('Arial', 12, 'bold'), 
-                    fg=palette['subtitle_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 5))
+                    font=('Arial', 20, 'bold'), 
+                    fg=palette['subtitle_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 8))
             
             tk.Label(tools_container, text=project["tools"], 
-                    font=('Arial', 12), 
+                    font=('Arial', 20), 
                     fg=palette['description_label_color'], bg=palette['background_3']).pack(side=tk.LEFT)
             
             # Steps section - centered header with left-aligned steps for readability
@@ -835,7 +838,7 @@ class LearnHub:
             steps_frame.pack(fill=tk.X)
             
             tk.Label(steps_frame, text="Implementation Steps:", 
-                    font=('Arial', 12, 'bold'), 
+                    font=('Arial', 20, 'bold'), 
                     fg=palette['subtitle_color'], bg=palette['background_3']).pack(anchor="center", pady=5)
             
             # Create bulleted list of steps - centered frame with left-aligned text
@@ -847,11 +850,11 @@ class LearnHub:
                 step_frame.pack(fill=tk.X, anchor="w", pady=4)  # Increased padding for touch
                 
                 tk.Label(step_frame, text="•", 
-                        font=('Arial', 12), 
-                        fg=palette['subtitle_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 8))
+                        font=('Arial', 20), 
+                        fg=palette['subtitle_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 12))
                 
                 tk.Label(step_frame, text=step, 
-                        font=('Arial', 12), 
+                        font=('Arial', 20), 
                         fg=palette['subtitle_color'], bg=palette['background_3'], 
                         anchor="w").pack(side=tk.LEFT, fill=tk.X)
                         
@@ -861,7 +864,7 @@ class LearnHub:
     def create_career_tab(self):
         """Career & Learning Pathways tab: integrated information instead of external links"""
         career_frame = ttk.Frame(self.notebook)
-        self.notebook.add(career_frame, text=" Career & Learning Pathways")
+        self.notebook.add(career_frame, text="Careers")
 
         main_container = tk.Frame(career_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
@@ -869,7 +872,7 @@ class LearnHub:
         # Centered title
         title_frame = tk.Frame(main_container, bg=palette['background_3'])
         title_frame.pack(fill=tk.X, pady=10)
-        tk.Label(title_frame, text="Quantum Computing Career Paths", font=('Arial', 18, 'bold'), 
+        tk.Label(title_frame, text="Quantum Computing Career Paths", font=('Arial', 36, 'bold'), 
                 fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
         
         # Create a frame with scrollbar for better tablet usability
@@ -910,7 +913,7 @@ class LearnHub:
         canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
         
         # Store canvas in dictionary for tab switching
-        self.tab_scrolling[" Career & Learning Pathways"] = canvas
+        self.tab_scrolling["Careers"] = canvas
         
         # Bind canvas resize to adjust content width
         def on_canvas_resize(event):
@@ -977,7 +980,7 @@ class LearnHub:
             title_frame = tk.Frame(card, bg=palette['background_3'], padx=15, pady=15)
             title_frame.pack(fill=tk.X)
             
-            tk.Label(title_frame, text=career["title"], font=('Arial', 16, 'bold'), 
+            tk.Label(title_frame, text=career["title"], font=('Arial', 28, 'bold'), 
                     fg="#ffb86b", bg=palette['background_3']).pack(anchor="center")
             
             separator = ttk.Separator(card, orient='horizontal')
@@ -998,18 +1001,18 @@ class LearnHub:
             ]
             
             for section in sections:
-                section_frame = tk.Frame(content, bg=palette['background_3'], pady=6)
+                section_frame = tk.Frame(content, bg=palette['background_3'], pady=10)
                 section_frame.pack(fill=tk.X, anchor="center")
                 
                 # Section title
-                title_label = tk.Label(section_frame, text=section["title"], font=('Arial', 12, 'bold'), 
+                title_label = tk.Label(section_frame, text=section["title"], font=('Arial', 20, 'bold'), 
                         fg=palette['subtitle_color'], bg=palette['background_3'])
-                title_label.pack(anchor="center", pady=(0, 3))
+                title_label.pack(anchor="center", pady=(0, 6))
                 
                 # Content - larger font for better readability on touch screens
-                content_label = tk.Label(section_frame, text=section["content"], font=('Arial', 12), 
+                content_label = tk.Label(section_frame, text=section["content"], font=('Arial', 18), 
                         fg=palette['description_label_color'], bg=palette['background_3'], 
-                        wraplength=600, justify=tk.CENTER)
+                        wraplength=900, justify=tk.CENTER)
                 content_label.pack(anchor="center")
             
             # Add bottom padding for touch
@@ -1203,19 +1206,20 @@ class LearnHub:
         style = ttk.Style()
         style.theme_use('clam')
 
-        # Enhanced notebook styling with larger targets for touch screens
+        # Enhanced notebook styling with larger targets for touch screens - full width
         style.configure('TNotebook',
                     background=palette['background_3'],
                     borderwidth=0,
-                    tabmargins=[5, 8, 5, 0])
+                    tabmargins=[0, 0, 0, 0])  # Remove margins to span full width
 
-        # Larger padding for touch-friendly tabs
+        # Larger padding for touch-friendly tabs - equal distribution
         style.configure('TNotebook.Tab',
                     background=palette['background_4'],
                     foreground='#ffffff',  # Default text color - white
-                    padding=[30, 20],      # Increased padding for touch
+                    padding=[10, 20],      # Reduced horizontal padding to fit equally
                     borderwidth=0,
-                    font=('Arial', 12, 'bold'))  # Larger font for better visibility
+                    font=('Arial', 18, 'bold'),  # Much larger font for better visibility
+                    anchor='center')  # Center text in tabs
 
         # FIXED: Text colors for tab states
         style.map('TNotebook.Tab',
@@ -1242,6 +1246,38 @@ class LearnHub:
         # Center the tabs by configuring tab positioning
         style.configure('TNotebook', tabposition='n')
 
+    def configure_equal_tab_distribution(self):
+        """Configure tabs to be equally distributed across the full width"""
+        # Update after the window is ready
+        self.root.after(100, self._apply_equal_distribution)
+    
+    def _apply_equal_distribution(self):
+        """Apply equal distribution styling to tabs"""
+        try:
+            # Get the number of tabs
+            tab_count = self.notebook.index("end")
+            if tab_count > 0:
+                # Calculate equal width for each tab
+                notebook_width = self.notebook.winfo_width()
+                if notebook_width > 1:  # Make sure notebook is rendered
+                    tab_width = notebook_width // tab_count
+                    
+                    # Apply uniform width to all tabs through styling
+                    style = ttk.Style()
+                    style.configure('TNotebook.Tab',
+                        background=palette['background_4'],
+                        foreground='#ffffff',
+                        padding=[5, 20],  # Minimal horizontal padding
+                        borderwidth=0,
+                        font=('Arial', 18, 'bold'),
+                        anchor='center',
+                        width=tab_width)  # Set calculated width
+                else:
+                    # Retry if notebook not ready
+                    self.root.after(100, self._apply_equal_distribution)
+        except Exception:
+            # Fallback - retry once more
+            self.root.after(200, self._apply_equal_distribution)
 
 
     # Removed concepts tab
@@ -1350,7 +1386,7 @@ class LearnHub:
     def create_resources_tab(self):
         """Resources tab: integrated information instead of external links"""
         resources_frame = ttk.Frame(self.notebook)
-        self.notebook.add(resources_frame, text=" Resources")
+        self.notebook.add(resources_frame, text="Resources")
 
         main_container = tk.Frame(resources_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
@@ -1358,7 +1394,7 @@ class LearnHub:
         # Centered title
         title_frame = tk.Frame(main_container, bg=palette['background_3'])
         title_frame.pack(fill=tk.X, pady=10)
-        tk.Label(title_frame, text="Quantum Computing Resources", font=('Arial', 18, 'bold'), 
+        tk.Label(title_frame, text="Quantum Computing Resources", font=('Arial', 36, 'bold'), 
                 fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
         
         # Create a frame with scrollbar for better tablet usability
@@ -1399,7 +1435,7 @@ class LearnHub:
         canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
         
         # Store canvas in dictionary for tab switching
-        self.tab_scrolling[" Resources"] = canvas
+        self.tab_scrolling["Resources"] = canvas
         
         # Bind canvas resize to adjust content width
         def on_canvas_resize(event):
@@ -1475,8 +1511,8 @@ class LearnHub:
             category_frame = tk.Frame(content_frame, bg=palette['background_3'])
             category_frame.pack(fill=tk.X, pady=(25, 10))
             
-            tk.Label(category_frame, text=category["name"], font=('Arial', 18, 'bold'), 
-                    fg="#50fa7b", bg=palette['background_3']).pack(anchor="center", pady=5)
+            tk.Label(category_frame, text=category["name"], font=('Arial', 30, 'bold'), 
+                    fg="#50fa7b", bg=palette['background_3']).pack(anchor="center", pady=8)
             
             # Items in this category
             for item_index, item in enumerate(category["items"]):
@@ -1488,20 +1524,20 @@ class LearnHub:
                 title_frame = tk.Frame(item_frame, bg=palette['background_3'], padx=15, pady=12)
                 title_frame.pack(fill=tk.X)
                 
-                tk.Label(title_frame, text=item["title"], font=('Arial', 16, 'bold'), 
-                        fg="#8be9fd", bg=palette['background_3']).pack(anchor="center", pady=(0, 5))
+                tk.Label(title_frame, text=item["title"], font=('Arial', 24, 'bold'), 
+                        fg="#8be9fd", bg=palette['background_3']).pack(anchor="center", pady=(0, 8))
                 
                 if "authors" in item:
-                    tk.Label(title_frame, text=f"By: {item['authors']}", font=('Arial', 12, 'italic'), 
-                            fg=palette['subtitle_color'], bg=palette['background_3']).pack(anchor="center", pady=(0, 5))
+                    tk.Label(title_frame, text=f"By: {item['authors']}", font=('Arial', 18, 'italic'), 
+                            fg=palette['subtitle_color'], bg=palette['background_3']).pack(anchor="center", pady=(0, 8))
                 
                 # Description - centered text with good readability
-                desc_frame = tk.Frame(item_frame, bg=palette['background_3'], padx=20, pady=12)
+                desc_frame = tk.Frame(item_frame, bg=palette['background_3'], padx=24, pady=16)
                 desc_frame.pack(fill=tk.X)
                 
-                tk.Label(desc_frame, text=item["description"], font=('Arial', 12), 
+                tk.Label(desc_frame, text=item["description"], font=('Arial', 18), 
                         fg=palette['description_label_color'], bg=palette['background_3'], 
-                        wraplength=650, justify=tk.CENTER).pack(anchor="center", pady=5)
+                        wraplength=900, justify=tk.CENTER).pack(anchor="center", pady=8)
             
             # Add separator between categories except for last one
             if category_index < len(categories) - 1:
@@ -1520,7 +1556,7 @@ class LearnHub:
         tips_title = tk.Frame(tips_frame, bg=palette['background_3'], padx=10, pady=15)
         tips_title.pack(fill=tk.X)
         
-        tk.Label(tips_title, text="Learning Tips", font=('Arial', 18, 'bold'), 
+        tk.Label(tips_title, text="Learning Tips", font=('Arial', 30, 'bold'), 
                 fg="#bd93f9", bg=palette['background_3']).pack(anchor="center")
         
         # Tips with larger touch targets
@@ -1533,11 +1569,11 @@ class LearnHub:
         ]
         
         # Container for tips
-        tips_list = tk.Frame(tips_frame, bg=palette['background_3'], padx=20, pady=15)
+        tips_list = tk.Frame(tips_frame, bg=palette['background_3'], padx=24, pady=18)
         tips_list.pack(fill=tk.X)
         
         for tip in tips:
-            tip_container = tk.Frame(tips_list, bg=palette['background_3'], pady=8)
+            tip_container = tk.Frame(tips_list, bg=palette['background_3'], pady=12)
             tip_container.pack(fill=tk.X)
             
             # Create a frame to center the tip content
@@ -1545,12 +1581,12 @@ class LearnHub:
             tip_content.pack(anchor="center")
             
             # Bullet point and tip text with larger font and padding for touch
-            tk.Label(tip_content, text="•", font=('Arial', 16, 'bold'), 
-                    fg=palette['description_label_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 10))
+            tk.Label(tip_content, text="•", font=('Arial', 24, 'bold'), 
+                    fg=palette['description_label_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 16))
             
-            tk.Label(tip_content, text=tip, font=('Arial', 13), 
+            tk.Label(tip_content, text=tip, font=('Arial', 20), 
                     fg=palette['description_label_color'], bg=palette['background_3'], 
-                    wraplength=600, justify=tk.LEFT).pack(side=tk.LEFT, padx=5, pady=5)
+                    wraplength=900, justify=tk.LEFT).pack(side=tk.LEFT, padx=8, pady=8)
 
 
     def create_enhanced_resource_card_horizontal(self, parent, title, url, description, icon, rating):
