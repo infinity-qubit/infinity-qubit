@@ -30,7 +30,7 @@ class PuzzleMode:
     SAVE_FILE = os.path.expanduser("resources/saves/infinity_qubit_puzzle_save.json")
 
 
-    def __init__(self, root):
+    def __init__(self, root, starting_level=0):
         self.root = root
         self.root.title("Infinity Qubit - Puzzle Mode")
 
@@ -61,7 +61,7 @@ class PuzzleMode:
         self.root.bind('<Escape>', lambda e: self.return_to_main_menu())
 
         # Game state
-        self.current_level = 0
+        self.current_level = starting_level
         self.placed_gates = []
         self.score = 0
         self.levels = self.load_puzzle_levels()
@@ -81,17 +81,35 @@ class PuzzleMode:
 
     def save_progress(self):
         """Save current progress to a file."""
-        data = {
-            "current_level": self.current_level,
-            "score": self.score,
-            "placed_gates": self.placed_gates,
-        }
         try:
-            with open(self.SAVE_FILE, "w") as f:
-                json.dump(data, f)
-            print("✅ Progress saved.")
+            with open(self.SAVE_FILE, "r+") as f:
+                data = json.load(f)
+                old_current_level = data.get('current_level', 0)
+                # Save progress to file only if current_level is greater or equal than old current level
+                if self.current_level >= old_current_level:
+                    new_data = {
+                        "current_level": self.current_level,
+                        "score": self.score,
+                        "placed_gates": self.placed_gates
+                    }
+                    f.seek(0)
+                    json.dump(new_data, f)
+                    f.truncate()
+        except (json.JSONDecodeError, ValueError) as e:
+            # Write default values to file
+            try:
+                with open(self.SAVE_FILE, "w") as f:
+                    default_data = {
+                        "current_level": self.current_level,
+                        "score": self.score,
+                        "placed_gates": self.placed_gates
+                    }
+                    json.dump(default_data, f)
+            except Exception as e2:
+                print(f"❌ Could not create save file: {e2}")
         except Exception as e:
             print(f"❌ Could not save progress: {e}")
+
 
 
     def load_progress(self):
@@ -100,13 +118,17 @@ class PuzzleMode:
             try:
                 with open(self.SAVE_FILE, "r") as f:
                     data = json.load(f)
-                self.current_level = data.get("current_level", 0)
                 self.score = data.get("score", 0)
-                self.placed_gates = data.get("placed_gates", [])
+
+                # Load the saved circuit only if current level is selected
+                current_level = data.get('current_level', 0)
+                if current_level == self.current_level:
+                    self.placed_gates = data.get("placed_gates", [])
+
                 print("✅ Progress loaded.")
             except Exception as e:
                 print(f"❌ Could not load progress: {e}")
-
+    
 
     def create_canvas_dialog_button(self, parent, text, command, bg_color, text_color,
                                    width=120, height=40, font_size=12, font_weight='bold'):
@@ -1924,226 +1946,19 @@ class PuzzleMode:
 
 
     def show_level_selection_dialog(self):
-        """Show a large dialog with all 30 levels arranged in a grid"""
+        """Open the level selection window and close current puzzle window"""
         self.play_sound('button_click')
 
-        # Create dialog
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Select Level")
-        dialog.configure(bg=palette['background'])
+        # Save progress
+        self.save_progress()
 
-        # Make dialog fullscreen-compatible and always on top
-        dialog.overrideredirect(True)
-        dialog.attributes('-topmost', True)
-
-        # Calculate responsive size (80% of screen width and height)
-        dialog_width = int(self.window_width * 0.8)
-        dialog_height = int(self.window_height * 0.8)
-        x = (self.window_width - dialog_width) // 2
-        y = (self.window_height - dialog_height) // 2
-        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
-
-        dialog.transient(self.root)
-        try:
-            dialog.grab_set()
-            dialog.focus_force()
-        except tk.TclError:
-            # Window not ready yet, try again after a short delay
-            self.root.after(50, lambda: dialog.grab_set() if dialog.winfo_exists() else None)
-            dialog.focus_force()
-
-        # Border frame
-        border_frame = tk.Frame(dialog, bg=palette['main_menu_button_text_color'], bd=2, relief=tk.RAISED)
-        border_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
-
-        # Main frame
-        main_frame = tk.Frame(border_frame, bg=palette['background_3'])
-        main_frame.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
-
-        # Title bar
-        title_bar = tk.Frame(main_frame, bg=palette['background_4'])
-        title_bar.place(relx=0, rely=0, relwidth=1, relheight=0.1)
-
-        # Title
-        title_font_size = max(16, int(self.window_width * 0.012))
-        title_label = tk.Label(title_bar, text="Select Level to Play",
-                            font=('Arial', title_font_size, 'bold'),
-                            fg=palette['title_color'], bg=palette['background_4'])
-        title_label.place(relx=0.05, rely=0.5, anchor='w')
-
-        # Close button
-        close_canvas = tk.Canvas(title_bar, bg=palette['background_4'], highlightthickness=0, bd=0)
-        close_canvas.place(relx=0.9, rely=0.5, relwidth=0.08, relheight=0.6, anchor='center')
-
-        def draw_close_button():
-            close_canvas.delete("all")
-            close_canvas.update_idletasks()
-            width = close_canvas.winfo_width()
-            height = close_canvas.winfo_height()
-            if width > 1 and height > 1:
-                close_canvas.create_rectangle(2, 2, width-2, height-2,
-                                            fill=palette['background_4'], 
-                                            outline=palette['title_color'], width=1, tags="bg")
-                close_canvas.create_text(width//2, height//2, text="✕",
-                                    font=('Arial', int(min(width, height) * 0.4), 'bold'), 
-                                    fill=palette['title_color'], tags="text")
-
-        close_canvas.bind('<Configure>', lambda e: draw_close_button())
-        close_canvas.after(10, draw_close_button)
-        close_canvas.bind("<Button-1>", lambda e: dialog.destroy())
-
-        # Hover effects for close button
-        def close_on_enter(event):
-            close_canvas.itemconfig("bg", fill=palette['button_hover_background'])
-            close_canvas.itemconfig("text", fill=palette['button_hover_text_color'])
-            close_canvas.configure(cursor='hand2')
-
-        def close_on_leave(event):
-            close_canvas.itemconfig("bg", fill=palette['background_4'])
-            close_canvas.itemconfig("text", fill=palette['title_color'])
-            close_canvas.configure(cursor='')
-
-        close_canvas.bind("<Enter>", close_on_enter)
-        close_canvas.bind("<Leave>", close_on_leave)
-
-        # Content area (no scrolling needed)
-        content_frame = tk.Frame(main_frame, bg=palette['background_3'])
-        content_frame.place(relx=0, rely=0.1, relwidth=1, relheight=0.9)
-
-        # Create the level grid directly in content frame (6 columns, 5 rows for 30 levels)
-        self.create_level_grid(content_frame, dialog)
-
-        # Make title bar draggable
-        def start_move(event):
-            dialog.x = event.x_root - dialog.winfo_x()
-            dialog.y = event.y_root - dialog.winfo_y()
-
-        def on_move(event):
-            x = event.x_root - dialog.x
-            y = event.y_root - dialog.y
-            dialog.geometry(f"+{x}+{y}")
-
-        title_bar.bind("<Button-1>", start_move)
-        title_bar.bind("<B1-Motion>", on_move)
-        title_label.bind("<Button-1>", start_move)
-        title_label.bind("<B1-Motion>", on_move)
-
-        # Bind Escape to close
-        dialog.bind('<Escape>', lambda e: dialog.destroy())
-
-
-    def create_level_grid(self, parent, dialog):
-        """Create a 6x5 grid of level buttons"""
-        cols = 6
-        rows = 5
-
-        # Calculate larger button size to better fill the dialog space
-        button_width = max(160, int(self.window_width * 0.12))
-        button_height = max(120, int(self.window_height * 0.12))
+        # Close current puzzle window
+        self.root.destroy()
         
-        # Create a main container frame for the grid with less padding
-        grid_container = tk.Frame(parent, bg=palette['background_3'])
-        grid_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        # Configure grid weights to make buttons expand
-        for i in range(cols):
-            grid_container.grid_columnconfigure(i, weight=1)
-        for i in range(rows):
-            grid_container.grid_rowconfigure(i, weight=1)
-
-        for level_index in range(len(self.levels)):
-            if level_index >= 30:  # Safety check for display
-                break
-                
-            row = level_index // cols
-            col = level_index % cols
-            
-            level = self.levels[level_index]
-            
-            # Create button frame using grid with larger spacing
-            btn_frame = tk.Frame(grid_container, bg=palette['background_4'], relief=tk.RAISED, bd=2,
-                               width=button_width, height=button_height)
-            btn_frame.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
-            btn_frame.grid_propagate(False)  # Maintain fixed size
-
-            # Create canvas button
-            btn_canvas = tk.Canvas(btn_frame, bg=palette['background'], highlightthickness=0, bd=0)
-            btn_canvas.place(relx=0.05, rely=0.05, relwidth=0.9, relheight=0.9)
-
-            def draw_level_button(event=None, canvas=btn_canvas, level_num=level_index+1, level_data=level):
-                canvas.delete("all")
-                canvas.update_idletasks()
-                width = canvas.winfo_width()
-                height = canvas.winfo_height()
-                if width > 1 and height > 1:
-                    # Determine button color based on difficulty
-                    diff_colors = {
-                        'Beginner': palette.get('beginner_color', '#4CAF50'),
-                        'Intermediate': palette.get('intermediate_color', '#FF9800'),
-                        'Advanced': palette.get('advanced_color', '#F44336'),
-                        'Expert': palette.get('expert_color', '#9C27B0'),
-                        'Master': palette.get('master_color', '#000000')
-                    }
-                    bg_color = diff_colors.get(level_data['difficulty'], palette['background'])
-                    
-                    # Highlight current level
-                    if level_num - 1 == self.current_level:
-                        bg_color = palette.get('button_hover_background', '#ffd08f')
-                    
-                    canvas.create_rectangle(2, 2, width-2, height-2,
-                                        fill=bg_color, 
-                                        outline=palette['combobox_color'], width=2, tags="bg")
-                    
-                    # Level number with larger font
-                    level_font_size = max(16, int(min(width, height) * 0.28))
-                    canvas.create_text(width//2, height//4, text=f"Level {level_num}",
-                                    font=('Arial', level_font_size, 'bold'), 
-                                    fill='white', tags="text")
-                    
-                    # Level name (truncated if too long) with larger font - single line only
-                    name = level_data['name']
-                    if len(name) > 15:  # Allow longer names for bigger buttons
-                        name = name[:15] + "..."
-                    
-                    name_font_size = max(12, int(min(width, height) * 0.14))
-                    canvas.create_text(width//2, height//2, text=name,
-                                    font=('Arial', name_font_size), 
-                                    fill='white', tags="text")
-                    
-                    # Difficulty with larger font
-                    diff_font_size = max(10, int(min(width, height) * 0.12))
-                    canvas.create_text(width//2, 3*height//4, text=level_data['difficulty'],
-                                    font=('Arial', diff_font_size), 
-                                    fill='white', tags="text")
-
-            btn_canvas.bind('<Configure>', draw_level_button)
-            btn_canvas.after(10, draw_level_button)
-
-            # Click handler
-            def create_level_handler(selected_level):
-                def on_level_select(event):
-                    dialog.destroy()
-                    self.load_level(selected_level)
-                return on_level_select
-
-            btn_canvas.bind("<Button-1>", create_level_handler(level_index))
-
-            # Hover effects
-            def create_hover_handlers(canvas, level_num, level_data):
-                def on_enter(event):
-                    canvas.itemconfig("bg", fill=palette['button_hover_background'])
-                    canvas.configure(cursor='hand2')
-
-                def on_leave(event):
-                    # Redraw with original colors
-                    draw_level_button(canvas=canvas, level_num=level_num, level_data=level_data)
-                    canvas.configure(cursor='')
-
-                return on_enter, on_leave
-
-            on_enter, on_leave = create_hover_handlers(btn_canvas, level_index+1, level)
-            btn_canvas.bind("<Enter>", on_enter)
-            btn_canvas.bind("<Leave>", on_leave)
+        # Import and start puzzle level selection
+        from puzzle_level_selection import PuzzleLevelSelection
+        level_selection = PuzzleLevelSelection()
+        level_selection.run()
 
 
     def set_initial_state(self, qc, initial_state):
@@ -3010,7 +2825,7 @@ Thank you for playing Infinity Qubit!"""
 
         # Make buttons even bigger for the larger dialog
         yes_canvas = self.create_canvas_dialog_button(
-            button_frame, "✓ Yes, Return",
+            button_frame, "Yes, Return",
             confirm_return,
             palette['return_to_gamemode_button_background'],
             palette['return_to_gamemode_button_text_color'],
@@ -3019,7 +2834,7 @@ Thank you for playing Infinity Qubit!"""
         yes_canvas.pack(side=tk.LEFT, padx=30)
 
         no_canvas = self.create_canvas_dialog_button(
-            button_frame, "✗ No, Stay",
+            button_frame, "No, Stay",
             cancel_return,
             palette['close_gamemode_button_background'],
             palette['close_gamemode_button_hover_text_color'],

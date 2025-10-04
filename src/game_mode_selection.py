@@ -695,32 +695,24 @@ class GameModeSelection:
 
 
     def start_puzzle_mode(self):
-        """Start the puzzle mode"""
-        print("📚 Starting Puzzle Mode...")
+        """Start the puzzle level selection"""
+        print("📚 Starting Puzzle Level Selection...")
         try:
-            from puzzle_mode import PuzzleMode
+            from puzzle_level_selection import PuzzleLevelSelection
 
-            # Create new window first
-            puzzle_root = tk.Tk()
-            puzzle_app = PuzzleMode(puzzle_root)
-
-            # Make sure new window is visible before closing this one
-            puzzle_root.update()
-            puzzle_root.lift()
-            puzzle_root.focus_force()
-
-            # Now safely close main window
+            # Close current window
             self.root.destroy()
 
-            # Start the puzzle mode mainloop
-            puzzle_root.mainloop()
+            # Start the puzzle level selection
+            level_selection = PuzzleLevelSelection()
+            level_selection.run()
 
         except ImportError:
-            print("❌ Puzzle mode module not found")
-            messagebox.showerror("Error", "Puzzle mode module not available")
+            print("❌ Puzzle level selection module not found")
+            messagebox.showerror("Error", "Puzzle level selection module not available")
         except Exception as e:
-            print(f"❌ Error starting puzzle mode: {e}")
-            messagebox.showerror("Error", f"Error starting puzzle mode: {str(e)}")
+            print(f"❌ Error starting puzzle level selection: {e}")
+            messagebox.showerror("Error", f"Error starting puzzle level selection: {str(e)}")
 
 
     def start_sandbox_mode(self):
