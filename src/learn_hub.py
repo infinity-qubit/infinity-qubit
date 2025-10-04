@@ -8,8 +8,10 @@ import sys
 import webbrowser
 import tkinter as tk
 from tkinter import ttk, scrolledtext
+import os
 
-sys.path.append('..')
+# Add parent directory to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from run import PROJECT_ROOT, get_resource_path
 from q_utils import get_colors_from_file, extract_color_palette
 
@@ -37,6 +39,17 @@ class LearnHub:
         self.screen_height = screen_height
         self.window_width = screen_width
         self.window_height = screen_height
+        
+        # Animation tracking
+        self.animation_id = None
+        self.animation_ids = []  # Track all animation IDs
+        self.animation_running = False
+        
+        # Scrolling variables
+        self.scroll_start_y = 0
+        self.last_y = 0
+        self.is_scrolling = False
+        self.scroll_indicator = None
 
         # Bind Escape key to exit
         self.root.bind('<Escape>', self.exit_fullscreen)
@@ -59,6 +72,40 @@ class LearnHub:
         # Make window focused
         self.root.lift()
         self.root.focus_force()
+        
+        # Apply extra-wide scrollbar styling
+        self.style_scrollbars()
+
+
+    def style_scrollbars(self):
+        """Apply extra-wide scrollbar styling for better touch interaction"""
+        style = ttk.Style()
+        
+        # Configure both standard scrollbar and our custom vertical scrollbar
+        for scrollbar_style in ["TScrollbar", "Vertical.TScrollbar"]:
+            style.configure(scrollbar_style, 
+                          gripcount=0,
+                          background=palette['subtitle_color'],
+                          darkcolor=palette['background_4'], 
+                          lightcolor=palette['background_3'],
+                          troughcolor=palette['background_4'],
+                          bordercolor=palette['background_4'],
+                          arrowcolor=palette['title_color'],
+                          arrowsize=40,
+                          width=150)  # Extra wide scrollbar for tablet use
+        
+        # Apply the styling to map states as well
+        style.map("TScrollbar",
+                background=[("active", palette['background_4'])],
+                arrowcolor=[("active", palette['title_color'])])
+        
+        style.map("Vertical.TScrollbar",
+                background=[("active", palette['background_4'])],
+                arrowcolor=[("active", palette['title_color'])])
+        
+        # Override any default scrollbar appearance
+        self.root.option_add("*TScrollbar*width", 150)
+        self.root.option_add("*Scrollbar*width", 150)
 
 
     def exit_fullscreen(self, event=None):
@@ -126,10 +173,15 @@ class LearnHub:
     def start_animations(self):
         """Start background animations"""
         self.animation_running = True
+        
         # Start circuit animation after UI is ready with a longer interval
-        self.animation_id = self.root.after(500, self.animate_circuit)
-        # Start subtitle animation
-        self.root.after(1000, self.animate_subtitle)
+        animation_id = self.root.after(500, self.animate_circuit)
+        self.animation_id = str(animation_id)
+        self.animation_ids.append(self.animation_id)
+        
+        # Start subtitle animation with lambda to avoid "invalid command name" error
+        subtitle_anim_id = self.root.after(1000, lambda: self.animate_subtitle())
+        self.animation_ids.append(str(subtitle_anim_id))
 
 
     def on_window_resize(self, event):
@@ -161,34 +213,816 @@ class LearnHub:
         content_frame = tk.Frame(main_frame, bg=palette['background_3'])
         content_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Create animated header with internal padding
+        # Create simplified header with internal padding
         self.create_animated_header(content_frame)
 
-        # Create a container to center the notebook with relative padding
+        # Create a container for the notebook spanning full width
         notebook_container = tk.Frame(content_frame, bg=palette['background_3'])
         notebook_container.pack(fill=tk.BOTH, expand=True,
-                            padx=int(self.screen_width * 0.02),
+                            padx=0,  # No horizontal padding for full width
                             pady=(0, int(self.screen_height * 0.02)))
 
-        # Create notebook for tabs - centered
+        # Create notebook for tabs - full width
         self.notebook = ttk.Notebook(notebook_container)
         self.notebook.pack(expand=True, fill=tk.BOTH)
 
         # Apply enhanced styling
         self.style_notebook()
-
-        # Create tabs with enhanced design
-        self.create_concepts_tab()
-        self.create_gates_tab()
-        self.create_algorithms_tab()
+        
+        # Dictionary to store scroll widgets for each tab
+        self.tab_scrolling = {}
+        
+        # Create new tabs for expanded Learn Hub
+        self.create_community_tab()
+        self.create_news_tab()
+        self.create_projects_tab()
+        self.create_career_tab()
         self.create_resources_tab()
+        
+        # Force equal distribution of tabs after creation
+        self.configure_equal_tab_distribution()
+        
+        # Bind tab change to handle scrolling
+        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_change)
+        
+        # Add a scroll indicator label to show users they can scroll
+        self.scroll_indicator = tk.Label(
+            content_frame, 
+            text="↓ Drag to scroll content ↓",
+            font=('Arial', 16, 'italic'),
+            fg=palette['subtitle_color'],
+            bg=palette['background_3']
+        )
+        self.scroll_indicator.place(relx=0.5, rely=0.95, anchor="center")
+        
+        # After 5 seconds, fade out the indicator
+        self.root.after(5000, self.hide_scroll_indicator)
+    
+    def _hide_scroll_indicator_widget(self):
+        """Hide the scroll indicator widget with a fade effect"""
+        if hasattr(self, 'scroll_indicator_widget') and self.scroll_indicator_widget:
+            try:
+                self.scroll_indicator_widget.destroy()
+            except:
+                pass
+            self.scroll_indicator_widget = None
+            
+    def hide_scroll_indicator(self):
+        """Hide the scroll indicator after a delay"""
+        if hasattr(self, 'scroll_indicator') and self.scroll_indicator.winfo_exists():
+            self.scroll_indicator.destroy()
+        
+    def on_tab_change(self, event):
+        """Handle tab changes to manage scrolling bindings"""
+        # Remove any existing scroll indicator
+        if hasattr(self, 'scroll_indicator_widget') and self.scroll_indicator_widget:
+            try:
+                self.scroll_indicator_widget.destroy()
+            except:
+                pass
+            self.scroll_indicator_widget = None
+            
+        # Unbind all wheel and drag events first
+        self.root.unbind_all("<MouseWheel>")
+        self.root.unbind_all("<Button-4>")
+        self.root.unbind_all("<Button-5>")
+        
+        # Reset scrolling state
+        self.is_scrolling = False
+        
+        # Get current tab
+        current_tab = self.notebook.index("current")
+        tab_name = self.notebook.tab(current_tab, "text").strip()
+        
+        # If this tab has scroll widgets, bind them
+        if tab_name in self.tab_scrolling:
+            canvas = self.tab_scrolling[tab_name]
+            
+            # Bind mouse wheel for scrolling (Windows)
+            def _on_mousewheel(event):
+                # For Windows
+                if hasattr(event, 'delta'):
+                    canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+                # For Linux (event.num)
+                elif event.num == 4:
+                    canvas.yview_scroll(-1, "units")
+                elif event.num == 5:
+                    canvas.yview_scroll(1, "units")
+                
+            # Separate functions for Linux scrolling
+            def _on_button4(event):
+                canvas.yview_scroll(-1, "units")
+                
+            def _on_button5(event):
+                canvas.yview_scroll(1, "units")
+            
+            # Bind drag scrolling events
+            def _start_scroll(event):
+                # Only start scrolling on left mouse button
+                if event.num == 1:
+                    # Remember the starting position
+                    self.scroll_start_y = event.y
+                    self.last_y = event.y
+                    self.is_scrolling = True
+                    
+                    # Change cursor to indicate dragging is happening
+                    canvas.config(cursor="fleur")
+            
+            def _do_scroll(event):
+                # Only scroll if we're in scrolling mode
+                if not self.is_scrolling:
+                    return
+                    
+                # Calculate how far we've moved
+                delta_y = self.last_y - event.y
+                self.last_y = event.y
+                
+                if delta_y != 0:
+                    # Scroll the canvas - adjust sensitivity as needed
+                    # Lower denominator = more sensitive scrolling
+                    scroll_amount = int(delta_y/1.5)  # More sensitive scrolling
+                    if scroll_amount != 0:
+                        canvas.yview_scroll(scroll_amount, "units")
+            
+            def _stop_scroll(event):
+                # Reset scrolling state and cursor
+                self.is_scrolling = False
+                canvas.config(cursor="hand2")  # Reset to hand cursor
+            
+            # Handle mouse leaving canvas during drag
+            def _on_leave(event):
+                if self.is_scrolling:
+                    self.is_scrolling = False
+                    canvas.config(cursor="hand2")  # Reset to hand cursor
+            
+            # Bind wheel events - use platform-specific bindings
+            # Windows/macOS wheel event
+            self.root.bind_all("<MouseWheel>", _on_mousewheel)
+            # Linux wheel events
+            self.root.bind_all("<Button-4>", _on_button4)
+            self.root.bind_all("<Button-5>", _on_button5)
+            
+            # Bind drag scrolling events directly to the canvas for better performance
+            canvas.bind("<ButtonPress-1>", _start_scroll)
+            canvas.bind("<B1-Motion>", _do_scroll)
+            canvas.bind("<ButtonRelease-1>", _stop_scroll)
+            canvas.bind("<Leave>", _on_leave)
+            
+            # Ensure the canvas has focus for events
+            canvas.focus_set()
 
-        # Enhanced footer
-        # self.create_enhanced_footer(content_frame)
+    def create_community_tab(self):
+        """Community & Discussion tab: integrated information instead of external links"""
+        community_frame = ttk.Frame(self.notebook)
+        self.notebook.add(community_frame, text="Community")
 
+        main_container = tk.Frame(community_frame, bg=palette['background_3'])
+        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
+        # Centered title
+        title_frame = tk.Frame(main_container, bg=palette['background_3'])
+        title_frame.pack(fill=tk.X, pady=10)
+        tk.Label(title_frame, text="Quantum Computing Communities", font=('Arial', 36, 'bold'), 
+                 fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
+        
+        # Create a frame with scrollbar for better tablet usability
+        outer_frame = tk.Frame(main_container, bg=palette['background_3'])
+        outer_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Create a large scrollbar for tablet use
+        scrollbar = ttk.Scrollbar(outer_frame, orient="vertical", style="Vertical.TScrollbar")
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5, padx=(5, 0))
+        
+        # Create canvas with scrollbar
+        canvas = tk.Canvas(outer_frame, bg=palette['background_3'], 
+                         highlightthickness=0,
+                         yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configure the scrollbar to work with the canvas
+        scrollbar.config(command=canvas.yview)
+        
+        # Create frame inside canvas to hold content
+        content_frame = tk.Frame(canvas, bg=palette['background_3'])
+        
+        # Create window in canvas to display the content frame
+        canvas_window = canvas.create_window((0, 0), window=content_frame, anchor="nw", tags="content_frame")
+        
+        # Configure canvas scrolling
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Keep the width of content_frame matched to canvas width
+            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+            
+        content_frame.bind("<Configure>", configure_scroll_region)
+        
+        # Ensure canvas is configurable by mouse wheel
+        canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
+        
+        # Store canvas in dictionary for tab switching
+        self.tab_scrolling["Community"] = canvas
+        
+        # Bind canvas resize to adjust content width
+        def on_canvas_resize(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+            
+        canvas.bind("<Configure>", on_canvas_resize)
+        
+        # Community sections with information instead of links
+        communities = [
+            {
+                "name": "Quantum Computing Stack Exchange",
+                "description": "A community-driven question and answer site for quantum computing researchers, practitioners, and students.",
+                "members": "25,000+ members",
+                "topics": "Quantum algorithms, error correction, qubits, quantum gates"
+            },
+            {
+                "name": "r/QuantumComputing",
+                "description": "Reddit's quantum computing community for discussing advancements, research, and educational resources.",
+                "members": "100,000+ members",
+                "topics": "News, tutorials, quantum programming, theoretical discussions"
+            },
+            {
+                "name": "IBM Quantum Community",
+                "description": "IBM's dedicated quantum computing community connecting researchers, developers, and enthusiasts.",
+                "members": "150,000+ members",
+                "topics": "Qiskit, IBM Quantum systems, cloud-based quantum computing"
+            },
+            {
+                "name": "Quantum Open Source Foundation",
+                "description": "A community promoting development and standardization of open source quantum computing software.",
+                "members": "5,000+ contributors",
+                "topics": "Open source projects, hackathons, mentoring programs"
+            }
+        ]
+        
+        # Create community cards directly in the content frame
+        for i, community in enumerate(communities):
+            # Create card with visible border
+            card = tk.Frame(content_frame, bg=palette['background_3'], bd=2, relief=tk.RAISED,
+                          highlightbackground="#4ecdc4", highlightthickness=2)
+            card.pack(fill=tk.X, pady=15, padx=20)
+            
+            # Card title
+            tk.Label(card, text=community["name"], font=('Arial', 32, 'bold'), 
+                    fg="#00ff88", bg=palette['background_3']).pack(anchor="center", pady=10)
+            
+            # Card description
+            tk.Label(card, text=community["description"], font=('Arial', 22), 
+                    fg=palette['subtitle_color'], bg=palette['background_3'], 
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center", pady=5)
+            
+            # Members info
+            tk.Label(card, text=f"Members: {community['members']}", font=('Arial', 20), 
+                    fg=palette['description_label_color'], bg=palette['background_3']).pack(anchor="center", pady=5)
+            
+            # Topics info
+            tk.Label(card, text=f"Topics: {community['topics']}", font=('Arial', 20), 
+                    fg=palette['description_label_color'], bg=palette['background_3'],
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center", pady=5)
+            
+            # Add separator except for last item
+            if i < len(communities) - 1:
+                ttk.Separator(content_frame, orient='horizontal').pack(fill=tk.X, padx=50, pady=10)
+
+    def create_news_tab(self):
+        """Latest News & Research tab: integrated information instead of external links"""
+        news_frame = ttk.Frame(self.notebook)
+        self.notebook.add(news_frame, text="News & Research")
+
+        main_container = tk.Frame(news_frame, bg=palette['background_3'])
+        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+
+        # Centered title
+        title_frame = tk.Frame(main_container, bg=palette['background_3'])
+        title_frame.pack(fill=tk.X, pady=10)
+        tk.Label(title_frame, text="Latest Quantum Computing News", font=('Arial', 36, 'bold'), 
+                 fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
+        
+        # Create a frame with scrollbar for better tablet usability
+        outer_frame = tk.Frame(main_container, bg=palette['background_3'])
+        outer_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Create a large scrollbar for tablet use
+        scrollbar = ttk.Scrollbar(outer_frame, orient="vertical", style="Vertical.TScrollbar")
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5, padx=(5, 0))
+        
+        # Style the scrollbar to be bigger and more touch-friendly (style already created in community tab)
+        scrollbar.configure(style="Vertical.TScrollbar")
+        
+        # Create canvas with scrollbar
+        canvas = tk.Canvas(outer_frame, bg=palette['background_3'], 
+                         highlightthickness=0,
+                         yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configure the scrollbar to work with the canvas
+        scrollbar.config(command=canvas.yview)
+        
+        # Create frame inside canvas to hold content
+        content_frame = tk.Frame(canvas, bg=palette['background_3'])
+        
+        # Create window in canvas to display the content frame
+        canvas_window = canvas.create_window((0, 0), window=content_frame, anchor="nw", tags="content_frame")
+        
+        # Configure canvas scrolling
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Keep the width of content_frame matched to canvas width
+            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+            
+        content_frame.bind("<Configure>", configure_scroll_region)
+        
+        # Ensure canvas is configurable by mouse wheel
+        canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
+        
+        # Store canvas in dictionary for tab switching
+        self.tab_scrolling["News & Research"] = canvas
+        
+        # Bind canvas resize to adjust content width
+        def on_canvas_resize(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+            
+        canvas.bind("<Configure>", on_canvas_resize)
+        
+        # News articles with images, dates, and content
+        news = [
+            {
+                "title": "Quantum Computer Achieves 1000 Qubit Milestone",
+                "date": "September 15, 2025",
+                "source": "Quantum Magazine",
+                "summary": "Scientists have successfully built and operated a quantum computer with 1000 qubits, marking a significant step toward practical quantum advantage. The system demonstrates unprecedented coherence times and error correction capabilities.",
+                "category": "Hardware"
+            },
+            {
+                "title": "New Quantum Algorithm Promises Breakthrough in Materials Science",
+                "date": "September 10, 2025",
+                "source": "Science Today",
+                "summary": "Researchers have developed a novel quantum algorithm that can simulate complex molecular structures with exponentially less computational resources than classical methods. The algorithm is expected to accelerate discoveries in materials science and drug development.",
+                "category": "Algorithms"
+            },
+            {
+                "title": "Quantum Error Correction Reaches Record Fidelity",
+                "date": "September 5, 2025",
+                "source": "Quantum Research Journal",
+                "summary": "A team of physicists has demonstrated quantum error correction with over 99% fidelity, addressing one of the major obstacles to building large-scale quantum computers. This breakthrough brings fault-tolerant quantum computing significantly closer to reality.",
+                "category": "Error Correction"
+            },
+            {
+                "title": "Quantum Internet Prototype Links Three Cities",
+                "date": "August 28, 2025",
+                "source": "Tech News Daily",
+                "summary": "The world's first multi-node quantum internet has successfully linked three cities over 100km apart, enabling secure quantum communication protocols. The network uses quantum entanglement to achieve theoretically unhackable information transfer.",
+                "category": "Quantum Communication"
+            }
+        ]
+        
+        # Container to center all news cards
+        news_container = tk.Frame(content_frame, bg=palette['background_3'])
+        news_container.pack(fill=tk.X, expand=True)
+        
+        for i, article in enumerate(news):
+            # Frame to center the card
+            article_container = tk.Frame(news_container, bg=palette['background_3'])
+            article_container.pack(fill=tk.X, expand=True, pady=15, padx=10)
+            
+            # The news card with increased padding for touch friendliness
+            frame = tk.Frame(article_container, bg=palette['background_3'], bd=2, relief=tk.RAISED)
+            frame.pack(fill=tk.X, expand=True)
+            
+            # Header section with title and date - centered
+            header = tk.Frame(frame, bg=palette['background_3'], padx=15, pady=15)
+            header.pack(fill=tk.X)
+            
+            # Title centered
+            tk.Label(header, text=article["title"], font=('Arial', 28, 'bold'), 
+                    fg="#4ecdc4", bg=palette['background_3'], 
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center", pady=5)
+            
+            # Date centered
+            tk.Label(header, text=article["date"], font=('Arial', 20, 'italic'), 
+                    fg=palette['description_label_color'], bg=palette['background_3']).pack(anchor="center")
+            
+            # Source and category in separate sections with larger touch targets
+            category_frame = tk.Frame(frame, bg=palette['background_3'], padx=15, pady=10)
+            category_frame.pack(fill=tk.X)
+            
+            # Center-align the content
+            category_inner = tk.Frame(category_frame, bg=palette['background_3'])
+            category_inner.pack(anchor="center")
+            
+            # Category tag - larger and more prominent
+            category_label = tk.Label(category_inner, text=article["category"], font=('Arial', 20, 'bold'), 
+                                     fg="#FFFFFF", bg="#5151A2", padx=18, pady=8)
+            category_label.pack(side=tk.LEFT, padx=10)
+            
+            # Source
+            tk.Label(category_inner, text=f"Source: {article['source']}", font=('Arial', 20), 
+                    fg=palette['description_label_color'], bg=palette['background_3'], padx=8, pady=8).pack(side=tk.LEFT)
+            
+            # Summary - centered text
+            summary_frame = tk.Frame(frame, bg=palette['background_3'], padx=20, pady=15)
+            summary_frame.pack(fill=tk.X)
+            
+            tk.Label(summary_frame, text=article["summary"], font=('Arial', 22), 
+                    fg=palette['subtitle_color'], bg=palette['background_3'], 
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center")
+            
+            # Bottom padding for better touch
+            tk.Frame(frame, height=10, bg=palette['background_3']).pack(fill=tk.X)
+            
+            # Separator except for last item
+            if i < len(news) - 1:
+                sep_frame = tk.Frame(news_container, bg=palette['background_3'])
+                sep_frame.pack(fill=tk.X, expand=True)
+                ttk.Separator(sep_frame, orient='horizontal').pack(fill=tk.X, padx=50, pady=10)
+
+    def create_projects_tab(self):
+        """Project Ideas & Challenges tab: integrated project information instead of just ideas"""
+        projects_frame = ttk.Frame(self.notebook)
+        self.notebook.add(projects_frame, text="Projects")
+
+        main_container = tk.Frame(projects_frame, bg=palette['background_3'])
+        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+
+        # Centered title
+        title_frame = tk.Frame(main_container, bg=palette['background_3'])
+        title_frame.pack(fill=tk.X, pady=10)
+        tk.Label(title_frame, text="Quantum Computing Projects & Challenges", font=('Arial', 36, 'bold'), 
+                 fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
+        
+        # Create a frame with scrollbar for better tablet usability
+        outer_frame = tk.Frame(main_container, bg=palette['background_3'])
+        outer_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Create a large scrollbar for tablet use
+        scrollbar = ttk.Scrollbar(outer_frame, orient="vertical")
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
+        
+        # Style the scrollbar to be bigger and more touch-friendly (style already created in community tab)
+        scrollbar.configure(style="Vertical.TScrollbar")
+        
+        # Create canvas with scrollbar
+        canvas = tk.Canvas(outer_frame, bg=palette['background_3'], 
+                         highlightthickness=0,
+                         yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configure the scrollbar to work with the canvas
+        scrollbar.config(command=canvas.yview)
+        
+        # Create frame inside canvas to hold content
+        content_frame = tk.Frame(canvas, bg=palette['background_3'])
+        
+        # Create window in canvas to display the content frame
+        canvas_window = canvas.create_window((0, 0), window=content_frame, anchor="nw", tags="content_frame")
+        
+        # Configure canvas scrolling
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Keep the width of content_frame matched to canvas width
+            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+            
+        content_frame.bind("<Configure>", configure_scroll_region)
+        
+        # Ensure canvas is configurable by mouse wheel
+        canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
+        
+        # Store canvas in dictionary for tab switching
+        self.tab_scrolling["Projects"] = canvas
+        
+        # Bind canvas resize to adjust content width
+        def on_canvas_resize(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+            
+        canvas.bind("<Configure>", on_canvas_resize)
+        
+        # Project cards with detailed information
+        projects = [
+            {
+                "title": "Quantum Random Number Generator",
+                "difficulty": "Beginner",
+                "time": "2-3 hours",
+                "description": "Create a true random number generator using quantum superposition principles. This project introduces basic quantum gates and measurement.",
+                "tools": "Qiskit, Python",
+                "steps": [
+                    "Create a quantum circuit with one qubit",
+                    "Apply Hadamard gate to create superposition",
+                    "Measure the qubit to get random 0 or 1",
+                    "Repeat to generate longer random sequences"
+                ]
+            },
+            {
+                "title": "Quantum Teleportation Demo",
+                "difficulty": "Intermediate",
+                "time": "4-6 hours",
+                "description": "Build a quantum teleportation circuit that transfers a quantum state from one qubit to another using entanglement and classical communication.",
+                "tools": "Qiskit, Python, NumPy",
+                "steps": [
+                    "Create a circuit with three qubits",
+                    "Prepare the state to teleport",
+                    "Create Bell pair for entanglement",
+                    "Perform Bell measurement",
+                    "Apply correction operations",
+                    "Verify teleported state"
+                ]
+            },
+            {
+                "title": "Grover's Search Algorithm Implementation",
+                "difficulty": "Advanced",
+                "time": "8-10 hours",
+                "description": "Implement Grover's quantum search algorithm to find an item in an unsorted database with quadratic speedup compared to classical algorithms.",
+                "tools": "Qiskit, Python, Linear Algebra knowledge",
+                "steps": [
+                    "Initialize qubits in superposition",
+                    "Implement oracle function for the search target",
+                    "Apply diffusion operator",
+                    "Repeat amplitude amplification steps",
+                    "Measure results and verify correctness",
+                    "Compare with classical search complexity"
+                ]
+            },
+            {
+                "title": "Quantum Error Correction Code",
+                "difficulty": "Expert",
+                "time": "10-15 hours",
+                "description": "Build a simple quantum error correction code to protect quantum information from bit-flip or phase-flip errors.",
+                "tools": "Qiskit, Python, Error correction theory",
+                "steps": [
+                    "Implement the 3-qubit bit-flip code",
+                    "Add controlled error channels",
+                    "Perform syndrome measurement",
+                    "Apply error correction",
+                    "Compare results with and without correction",
+                    "Extend to Shor's 9-qubit code (advanced)"
+                ]
+            }
+        ]
+        
+        # Container to center all project cards
+        projects_container = tk.Frame(content_frame, bg=palette['background_3'])
+        projects_container.pack(fill=tk.X, expand=True)
+        
+        for i, project in enumerate(projects):
+            # Difficulty colors for the card borders
+            difficulty_colors = {
+                "Beginner": "#4CAF50",
+                "Intermediate": "#2196F3",
+                "Advanced": "#FF9800",
+                "Expert": "#F44336"
+            }
+            
+            border_color = difficulty_colors.get(project["difficulty"], "#CCCCCC")
+            
+            # Frame to center each project card
+            card_container = tk.Frame(projects_container, bg=palette['background_3'])
+            card_container.pack(fill=tk.X, expand=True, pady=20, padx=20)
+            
+            # Project card with larger touch targets
+            card = tk.Frame(card_container, bg=palette['background_3'], bd=3, 
+                           highlightbackground=border_color, highlightthickness=3)
+            card.pack(fill=tk.X, expand=True)
+            
+            # Header with title and difficulty badge - centered
+            header = tk.Frame(card, bg=palette['background_3'], padx=20, pady=15)
+            header.pack(fill=tk.X)
+            
+            # Title centered
+            tk.Label(header, text=project["title"], font=('Arial', 28, 'bold'), 
+                    fg=palette['enhanced_title_color'], bg=palette['background_3']).pack(anchor="center", pady=5)
+            
+            # Difficulty and time info - centered
+            info_frame = tk.Frame(header, bg=palette['background_3'])
+            info_frame.pack(anchor="center", pady=5)
+            
+            # Difficulty badge - larger for touch
+            difficulty_label = tk.Label(info_frame, text=project["difficulty"], 
+                                      font=('Arial', 20, 'bold'), 
+                                      fg="white", bg=border_color, 
+                                      padx=16, pady=8)
+            difficulty_label.pack(side=tk.LEFT, padx=5)
+            
+            # Time estimate - larger for touch
+            tk.Label(info_frame, text=f"Time: {project['time']}", 
+                    font=('Arial', 18), 
+                    fg=palette['description_label_color'], 
+                    bg=palette['background_3'],
+                    padx=8, pady=8).pack(side=tk.LEFT)
+            
+            # Description - centered
+            desc_frame = tk.Frame(card, bg=palette['background_3'], padx=20, pady=10)
+            desc_frame.pack(fill=tk.X)
+            
+            tk.Label(desc_frame, text=project["description"], 
+                    font=('Arial', 20), 
+                    fg=palette['subtitle_color'], bg=palette['background_3'], 
+                    wraplength=900, justify=tk.CENTER).pack(anchor="center")
+            
+            # Tools section - centered
+            tools_frame = tk.Frame(card, bg=palette['background_3'], padx=20, pady=10)
+            tools_frame.pack(fill=tk.X)
+            
+            tools_container = tk.Frame(tools_frame, bg=palette['background_3'])
+            tools_container.pack(anchor="center")
+            
+            tk.Label(tools_container, text="Tools:", 
+                    font=('Arial', 20, 'bold'), 
+                    fg=palette['subtitle_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 8))
+            
+            tk.Label(tools_container, text=project["tools"], 
+                    font=('Arial', 20), 
+                    fg=palette['description_label_color'], bg=palette['background_3']).pack(side=tk.LEFT)
+            
+            # Steps section - centered header with left-aligned steps for readability
+            steps_frame = tk.Frame(card, bg=palette['background_3'], padx=20, pady=10)
+            steps_frame.pack(fill=tk.X)
+            
+            tk.Label(steps_frame, text="Implementation Steps:", 
+                    font=('Arial', 20, 'bold'), 
+                    fg=palette['subtitle_color'], bg=palette['background_3']).pack(anchor="center", pady=5)
+            
+            # Create bulleted list of steps - centered frame with left-aligned text
+            steps_list = tk.Frame(steps_frame, bg=palette['background_3'])
+            steps_list.pack(anchor="center", pady=5)
+            
+            for j, step in enumerate(project["steps"]):
+                step_frame = tk.Frame(steps_list, bg=palette['background_3'])
+                step_frame.pack(fill=tk.X, anchor="w", pady=4)  # Increased padding for touch
+                
+                tk.Label(step_frame, text="•", 
+                        font=('Arial', 20), 
+                        fg=palette['subtitle_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 12))
+                
+                tk.Label(step_frame, text=step, 
+                        font=('Arial', 20), 
+                        fg=palette['subtitle_color'], bg=palette['background_3'], 
+                        anchor="w").pack(side=tk.LEFT, fill=tk.X)
+                        
+            # Add bottom padding for touch
+            tk.Frame(card, height=15, bg=palette['background_3']).pack(fill=tk.X)
+
+    def create_career_tab(self):
+        """Career & Learning Pathways tab: integrated information instead of external links"""
+        career_frame = ttk.Frame(self.notebook)
+        self.notebook.add(career_frame, text="Careers")
+
+        main_container = tk.Frame(career_frame, bg=palette['background_3'])
+        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+
+        # Centered title
+        title_frame = tk.Frame(main_container, bg=palette['background_3'])
+        title_frame.pack(fill=tk.X, pady=10)
+        tk.Label(title_frame, text="Quantum Computing Career Paths", font=('Arial', 36, 'bold'), 
+                fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
+        
+        # Create a frame with scrollbar for better tablet usability
+        outer_frame = tk.Frame(main_container, bg=palette['background_3'])
+        outer_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Create a large scrollbar for tablet use
+        scrollbar = ttk.Scrollbar(outer_frame, orient="vertical")
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
+        
+        # Style the scrollbar to be bigger and more touch-friendly (style already created in community tab)
+        scrollbar.configure(style="Vertical.TScrollbar")
+        
+        # Create canvas with scrollbar
+        canvas = tk.Canvas(outer_frame, bg=palette['background_3'], 
+                         highlightthickness=0,
+                         yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configure the scrollbar to work with the canvas
+        scrollbar.config(command=canvas.yview)
+        
+        # Create frame inside canvas to hold content
+        content_frame = tk.Frame(canvas, bg=palette['background_3'])
+        
+        # Create window in canvas to display the content frame
+        canvas_window = canvas.create_window((0, 0), window=content_frame, anchor="nw", tags="content_frame")
+        
+        # Configure canvas scrolling
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Keep the width of content_frame matched to canvas width
+            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+            
+        content_frame.bind("<Configure>", configure_scroll_region)
+        
+        # Ensure canvas is configurable by mouse wheel
+        canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
+        
+        # Store canvas in dictionary for tab switching
+        self.tab_scrolling["Careers"] = canvas
+        
+        # Bind canvas resize to adjust content width
+        def on_canvas_resize(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+            
+        canvas.bind("<Configure>", on_canvas_resize)
+        
+        # Career paths with detailed information
+        careers = [
+            {
+                "title": "Quantum Software Engineer",
+                "education": "BS/MS in Computer Science, Physics, or related field",
+                "skills": "Programming (Python, C++), Quantum algorithms, Linear algebra",
+                "description": "Develop software for quantum computers, including circuit design, algorithm implementation, and quantum programming frameworks.",
+                "companies": "IBM Quantum, Google Quantum AI, Microsoft Quantum, Rigetti, D-Wave",
+                "salary_range": "$90,000 - $160,000",
+                "growth": "High demand expected for the next decade as quantum computers become more commercially viable."
+            },
+            {
+                "title": "Quantum Algorithm Researcher",
+                "education": "PhD in Computer Science, Physics, or Mathematics",
+                "skills": "Advanced mathematics, Algorithm design, Quantum theory",
+                "description": "Research and develop new quantum algorithms that can provide advantages over classical computing methods for specific problem domains.",
+                "companies": "Academic institutions, National laboratories, IBM Research, Google Research",
+                "salary_range": "$110,000 - $180,000",
+                "growth": "Steady growth as businesses seek quantum solutions to complex problems in optimization, simulation, and machine learning."
+            },
+            {
+                "title": "Quantum Hardware Engineer",
+                "education": "PhD in Physics, Electrical Engineering, or related field",
+                "skills": "Quantum mechanics, Superconductivity, Electronic design, Cryogenics",
+                "description": "Design and build the physical components of quantum computers, including qubits, control systems, and error correction mechanisms.",
+                "companies": "IBM, Google, Intel, Rigetti, IonQ, Quantum Circuits Inc.",
+                "salary_range": "$120,000 - $200,000",
+                "growth": "Critical field with high demand as quantum hardware continues to evolve and scale up."
+            },
+            {
+                "title": "Quantum Applications Specialist",
+                "education": "MS/PhD in domain field (Chemistry, Finance, etc.) with quantum computing knowledge",
+                "skills": "Domain expertise, Quantum algorithms, Optimization techniques",
+                "description": "Apply quantum computing to solve industry-specific problems in fields like pharmaceuticals, materials science, finance, or logistics.",
+                "companies": "JP Morgan Chase, Goldman Sachs, Merck, Airbus, ExxonMobil",
+                "salary_range": "$100,000 - $170,000",
+                "growth": "Rapidly expanding field as more industries adopt quantum computing for specialized applications."
+            },
+            {
+                "title": "Quantum Education & Outreach",
+                "education": "BS/MS in Physics, Computer Science, or Education with quantum knowledge",
+                "skills": "Communication, Teaching, Quantum fundamentals, Content creation",
+                "description": "Develop educational materials, teach courses, and create content to help others learn about quantum computing and its applications.",
+                "companies": "Universities, Coding bootcamps, Qiskit Advocates program, Quantum education startups",
+                "salary_range": "$60,000 - $120,000",
+                "growth": "Growing demand as more educational institutions add quantum computing to their curriculum."
+            }
+        ]
+        
+        # Create career cards directly in the content frame
+        for i, career in enumerate(careers):
+            # Create card with visible border
+            card = tk.Frame(content_frame, bg=palette['background_3'], bd=2, relief=tk.RAISED)
+            card.pack(fill=tk.X, pady=15, padx=20)
+            
+            # Title with underline - centered
+            title_frame = tk.Frame(card, bg=palette['background_3'], padx=15, pady=15)
+            title_frame.pack(fill=tk.X)
+            
+            tk.Label(title_frame, text=career["title"], font=('Arial', 28, 'bold'), 
+                    fg="#ffb86b", bg=palette['background_3']).pack(anchor="center")
+            
+            separator = ttk.Separator(card, orient='horizontal')
+            separator.pack(fill=tk.X, padx=20, pady=5)
+            
+            # Content frame - centered layout
+            content = tk.Frame(card, bg=palette['background_3'], padx=20, pady=10)
+            content.pack(fill=tk.X)
+            
+            # Information sections centered but with content left-aligned for readability
+            sections = [
+                {"title": "Education:", "content": career["education"]},
+                {"title": "Key Skills:", "content": career["skills"]},
+                {"title": "Description:", "content": career["description"]},
+                {"title": "Companies:", "content": career["companies"]},
+                {"title": "Salary Range:", "content": career["salary_range"]},
+                {"title": "Growth Outlook:", "content": career["growth"]}
+            ]
+            
+            for section in sections:
+                section_frame = tk.Frame(content, bg=palette['background_3'], pady=10)
+                section_frame.pack(fill=tk.X, anchor="center")
+                
+                # Section title
+                title_label = tk.Label(section_frame, text=section["title"], font=('Arial', 20, 'bold'), 
+                        fg=palette['subtitle_color'], bg=palette['background_3'])
+                title_label.pack(anchor="center", pady=(0, 6))
+                
+                # Content - larger font for better readability on touch screens
+                content_label = tk.Label(section_frame, text=section["content"], font=('Arial', 18), 
+                        fg=palette['description_label_color'], bg=palette['background_3'], 
+                        wraplength=900, justify=tk.CENTER)
+                content_label.pack(anchor="center")
+            
+            # Add bottom padding for touch
+            tk.Frame(card, height=10, bg=palette['background_3']).pack(fill=tk.X)
+            
+            # Add separator except for last item
+            if i < len(careers) - 1:
+                ttk.Separator(content_frame, orient='horizontal').pack(fill=tk.X, padx=50, pady=10)
     def create_animated_header(self, parent):
-        """Create an animated quantum-themed header"""
+        """Create a simplified header without animation canvas"""
         header_frame = tk.Frame(parent, bg=palette['background_3'])
         header_frame.pack(fill=tk.X,
                         padx=int(self.screen_width * 0.02),
@@ -199,32 +1033,31 @@ class LearnHub:
         nav_frame.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.008)))
 
         # Back to Main Screen button - top right with relative sizing
-        button_font_size = max(10, int(self.screen_width * 0.008))
+        button_font_size = max(12, int(self.screen_width * 0.01))
         # Canvas-based main menu button for better color control on macOS
-        button_font_size = max(10, int(self.screen_width * 0.008))
-        button_width = max(140, int(self.screen_width * 0.09))
-        button_height = max(35, int(self.screen_height * 0.03))
+        button_width = max(180, int(self.screen_width * 0.12))
+        button_height = max(50, int(self.screen_height * 0.045))
 
         back_main_canvas = tk.Canvas(nav_frame,
                                width=button_width,
                                height=button_height,
-                               bg=palette['learn_hub_button_color'],  # FIXED: Use learn_hub_button_color instead of background_2
+                               bg=palette['learn_hub_button_color'],
                                highlightthickness=0,
                                bd=0)
 
         back_main_canvas.pack(side=tk.RIGHT)
 
-        # Draw button background with proper colors
+        # Draw button background with proper colors - larger for touch
         back_main_canvas.create_rectangle(2, 2, button_width-2, button_height-2,
-                                        fill=palette['learn_hub_button_color'],  # FIXED: Use learn_hub_button_color
-                                        outline="#2b3340", width=1,
+                                        fill=palette['learn_hub_button_color'],
+                                        outline="#2b3340", width=2,
                                         tags="menu_bg")
 
-        # Add text to button with proper contrast
+        # Add text to button with proper contrast - larger font
         back_main_canvas.create_text(button_width//2, button_height//2,
                                 text=" Main Screen",
                                 font=('Arial', button_font_size, 'bold'),
-                                fill=palette['learn_hub_button_text_color'],  # FIXED: Use learn_hub_button_text_color
+                                fill=palette['learn_hub_button_text_color'],
                                 tags="menu_text")
 
         # Bind click events
@@ -245,15 +1078,6 @@ class LearnHub:
         back_main_canvas.bind("<Button-1>", on_menu_click)
         back_main_canvas.bind("<Enter>", on_menu_enter)
         back_main_canvas.bind("<Leave>", on_menu_leave)
-
-        # Quantum circuit animation canvas with relative height
-        canvas_height = int(self.screen_height * 0.12)
-        self.circuit_canvas = tk.Canvas(header_frame, height=canvas_height, bg=palette['background_3'],
-                                    highlightthickness=0)
-        self.circuit_canvas.pack(fill=tk.X, pady=(0, int(self.screen_height * 0.012)))
-
-        # Draw quantum circuit after canvas is created
-        self.root.after(100, self.draw_quantum_circuit)
 
         # Title with shadow effect and relative font size
         title_frame = tk.Frame(header_frame, bg=palette['background_3'])
@@ -279,9 +1103,6 @@ class LearnHub:
                                     font=('Arial', subtitle_font_size, 'italic'),
                                     fg=palette['subtitle_color'], bg=palette['background_3'])
         self.subtitle_label.pack()
-
-        # Learning progress indicator
-        self.create_learning_progress(header_frame)
 
 
     def draw_quantum_circuit(self):
@@ -377,78 +1198,28 @@ class LearnHub:
             pass
 
 
-    def create_learning_progress(self, parent):
-        """Create a visual learning progress indicator"""
-        progress_frame = tk.Frame(parent, bg=palette['background_3'])
-        progress_frame.pack(fill=tk.X, pady=(int(self.screen_height * 0.012), 0))
 
-        # Title with relative font size
-        progress_title_font_size = max(12, int(self.screen_width * 0.01))
-        tk.Label(progress_frame, text=" Learning Journey",
-                font=('Arial', progress_title_font_size, 'bold'),
-                fg=palette['learning_journey_title_color'], bg=palette['background_3']).pack()
-
-        # Progress steps with enhanced visuals
-        steps_container = tk.Frame(progress_frame, bg=palette['background_3'])
-        steps_container.pack(pady=int(self.screen_height * 0.008))
-
-        steps = [
-            ("Basics", True, "#00ff88", ""),
-            ("Gates", True, "#4ecdc4", ""),
-            ("Algorithms", False, "#666666", ""),
-            ("Advanced", False, "#333333", "")
-        ]
-
-        for i, (step, completed, color, icon) in enumerate(steps):
-            step_frame = tk.Frame(steps_container, bg=palette['background_3'])
-            step_frame.pack(side=tk.LEFT, padx=int(self.screen_width * 0.012))
-
-            # Enhanced circle with glow - relative sizing
-            circle_size = int(self.screen_width * 0.025)
-            canvas = tk.Canvas(step_frame, width=circle_size, height=circle_size,
-                            bg=palette['background_3'], highlightthickness=0)
-            canvas.pack()
-
-            # Glow effect for completed steps
-            if completed:
-                canvas.create_oval(2, 2, circle_size-2, circle_size-2, fill=color, outline=color, width=3)
-                canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill=palette['background_3'], outline='white', width=2)
-                canvas.create_text(circle_size//2, circle_size//2, text="", fill='white',
-                                font=('Arial', max(10, int(self.screen_width * 0.01)), 'bold'))
-            else:
-                canvas.create_oval(8, 8, circle_size-8, circle_size-8, fill='', outline=color, width=2)
-
-            # Step label with icon and relative font size
-            step_font_size = max(9, int(self.screen_width * 0.007))
-            tk.Label(step_frame, text=f"{icon} {step}", fg=color, bg=palette['background_3'],
-                    font=('Arial', step_font_size, 'bold')).pack(pady=(int(self.screen_height * 0.004), 0))
-
-            # Connection line (except for last step)
-            if i < len(steps) - 1:
-                line_width = int(self.screen_width * 0.02)
-                line_canvas = tk.Canvas(steps_container, width=line_width, height=5,
-                                    bg=palette['background_3'], highlightthickness=0)
-                line_canvas.pack(side=tk.LEFT)
-                line_canvas.create_line(0, 2, line_width, 2, fill='#555555', width=2)
 
 
     def style_notebook(self):
-        """Apply enhanced styling to the notebook"""
+        """Apply enhanced styling to the notebook for touch-friendly tabs"""
         style = ttk.Style()
         style.theme_use('clam')
 
-        # Enhanced notebook styling - Updated for gray background
+        # Enhanced notebook styling with larger targets for touch screens - full width
         style.configure('TNotebook',
                     background=palette['background_3'],
                     borderwidth=0,
-                    tabmargins=[2, 5, 2, 0])
+                    tabmargins=[0, 0, 0, 0])  # Remove margins to span full width
 
+        # Larger padding for touch-friendly tabs - equal distribution
         style.configure('TNotebook.Tab',
                     background=palette['background_4'],
                     foreground='#ffffff',  # Default text color - white
-                    padding=[25, 15],
+                    padding=[10, 20],      # Reduced horizontal padding to fit equally
                     borderwidth=0,
-                    font=('Arial', 11, 'bold'))
+                    font=('Arial', 18, 'bold'),  # Much larger font for better visibility
+                    anchor='center')  # Center text in tabs
 
         # FIXED: Text colors for tab states
         style.map('TNotebook.Tab',
@@ -458,162 +1229,62 @@ class LearnHub:
                             ('active', '#ffffff'),                  # White text when hovering
                             ('!active', '#ffffff')])               # White text when not active
 
+        # Style large tablet-friendly scrollbars
+        style.configure("Vertical.TScrollbar", 
+                        gripcount=0,
+                        background=palette['subtitle_color'],
+                        darkcolor=palette['background_4'], 
+                        lightcolor=palette['background_3'],
+                        troughcolor=palette['background_4'],
+                        bordercolor=palette['background_4'],
+                        arrowcolor='#ffffff',
+                        arrowsize=100,
+                        width=150)  # Extra wide scrollbar for tablet use
+
         style.configure('TFrame', background=palette['background_3'])
 
         # Center the tabs by configuring tab positioning
         style.configure('TNotebook', tabposition='n')
 
-
-    def create_concepts_tab(self):
-        """Create the enhanced basic concepts tab"""
-        concepts_frame = ttk.Frame(self.notebook)
-        self.notebook.add(concepts_frame, text=" Basic Concepts")
-
-        # Main container with padding - changed to match text area background
-        main_container = tk.Frame(concepts_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
-
-        # Enhanced scrollable text area
-        text_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        text_frame.pack(fill=tk.BOTH, expand=True)
-
-        concepts_text = scrolledtext.ScrolledText(text_frame,
-                                                wrap=tk.WORD,
-                                                width=80, height=25,
-                                                bg=palette['background_3'], fg=palette['concepts_text_color'],
-                                                font=('Consolas', 11),
-                                                insertbackground=palette['concepts_text_insert_background'],
-                                                selectbackground=palette['concepts_text_select_background'],
-                                                selectforeground=palette['background_black'],
-                                                padx=20, pady=15)
-        concepts_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # Enhanced content with better formatting
-        concepts_content = """
- QUANTUM COMPUTING FUNDAMENTALS
-
- What is Quantum Computing?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Quantum computing harnesses the principles of quantum mechanics to process information in
-fundamentally different ways than classical computers. Instead of using bits that are either
-0 or 1, quantum computers use quantum bits (qubits) that can exist in superposition.
-
- KEY CONCEPTS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
- 1. QUBIT (Quantum Bit)
-   ┌─ The basic unit of quantum information
-   ├─ Can be in state |0⟩, |1⟩, or a superposition of both
-   └─ Represented as α|0⟩ + β|1⟩ where |α|² + |β|² = 1
-
- 2. SUPERPOSITION
-   ┌─ A qubit can exist in multiple states simultaneously
-   ├─ Enables quantum computers to process many possibilities at once
-   └─ Collapses to a definite state when measured
-
- 3. ENTANGLEMENT
-   ┌─ Quantum particles become correlated in impossible ways
-   ├─ Measurement of one particle instantly affects its entangled partner
-   └─ Key resource for quantum algorithms and communication
-
- 4. INTERFERENCE
-   ┌─ Quantum states can interfere constructively or destructively
-   ├─ Used in quantum algorithms to amplify correct answers
-   └─ Cancels out wrong answers in many quantum computations
-
- 5. MEASUREMENT
-   ┌─ The act of observing a quantum system
-   ├─ Causes the quantum state to collapse to a classical state
-   └─ Probabilistic outcome based on quantum amplitudes
-
- WHY QUANTUM COMPUTING MATTERS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- - Exponential speedup for certain problems
- - Cryptography and security applications
- - Drug discovery and molecular simulation
- - Optimization problems
- - Machine learning and AI
- - Financial modeling
-
- CURRENT CHALLENGES:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Quantum decoherence (qubits losing their quantum properties)
-- Error rates in quantum operations
-- Limited number of qubits in current systems
-- Need for extremely low temperatures
-- Quantum error correction
-
- THE FUTURE:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Quantum computing represents a paradigm shift that could revolutionize how we solve
-complex problems in science, technology, and beyond. The future is quantum!
-        """
-
-        concepts_text.insert(tk.END, concepts_content)
-        concepts_text.config(state=tk.DISABLED)
+    def configure_equal_tab_distribution(self):
+        """Configure tabs to be equally distributed across the full width"""
+        # Update after the window is ready
+        self.root.after(100, self._apply_equal_distribution)
+    
+    def _apply_equal_distribution(self):
+        """Apply equal distribution styling to tabs"""
+        try:
+            # Get the number of tabs
+            tab_count = self.notebook.index("end")
+            if tab_count > 0:
+                # Calculate equal width for each tab
+                notebook_width = self.notebook.winfo_width()
+                if notebook_width > 1:  # Make sure notebook is rendered
+                    tab_width = notebook_width // tab_count
+                    
+                    # Apply uniform width to all tabs through styling
+                    style = ttk.Style()
+                    style.configure('TNotebook.Tab',
+                        background=palette['background_4'],
+                        foreground='#ffffff',
+                        padding=[5, 20],  # Minimal horizontal padding
+                        borderwidth=0,
+                        font=('Arial', 18, 'bold'),
+                        anchor='center',
+                        width=tab_width)  # Set calculated width
+                else:
+                    # Retry if notebook not ready
+                    self.root.after(100, self._apply_equal_distribution)
+        except Exception:
+            # Fallback - retry once more
+            self.root.after(200, self._apply_equal_distribution)
 
 
-    def create_gates_tab(self):
-        """Create the enhanced quantum gates tab with all gates in one horizontal line"""
-        gates_frame = ttk.Frame(self.notebook)
-        self.notebook.add(gates_frame, text=" Quantum Gates")
+    # Removed concepts tab
 
-        # Main container - changed to match card background
-        main_container = tk.Frame(gates_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
-        # Create a canvas for horizontal scrolling with enhanced styling
-        canvas_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        canvas_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Use horizontal scrollbar instead of vertical
-        canvas = tk.Canvas(canvas_frame, bg=palette['background_3'], highlightthickness=0)  # Changed from #1a1a1a to #2a2a2a
-        scrollbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=canvas.xview)
-        scrollable_frame = tk.Frame(canvas, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(xscrollcommand=scrollbar.set)  # Changed to xscrollcommand
-
-        canvas.pack(side="top", fill="both", expand=True, padx=5, pady=5)
-        scrollbar.pack(side="bottom", fill="x")  # Changed to bottom and fill x
-
-        # Enhanced gate definitions with more details
-        gates = [
-            ("X Gate (NOT)", "Flips |0⟩ ↔ |1⟩", "Pauli-X rotation", "#ff6b6b", "", 2),
-            ("Y Gate", "Rotates around Y-axis", "Pauli-Y rotation", "#4ecdc4", "", 3),
-            ("Z Gate", "Phase flip: |1⟩ → -|1⟩", "Pauli-Z rotation", "#96ceb4", "", 2),
-            ("H Gate (Hadamard)", "Creates superposition", "|0⟩ → (|0⟩+|1⟩)/√2", "#f39c12", "", 4),
-            ("S Gate", "Phase gate: |1⟩ → i|1⟩", "90° Z rotation", "#9b59b6", "", 3),
-            ("T Gate", "π/8 gate", "45° Z rotation", "#e74c3c", "", 3),
-            ("CNOT Gate", "Controlled NOT", "Entangles two qubits", "#00ff88", "", 5),
-            ("CZ Gate", "Controlled Z", "Conditional phase flip", "#ff9ff3", "", 4),
-        ]
-
-        # Create one single row with all gates
-        row_frame = tk.Frame(scrollable_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-        row_frame.pack(fill=tk.BOTH, expand=True, pady=20)
-
-        # Add all gates to the single row
-        for name, description, formula, color, icon, difficulty in gates:
-            gate_container = tk.Frame(row_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-            gate_container.pack(side=tk.LEFT, fill=tk.Y, padx=15)
-
-            self.create_enhanced_gate_card_horizontal(gate_container, name, description,
-                                                    formula, color, icon, difficulty)
-
-        # Enable mouse wheel scrolling on the canvas
-        def on_mousewheel(event):
-            canvas.xview_scroll(int(-1*(event.delta/120)), "units")
-
-        canvas.bind("<MouseWheel>", on_mousewheel)
-        # For Linux
-        canvas.bind("<Button-4>", lambda e: canvas.xview_scroll(-1, "units"))
-        canvas.bind("<Button-5>", lambda e: canvas.xview_scroll(1, "units"))
+    # Removed gates tab
 
 
     def create_enhanced_gate_card_horizontal(self, parent, name, description, formula, color, icon, difficulty):
@@ -693,210 +1364,229 @@ complex problems in science, technology, and beyond. The future is quantum!
             widget.bind("<Leave>", on_leave)
 
 
-    def create_algorithms_tab(self):
-        """Create the enhanced algorithms tab"""
-        algorithms_frame = ttk.Frame(self.notebook)
-        self.notebook.add(algorithms_frame, text=" Algorithms")
 
-        # Main container - changed to match text area background
-        main_container = tk.Frame(algorithms_frame, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
+    # Removed algorithms tab
+    def create_coming_soon_tab(self):
+        """Create a simple 'Coming Soon' tab for future features"""
+        coming_frame = ttk.Frame(self.notebook)
+        self.notebook.add(coming_frame, text=" Coming Soon")
+
+        main_container = tk.Frame(coming_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
-        # Enhanced scrollable text area
-        text_frame = tk.Frame(main_container, bg=palette['background_3'], relief=tk.RAISED, bd=2)
-        text_frame.pack(fill=tk.BOTH, expand=True)
-
-        algorithms_text = scrolledtext.ScrolledText(text_frame,
-                                                wrap=tk.WORD,
-                                                width=80, height=25,
-                                                bg=palette['background_3'], fg=palette['algorithms_text_color'],
-                                                font=('Consolas', 11),
-                                                insertbackground=palette['algorithms_text_insert_background'],
-                                                selectbackground=palette['algorithms_text_select_background'],
-                                                selectforeground=palette['background_black'],
-                                                padx=20, pady=15)
-        algorithms_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # Enhanced algorithm content
-        algorithms_content = """
- FAMOUS QUANTUM ALGORITHMS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
- 1. SHOR'S ALGORITHM (1994)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Purpose: Integer factorization
-    Impact: Breaks RSA encryption
-    Speedup: Exponential over classical methods
-
-    Key Ideas:
-   ┌─ Uses quantum Fourier transform
-   ├─ Finds period of modular exponentiation
-   └─ Factors large numbers efficiently
-
-    Applications:
-   ┌─ Cryptography and security
-   ├─ Breaking current encryption schemes
-   └─ Motivating post-quantum cryptography
-
- 2. GROVER'S ALGORITHM (1996)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Purpose: Database search
-    Impact: Quadratic speedup for search problems
-    Speedup: √N instead of N comparisons
-
-    Key Ideas:
-   ┌─ Amplitude amplification
-   ├─ Iteratively increases probability of correct answer
-   └─ Uses quantum interference
-
-    Applications:
-   ┌─ Unstructured search
-   ├─ Optimization problems
-   └─ Machine learning
-
- 3. DEUTSCH-JOZSA ALGORITHM
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Purpose: Determine if function is constant or balanced
-    Impact: First quantum algorithm with exponential speedup
-    Speedup: 1 query vs N/2 queries classically
-
-    Key Ideas:
-   ┌─ Uses quantum parallelism
-   ├─ Evaluates function on all inputs simultaneously
-   └─ Quantum interference reveals global property
-
- 4. VARIATIONAL QUANTUM EIGENSOLVER (VQE)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Purpose: Find ground state of molecular systems
-    Impact: Near-term quantum chemistry applications
-    Approach: Hybrid quantum-classical optimization
-
-    Key Ideas:
-   ┌─ Parametrized quantum circuits
-   ├─ Classical optimization loop
-   └─ Minimizes energy expectation value
-
- ALGORITHM CATEGORIES:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
- Algebraic Algorithms:
-   • Shor's Algorithm (factoring)
-   • Hidden Subgroup Problem
-   • Discrete logarithm
-
- Search Algorithms:
-   • Grover's Algorithm
-   • Amplitude amplification
-   • Quantum walks
-
- Simulation Algorithms:
-   • Quantum chemistry simulation
-   • Many-body physics
-   • Quantum field theory
-
- Optimization Algorithms:
-   • QAOA
-   • VQE
-   • Quantum annealing
-
- FUTURE DIRECTIONS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- Fault-tolerant quantum algorithms
- Quantum machine learning
- Quantum error correction
- Distributed quantum computing
-
-The quantum future awaits!
-        """
-
-        algorithms_text.insert(tk.END, algorithms_content)
-        algorithms_text.config(state=tk.DISABLED)
+        label = tk.Label(main_container,
+                        text="More quantum learning features are coming soon!\nStay tuned for interactive tutorials, quizzes, and more.",
+                        font=('Arial', 16, 'italic'),
+                        fg=palette['subtitle_color'],
+                        bg=palette['background_3'],
+                        justify=tk.CENTER)
+        label.pack(expand=True)
 
 
     def create_resources_tab(self):
-        """Create the enhanced resources tab with horizontal layout"""
+        """Resources tab: integrated information instead of external links"""
         resources_frame = ttk.Frame(self.notebook)
-        self.notebook.add(resources_frame, text=" Resources")
+        self.notebook.add(resources_frame, text="Resources")
 
-        # Main container
         main_container = tk.Frame(resources_frame, bg=palette['background_3'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
-        # Create scrollable frame with horizontal scrolling
-        canvas = tk.Canvas(main_container, bg=palette['background_3'], highlightthickness=0)
-        scrollbar = ttk.Scrollbar(main_container, orient="horizontal", command=canvas.xview)
-        scrollable_frame = tk.Frame(canvas, bg=palette['background_3'])
-
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(xscrollcommand=scrollbar.set)
-
-        canvas.pack(side="top", fill="both", expand=True)
-        scrollbar.pack(side="bottom", fill="x")
-
-        # Learning Resources section
-        self.create_section_header_horizontal(scrollable_frame, " Learning Resources", "#00ff88")
-
-        # Resources in horizontal layout
-        resources_row = tk.Frame(scrollable_frame, bg=palette['background_3'])
-        resources_row.pack(fill=tk.X, pady=10)
-
-        resources = [
-            ("IBM Quantum Experience", "https://quantum-computing.ibm.com/",
-            "Hands-on quantum programming", "", 4),
-            ("Microsoft Quantum Development Kit", "https://azure.microsoft.com/en-us/products/quantum/",
-            "Q# programming language", "", 3),
-            ("Google Cirq", "https://quantumai.google/cirq",
-            "Python framework for quantum circuits", "", 3),
-            ("Qiskit Textbook", "https://qiskit.org/textbook/",
-            "Comprehensive quantum computing textbook", "", 5),
-            ("Nielsen & Chuang", "https://www.cambridge.org/core/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE",
-            "The quantum computing bible", "", 5),
+        # Centered title
+        title_frame = tk.Frame(main_container, bg=palette['background_3'])
+        title_frame.pack(fill=tk.X, pady=10)
+        tk.Label(title_frame, text="Quantum Computing Resources", font=('Arial', 36, 'bold'), 
+                fg=palette['title_color'], bg=palette['background_3']).pack(pady=10, anchor="center")
+        
+        # Create a frame with scrollbar for better tablet usability
+        outer_frame = tk.Frame(main_container, bg=palette['background_3'])
+        outer_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Create a large scrollbar for tablet use
+        scrollbar = ttk.Scrollbar(outer_frame, orient="vertical")
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
+        
+        # Style the scrollbar to be bigger and more touch-friendly (style already created in community tab)
+        scrollbar.configure(style="Vertical.TScrollbar")
+        
+        # Create canvas with scrollbar
+        canvas = tk.Canvas(outer_frame, bg=palette['background_3'], 
+                         highlightthickness=0,
+                         yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configure the scrollbar to work with the canvas
+        scrollbar.config(command=canvas.yview)
+        
+        # Create frame inside canvas to hold content
+        content_frame = tk.Frame(canvas, bg=palette['background_3'])
+        
+        # Create window in canvas to display the content frame
+        canvas_window = canvas.create_window((0, 0), window=content_frame, anchor="nw", tags="content_frame")
+        
+        # Configure canvas scrolling
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Keep the width of content_frame matched to canvas width
+            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+            
+        content_frame.bind("<Configure>", configure_scroll_region)
+        
+        # Ensure canvas is configurable by mouse wheel
+        canvas.configure(yscrollincrement=20)  # Set scroll increment for smoother scrolling
+        
+        # Store canvas in dictionary for tab switching
+        self.tab_scrolling["Resources"] = canvas
+        
+        # Bind canvas resize to adjust content width
+        def on_canvas_resize(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+            
+        canvas.bind("<Configure>", on_canvas_resize)
+        
+        # Resource categories
+        categories = [
+            {
+                "name": "Essential Books",
+                "items": [
+                    {
+                        "title": "Quantum Computation and Quantum Information",
+                        "authors": "Michael A. Nielsen and Isaac L. Chuang",
+                        "description": "The definitive textbook in the field, often called 'Mike and Ike'. Covers quantum mechanics, quantum computation, quantum information theory, and quantum cryptography."
+                    },
+                    {
+                        "title": "Quantum Computing: An Applied Approach",
+                        "authors": "Jack D. Hidary",
+                        "description": "A practical, application-focused introduction to quantum computing with real-world examples and programming exercises using Qiskit and other platforms."
+                    },
+                    {
+                        "title": "Programming Quantum Computers",
+                        "authors": "Eric R. Johnston, Nic Harrigan, and Mercedes Gimeno-Segovia",
+                        "description": "A hands-on introduction to quantum computing that focuses on practical implementation with visual explanations and programming examples."
+                    }
+                ]
+            },
+            {
+                "name": "Learning Concepts",
+                "items": [
+                    {
+                        "title": "Quantum Superposition",
+                        "description": "Quantum bits (qubits) can exist in multiple states simultaneously, unlike classical bits. This property allows quantum computers to process a vast amount of possibilities at once."
+                    },
+                    {
+                        "title": "Quantum Entanglement",
+                        "description": "When qubits become entangled, the state of one qubit is directly related to the state of another, regardless of the distance between them. Measuring one immediately determines the state of the other."
+                    },
+                    {
+                        "title": "Quantum Gates",
+                        "description": "Quantum gates are the building blocks of quantum circuits. Common gates include the Hadamard gate (creates superposition), Pauli-X gate (quantum NOT), and CNOT gate (creates entanglement between qubits)."
+                    },
+                    {
+                        "title": "Quantum Algorithms",
+                        "description": "Specialized algorithms that leverage quantum properties to solve certain problems more efficiently than classical computers. Examples include Shor's algorithm for factoring large numbers and Grover's algorithm for searching."
+                    }
+                ]
+            },
+            {
+                "name": "Mathematics for Quantum Computing",
+                "items": [
+                    {
+                        "title": "Linear Algebra",
+                        "description": "Essential for understanding quantum states and operations. Key concepts include vectors, matrices, eigenvalues, eigenvectors, and tensor products."
+                    },
+                    {
+                        "title": "Complex Numbers",
+                        "description": "Quantum amplitudes are represented as complex numbers. Understanding complex arithmetic, polar form, and Euler's formula is important."
+                    },
+                    {
+                        "title": "Probability Theory",
+                        "description": "Quantum measurements are probabilistic. Concepts like probability distributions, expected values, and Born's rule are fundamental."
+                    }
+                ]
+            }
         ]
-
-        for title, url, description, icon, rating in resources:
-            resource_container = tk.Frame(resources_row, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-            resource_container.pack(side=tk.LEFT, fill=tk.Y, padx=10)
-            self.create_enhanced_resource_card_horizontal(resource_container, title, url, description, icon, rating)
-
-        # Separator with horizontal layout
-        self.create_separator_horizontal(scrollable_frame)
-
-        # Tools section
-        self.create_section_header_horizontal(scrollable_frame, "️ Quantum Computing Tools", "#f39c12")
-
-        # Tools in horizontal layout
-        tools_row = tk.Frame(scrollable_frame, bg=palette['background_3'])
-        tools_row.pack(fill=tk.X, pady=10)
-
-        tools = [
-            ("Qiskit", "https://qiskit.org/",
-            "Open-source quantum computing framework", "️", 5),
-            ("Cirq", "https://quantumai.google/cirq",
-            "Google's quantum computing framework", "", 4),
-            ("PennyLane", "https://pennylane.ai/",
-            "Quantum machine learning library", "", 4),
-            ("Quantum Inspire", "https://www.quantum-inspire.com/",
-            "QuTech's quantum computing platform", "", 3),
+        
+        # Display each category and its items directly in the content frame
+        for category_index, category in enumerate(categories):
+            # Category header - centered
+            category_frame = tk.Frame(content_frame, bg=palette['background_3'])
+            category_frame.pack(fill=tk.X, pady=(25, 10))
+            
+            tk.Label(category_frame, text=category["name"], font=('Arial', 30, 'bold'), 
+                    fg="#50fa7b", bg=palette['background_3']).pack(anchor="center", pady=8)
+            
+            # Items in this category
+            for item_index, item in enumerate(category["items"]):
+                # Item card with increased padding for touch
+                item_frame = tk.Frame(content_frame, bg=palette['background_3'], bd=2, relief=tk.GROOVE)
+                item_frame.pack(fill=tk.X, expand=True, padx=15, pady=10)
+                
+                # Title with authors if available - centered
+                title_frame = tk.Frame(item_frame, bg=palette['background_3'], padx=15, pady=12)
+                title_frame.pack(fill=tk.X)
+                
+                tk.Label(title_frame, text=item["title"], font=('Arial', 24, 'bold'), 
+                        fg="#8be9fd", bg=palette['background_3']).pack(anchor="center", pady=(0, 8))
+                
+                if "authors" in item:
+                    tk.Label(title_frame, text=f"By: {item['authors']}", font=('Arial', 18, 'italic'), 
+                            fg=palette['subtitle_color'], bg=palette['background_3']).pack(anchor="center", pady=(0, 8))
+                
+                # Description - centered text with good readability
+                desc_frame = tk.Frame(item_frame, bg=palette['background_3'], padx=24, pady=16)
+                desc_frame.pack(fill=tk.X)
+                
+                tk.Label(desc_frame, text=item["description"], font=('Arial', 18), 
+                        fg=palette['description_label_color'], bg=palette['background_3'], 
+                        wraplength=900, justify=tk.CENTER).pack(anchor="center", pady=8)
+            
+            # Add separator between categories except for last one
+            if category_index < len(categories) - 1:
+                sep_frame = tk.Frame(content_frame, bg=palette['background_3'])
+                sep_frame.pack(fill=tk.X, pady=10)
+                ttk.Separator(sep_frame, orient='horizontal').pack(fill=tk.X, padx=50)
+        
+        # Additional learning tips section
+        tips_container = tk.Frame(content_frame, bg=palette['background_3'])
+        tips_container.pack(fill=tk.X, expand=True, pady=25)
+        
+        tips_frame = tk.Frame(tips_container, bg=palette['background_3'], bd=2, relief=tk.GROOVE)
+        tips_frame.pack(fill=tk.X, expand=True, padx=15)
+        
+        # Title centered
+        tips_title = tk.Frame(tips_frame, bg=palette['background_3'], padx=10, pady=15)
+        tips_title.pack(fill=tk.X)
+        
+        tk.Label(tips_title, text="Learning Tips", font=('Arial', 30, 'bold'), 
+                fg="#bd93f9", bg=palette['background_3']).pack(anchor="center")
+        
+        # Tips with larger touch targets
+        tips = [
+            "Start with the basics: Learn classical computing fundamentals before diving into quantum",
+            "Practice with simulators: Use this application to experiment with quantum circuits",
+            "Learn incrementally: Master one concept before moving to the next",
+            "Apply your knowledge: Try to implement simple algorithms after learning them",
+            "Join the community: Participate in quantum computing forums and discussions"
         ]
-
-        for title, url, description, icon, rating in tools:
-            tool_container = tk.Frame(tools_row, bg=palette['background_3'])  # Changed from #1a1a1a to #2a2a2a
-            tool_container.pack(side=tk.LEFT, fill=tk.Y, padx=10)
-            self.create_enhanced_resource_card_horizontal(tool_container, title, url, description, icon, rating)
-
-        # Enable mouse wheel scrolling on the canvas
-        def on_mousewheel(event):
-            canvas.xview_scroll(int(-1*(event.delta/120)), "units")
-
-        canvas.bind("<MouseWheel>", on_mousewheel)
-        # For Linux
-        canvas.bind("<Button-4>", lambda e: canvas.xview_scroll(-1, "units"))
-        canvas.bind("<Button-5>", lambda e: canvas.xview_scroll(1, "units"))
+        
+        # Container for tips
+        tips_list = tk.Frame(tips_frame, bg=palette['background_3'], padx=24, pady=18)
+        tips_list.pack(fill=tk.X)
+        
+        for tip in tips:
+            tip_container = tk.Frame(tips_list, bg=palette['background_3'], pady=12)
+            tip_container.pack(fill=tk.X)
+            
+            # Create a frame to center the tip content
+            tip_content = tk.Frame(tip_container, bg=palette['background_3'])
+            tip_content.pack(anchor="center")
+            
+            # Bullet point and tip text with larger font and padding for touch
+            tk.Label(tip_content, text="•", font=('Arial', 24, 'bold'), 
+                    fg=palette['description_label_color'], bg=palette['background_3']).pack(side=tk.LEFT, padx=(0, 16))
+            
+            tk.Label(tip_content, text=tip, font=('Arial', 20), 
+                    fg=palette['description_label_color'], bg=palette['background_3'], 
+                    wraplength=900, justify=tk.LEFT).pack(side=tk.LEFT, padx=8, pady=8)
 
 
     def create_enhanced_resource_card_horizontal(self, parent, title, url, description, icon, rating):
@@ -1167,20 +1857,28 @@ The quantum future awaits!
 
     def animate_subtitle(self):
         """Animate subtitle with pulsing effect"""
-        if not self.animation_running or not hasattr(self, 'subtitle_label'):
+        if not self.animation_running or not hasattr(self, 'root') or not self.root.winfo_exists():
             return
-
+        
+        # Safe check to ensure the subtitle label exists and the window is still open
         try:
-            if self.subtitle_label.winfo_exists():
+            if hasattr(self, 'subtitle_label') and self.subtitle_label.winfo_exists():
                 current_color = self.subtitle_label.cget('fg')
                 new_color = '#00ff88' if current_color == '#4ecdc4' else '#4ecdc4'
                 self.subtitle_label.configure(fg=new_color)
-
-                # Schedule next animation frame
-                self.root.after(2000, self.animate_subtitle)
-        except (tk.TclError, AttributeError):
-            # Widget might be destroyed or not exist, ignore
-            pass
+                
+                # Schedule next animation only if still running
+                if self.animation_running:
+                    # Use a named callback to avoid the "invalid command name" error
+                    animation_id = self.root.after(2000, lambda: self.animate_subtitle())
+                    self.animation_ids.append(str(animation_id))
+            else:
+                # If the subtitle label doesn't exist, stop trying to animate it
+                self.animation_running = False
+        except (tk.TclError, AttributeError, RuntimeError) as e:
+            # Widget might be destroyed or not exist
+            print(f"Animation error: {e}")
+            self.animation_running = False
 
 
     def open_url(self, url):
@@ -1193,14 +1891,26 @@ The quantum future awaits!
 
     def back_to_menu(self):
         """Go back to the main screen/menu"""
+        # Stop all animations immediately
         self.animation_running = False
 
         # Cancel any pending animations
         if hasattr(self, 'animation_id') and self.animation_id:
             try:
                 self.root.after_cancel(self.animation_id)
-            except:
+            except Exception:
                 pass
+                
+        # Cancel all tracked animation IDs
+        if hasattr(self, 'animation_ids'):
+            for anim_id in self.animation_ids:
+                try:
+                    if isinstance(anim_id, str) and anim_id.isdigit():
+                        self.root.after_cancel(int(anim_id))
+                    else:
+                        self.root.after_cancel(anim_id)
+                except Exception:
+                    pass
 
         try:
             # Create main menu FIRST
@@ -1268,7 +1978,7 @@ The quantum future awaits!
         # Learn Hub button
         # Learn button using canvas for macOS compatibility
         self.create_canvas_dialog_button(button_frame, " Learn Hub",
-                                        lambda: self.reopen_learn_hub(menu_root),
+                                        lambda event=None: self.reopen_learn_hub(menu_root),
                                         200, 45, palette['learn_button_background'],
                                         palette['background_black'], pady=5)
 
@@ -1296,15 +2006,25 @@ The quantum future awaits!
 
     def close_window(self):
         """Close the learn hub window"""
+        # Stop all animations immediately
         self.animation_running = False
 
         # Cancel any pending animations
         if hasattr(self, 'animation_id') and self.animation_id:
             try:
                 self.root.after_cancel(self.animation_id)
-            except:
+            except Exception:
                 pass
-
+                
+        # Cancel all tracked animation IDs
+        if hasattr(self, 'animation_ids'):
+            for anim_id in self.animation_ids:
+                try:
+                    self.root.after_cancel(anim_id)
+                except Exception:
+                    pass
+        
+        # Clean destroy the window
         self.root.destroy()
 
 
