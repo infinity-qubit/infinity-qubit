@@ -1965,16 +1965,20 @@ class PuzzleMode:
         """Open the level selection window and close current puzzle window"""
         self.play_sound('button_click')
 
-        # Save progress
-        self.save_progress()
-
-        # Close current puzzle window
-        self.root.destroy()
-        
-        # Import and start puzzle level selection
+        # Create new window first
         from puzzle_level_selection import PuzzleLevelSelection
-        level_selection = PuzzleLevelSelection()
-        level_selection.run()
+        level_selection_root = tk.Tk()
+        level_selection_app = PuzzleLevelSelection(level_selection_root)
+
+        # Make new window visible
+        level_selection_root.update()
+        level_selection_root.lift()
+        level_selection_root.focus_force()
+
+        # Close old window
+        self.root.destroy()
+
+        level_selection_root.mainloop()
 
 
     def set_initial_state(self, qc, initial_state):

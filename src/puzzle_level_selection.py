@@ -28,8 +28,15 @@ palette = extract_color_palette(get_colors_from_file(color_file_path), 'puzzle_l
 
 
 class PuzzleLevelSelection:
-    def __init__(self):
-        self.root = tk.Tk()
+    def __init__(self, root=None):
+        # Use provided root or create new one if none provided
+        if root is None:
+            self.root = tk.Tk()
+            self.owns_root = True
+        else:
+            self.root = root
+            self.owns_root = False
+        
         self.root.title("Infinity Qubit - Level Selection")
 
         # Set fullscreen mode
@@ -145,12 +152,26 @@ class PuzzleLevelSelection:
     def return_to_game_mode_selection(self, event=None):
         """Return to the game mode selection window"""
         self.play_sound('click')
-        self.root.destroy()
+        # self.root.destroy()
         
-        # Import and start game mode selection
+        # # Import and start game mode selection
+        # from game_mode_selection import GameModeSelection
+        # game_selection = GameModeSelection()
+        # game_selection.run()
+
         from game_mode_selection import GameModeSelection
-        game_selection = GameModeSelection()
-        game_selection.run()
+        new_root = tk.Tk()
+        new_app = GameModeSelection(new_root)
+
+        # Make sure the new window is on top
+        new_root.update()
+        new_root.lift()
+        new_root.focus_force()
+
+        # Close main window
+        self.root.destroy()
+
+        new_root.mainloop()
 
 
     def play_sound(self, sound_type="click"):
@@ -399,14 +420,20 @@ class PuzzleLevelSelection:
     def select_level(self, level_index):
         """Handle level selection"""
         self.play_sound('success')
-        
-        # Close this window and start puzzle mode with selected level
-        self.root.destroy()
-        
-        # Create new root window and start puzzle mode with the selected level
-        puzzle_root = tk.Tk()
+
         from puzzle_mode import PuzzleMode
+        # Create new window first
+        puzzle_root = tk.Tk()
         puzzle_app = PuzzleMode(puzzle_root, starting_level=level_index)
+
+        # Make sure the new window is on top
+        puzzle_root.update()
+        puzzle_root.lift()
+        puzzle_root.focus_force()
+
+        # Close main window
+        self.root.destroy()
+
         puzzle_root.mainloop()
 
 

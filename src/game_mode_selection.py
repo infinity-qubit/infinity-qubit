@@ -25,8 +25,15 @@ palette = extract_color_palette(get_colors_from_file(color_file_path), 'game_mod
 
 
 class GameModeSelection:
-    def __init__(self):
-        self.root = tk.Tk()
+    def __init__(self, root=None):
+        # Use provided root or create new one if none provided
+        if root is None:
+            self.root = tk.Tk()
+            self.owns_root = True
+        else:
+            self.root = root
+            self.owns_root = False
+            
         self.root.title("Infinity Qubit - Game Mode Selection")
 
         # Set fullscreen mode
@@ -700,12 +707,26 @@ class GameModeSelection:
         try:
             from puzzle_level_selection import PuzzleLevelSelection
 
-            # Close current window
+            # # Close current window
+            # self.root.destroy()
+
+            # # Start the puzzle level selection
+            # level_selection = PuzzleLevelSelection()
+            # level_selection.run()
+
+            level_selection_root = tk.Tk()
+            level_selection_app = PuzzleLevelSelection(level_selection_root)
+
+            # Make sure the new window is visible before closing this one
+            level_selection_root.update()
+            level_selection_root.lift()
+            level_selection_root.focus_force()
+
+            # Now safely close main window
             self.root.destroy()
 
-            # Start the puzzle level selection
-            level_selection = PuzzleLevelSelection()
-            level_selection.run()
+            # Start the level selection mainloop
+            level_selection_root.mainloop()
 
         except ImportError:
             print("❌ Puzzle level selection module not found")
