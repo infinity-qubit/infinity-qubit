@@ -167,7 +167,7 @@
 },
 
 {
-    "name": "Superposition Distribution",
+    "name": "Double Superposition",
     "description": "Create |++⟩ from |00⟩",
     "input_state": "|00⟩",
     "target_state": "|++⟩",
