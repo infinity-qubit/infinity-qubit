@@ -152,12 +152,6 @@ class PuzzleLevelSelection:
     def return_to_game_mode_selection(self, event=None):
         """Return to the game mode selection window"""
         self.play_sound('click')
-        # self.root.destroy()
-        
-        # # Import and start game mode selection
-        # from game_mode_selection import GameModeSelection
-        # game_selection = GameModeSelection()
-        # game_selection.run()
 
         from game_mode_selection import GameModeSelection
         new_root = tk.Tk()
@@ -377,16 +371,47 @@ class PuzzleLevelSelection:
                                  font=('Arial', level_font_size, 'bold'),
                                  fill=text_color, tags="text")
 
-            # Level name (truncated)
+            # Level name (wrapped)
             name = level['name']
-            if len(name) > 12:
-                name = name[:12] + "..."
-            
             name_font_size = max(10, int(min(width, height) * 0.12))
-            btn_canvas.create_text(width//2, height//2,
-                                 text=name,
-                                 font=('Arial', name_font_size),
-                                 fill=text_color, tags="text")
+            
+            # Calculate text wrapping with smaller character limit
+            max_chars_per_line = max(8, min(12, int(width / (name_font_size * 0.7))))  # Smaller chars per line
+            words = name.split()
+            lines = []
+            current_line = ""
+            
+            for word in words:
+                test_line = current_line + (" " if current_line else "") + word
+                if len(test_line) <= max_chars_per_line:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                        current_line = word
+                    else:
+                        # Single word is too long, truncate it
+                        lines.append(word[:max_chars_per_line-3] + "...")
+                        current_line = ""
+            
+            if current_line:
+                lines.append(current_line)
+            
+            # Limit to 3 lines max
+            if len(lines) > 3:
+                lines = lines[:1] + [lines[1][:max_chars_per_line-3] + "..."]
+            
+            # Draw wrapped text
+            line_height = name_font_size + 2
+            total_height = len(lines) * line_height
+            start_y = height//2 - total_height//2 + line_height
+            
+            for i, line in enumerate(lines):
+                y_pos = start_y + i * line_height
+                btn_canvas.create_text(width//2, y_pos,
+                                     text=line,
+                                     font=('Arial', name_font_size),
+                                     fill=text_color, tags="text")
 
         # Bind drawing to canvas configuration
         btn_canvas.bind('<Configure>', lambda e: draw_button())
