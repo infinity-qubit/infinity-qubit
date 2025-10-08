@@ -131,6 +131,8 @@
       "puzzle_mode_button_color": "#ffb86b",
       "puzzle_mode_button_hover_color": "#ffd08f",
       "puzzle_mode_button_text_color": "#000000",
+      "level_button_color": "#000",
+      "level_button_text_color": "#ffb86b",
       "background": "#121212",
       "main_frame_background": "#121212",
       "background_2": "#1b1f24",
@@ -254,11 +256,8 @@
       "info_title_color": "#ffb86b",
       "main_menu_button_text_color": "#2c1f12",
       "close_button_background": "#ffb86b",
-      
       "level_button_color": "#000",
       "level_button_text_color": "#ffb86b",
-
-
       "clear_button_background": "#ffb86b",
       "clear_button_text_color": "#2c1f12",
       "qubit_number_title_color": "#ffb86b",
