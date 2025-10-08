@@ -254,6 +254,11 @@
       "info_title_color": "#ffb86b",
       "main_menu_button_text_color": "#2c1f12",
       "close_button_background": "#ffb86b",
+      
+      "level_button_color": "#000",
+      "level_button_text_color": "#ffb86b",
+
+
       "clear_button_background": "#ffb86b",
       "clear_button_text_color": "#2c1f12",
       "qubit_number_title_color": "#ffb86b",
