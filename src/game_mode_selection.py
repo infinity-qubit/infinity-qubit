@@ -25,8 +25,15 @@ palette = extract_color_palette(get_colors_from_file(color_file_path), 'game_mod
 
 
 class GameModeSelection:
-    def __init__(self):
-        self.root = tk.Tk()
+    def __init__(self, root=None):
+        # Use provided root or create new one if none provided
+        if root is None:
+            self.root = tk.Tk()
+            self.owns_root = True
+        else:
+            self.root = root
+            self.owns_root = False
+            
         self.root.title("Infinity Qubit - Game Mode Selection")
 
         # Set fullscreen mode
@@ -695,32 +702,38 @@ class GameModeSelection:
 
 
     def start_puzzle_mode(self):
-        """Start the puzzle mode"""
-        print("📚 Starting Puzzle Mode...")
+        """Start the puzzle level selection"""
+        print("📚 Starting Puzzle Level Selection...")
         try:
-            from puzzle_mode import PuzzleMode
+            from puzzle_level_selection import PuzzleLevelSelection
 
-            # Create new window first
-            puzzle_root = tk.Tk()
-            puzzle_app = PuzzleMode(puzzle_root)
+            # # Close current window
+            # self.root.destroy()
 
-            # Make sure new window is visible before closing this one
-            puzzle_root.update()
-            puzzle_root.lift()
-            puzzle_root.focus_force()
+            # # Start the puzzle level selection
+            # level_selection = PuzzleLevelSelection()
+            # level_selection.run()
+
+            level_selection_root = tk.Tk()
+            level_selection_app = PuzzleLevelSelection(level_selection_root)
+
+            # Make sure the new window is visible before closing this one
+            level_selection_root.update()
+            level_selection_root.lift()
+            level_selection_root.focus_force()
 
             # Now safely close main window
             self.root.destroy()
 
-            # Start the puzzle mode mainloop
-            puzzle_root.mainloop()
+            # Start the level selection mainloop
+            level_selection_root.mainloop()
 
         except ImportError:
-            print("❌ Puzzle mode module not found")
-            messagebox.showerror("Error", "Puzzle mode module not available")
+            print("❌ Puzzle level selection module not found")
+            messagebox.showerror("Error", "Puzzle level selection module not available")
         except Exception as e:
-            print(f"❌ Error starting puzzle mode: {e}")
-            messagebox.showerror("Error", f"Error starting puzzle mode: {str(e)}")
+            print(f"❌ Error starting puzzle level selection: {e}")
+            messagebox.showerror("Error", f"Error starting puzzle level selection: {str(e)}")
 
 
     def start_sandbox_mode(self):
